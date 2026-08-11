@@ -1,0 +1,1218 @@
+# ROADMAP.md — Portfolio Backend PHP & Laravel
+
+## 1. Visión
+
+Construir un portfolio bilingüe, administrable y visualmente cinematográfico que posicione a Luciano González para puestos de:
+
+**Backend PHP/Laravel Jr.**
+
+El portfolio debe demostrar experiencia real en:
+
+- APIs REST.
+- Lógica de negocio.
+- Sistemas de gestión educativa.
+- Integraciones con APIs bancarias y medios de pago.
+- MySQL.
+- Automatizaciones.
+- Mantenimiento de sistemas productivos.
+- Docker y prácticas de entrega profesional.
+
+La estética será experimental, pero el mensaje central siempre será backend.
+
+---
+
+## 2. Principios de ejecución
+
+- Construir por fases.
+- No comenzar por las animaciones.
+- Validar primero el mensaje y la arquitectura.
+- No inventar contenido para completar secciones.
+- Priorizar una primera versión sólida antes de agregar efectos.
+- Medir rendimiento desde el primer prototipo visual.
+- Mantener el sitio funcional sin animaciones avanzadas.
+- No publicar proyectos nuevos hasta que tengan calidad suficiente.
+- Cada fase debe tener criterios de aceptación.
+- No avanzar con errores críticos acumulados.
+
+---
+
+# Fase 0 — Descubrimiento y definición
+
+## Objetivo
+
+Cerrar las decisiones necesarias antes de iniciar el repositorio.
+
+## Tareas
+
+- [ ] Definir nombre del proyecto y repositorio.
+- [ ] Definir si será un monorepositorio desde el inicio.
+- [ ] Elegir herramienta de paquetes para frontend.
+- [ ] Confirmar Laravel 13 y versión de PHP.
+- [ ] Confirmar MySQL y versión de imagen Docker.
+- [ ] Elegir librería de internacionalización para Next.js App Router.
+- [ ] Confirmar Filament 5.
+- [ ] Definir estructura inicial de rutas `/es` y `/en`.
+- [ ] Definir URL local del frontend, API y administración.
+- [ ] Definir política inicial de ramas.
+- [ ] Reservar `127.0.0.1:8000` para el portfolio en el registro de puertos del servidor.
+- [ ] Confirmar dominio principal definitivo.
+- [ ] Definir convención de subdominios para futuros proyectos.
+- [ ] Confirmar que `cloudflared` será un servicio global del host y no un contenedor por proyecto.
+- [ ] Confirmar distribución Linux, CPU, RAM y almacenamiento de la computadora que funcionará como servidor.
+- [ ] Confirmar raíz de aplicaciones del servidor (`/srv/apps` recomendado) y raíz de backups (`/srv/backups` recomendado).
+- [ ] Definir formato del CV público.
+- [ ] Preparar listado de información confidencial que no se puede publicar.
+
+## Entregables
+
+- Documento de arquitectura inicial.
+- Diagrama de alto nivel.
+- Convenciones del repositorio.
+- Decisiones registradas.
+- Backlog inicial priorizado.
+
+## Criterios de aceptación
+
+- Frontend, backend y administración tienen responsabilidades claras.
+- La arquitectura de producción está definida para ejecutarse completamente en el servidor propio mediante Docker y Cloudflare Tunnel.
+- Las decisiones diferidas están identificadas.
+- No queda ninguna duda que impida crear el repositorio.
+
+---
+
+# Fase 1 — Identidad, contenido y narrativa
+
+## Objetivo
+
+Definir qué verá y entenderá el reclutador antes de diseñar la interfaz final.
+
+## Tareas
+
+### Posicionamiento
+
+- [ ] Redactar titular principal en español.
+- [ ] Redactar titular principal en inglés.
+- [ ] Redactar resumen profesional corto.
+- [ ] Redactar presentación extendida.
+- [ ] Definir llamado a la acción principal.
+- [ ] Definir mensaje de disponibilidad laboral.
+
+### Experiencia
+
+- [ ] Crear una versión pública y anonimizada de la experiencia en gestión educativa.
+- [ ] Crear una versión pública y anonimizada de las integraciones con APIs bancarias.
+- [ ] Describir trabajo con APIs REST.
+- [ ] Describir automatizaciones y tareas programadas.
+- [ ] Describir optimización de consultas y soporte multiinstitución.
+- [ ] Revisar que no se expongan clientes, credenciales, rutas, datos ni reglas privadas.
+- [ ] Separar responsabilidades propias de logros del equipo.
+
+### Contacto
+
+- [ ] Confirmar LinkedIn.
+- [ ] Confirmar GitHub.
+- [ ] Confirmar correo público.
+- [ ] Aprobar versión del CV descargable.
+
+### Fotografía
+
+- [ ] Elegir o producir fotografía profesional.
+- [ ] Preparar recorte horizontal y vertical.
+- [ ] Preparar versión optimizada.
+- [ ] Definir texto alternativo.
+- [ ] Verificar integración en modo claro y oscuro.
+
+### Traducción
+
+- [ ] Crear glosario técnico español/inglés.
+- [ ] Traducir el contenido profesional.
+- [ ] Revisar el inglés de forma humana.
+- [ ] Mantener consistencia en términos como backend, API, payment integration y education management system.
+
+## Entregables
+
+- Documento de contenido aprobado.
+- Textos en español e inglés.
+- Material visual inicial.
+- CV definitivo.
+- Matriz de confidencialidad.
+
+## Criterios de aceptación
+
+- El mensaje “resuelve sistemas backend reales” se entiende en menos de diez segundos.
+- Las integraciones bancarias y la gestión educativa tienen prioridad.
+- El contenido es creíble sin exageraciones.
+- Todo texto tiene versión equivalente en ambos idiomas.
+- No hay información confidencial.
+
+---
+
+# Fase 2 — Diseño de experiencia
+
+## Objetivo
+
+Diseñar la experiencia completa antes de implementar animaciones complejas.
+
+## Tareas
+
+### Arquitectura de información
+
+- [ ] Definir orden definitivo de secciones.
+- [ ] Definir navegación de escritorio.
+- [ ] Definir navegación móvil.
+- [ ] Definir comportamiento de enlaces internos.
+- [ ] Definir ubicación de idioma y tema.
+- [ ] Definir estados con y sin proyectos publicados.
+
+### Wireframes
+
+- [ ] Wireframe del hero.
+- [ ] Wireframe de experiencia.
+- [ ] Wireframe de casos de trabajo.
+- [ ] Wireframe de especializaciones.
+- [ ] Wireframe de proyectos.
+- [ ] Wireframe de tecnologías.
+- [ ] Wireframe de forma de trabajo.
+- [ ] Wireframe de contacto.
+- [ ] Wireframe de menú móvil.
+- [ ] Wireframe de estados de carga y error.
+
+### Sistema visual
+
+- [ ] Elegir paleta clara.
+- [ ] Elegir paleta oscura.
+- [ ] Elegir tipografías.
+- [ ] Definir escala tipográfica.
+- [ ] Definir espaciado.
+- [ ] Definir radios, bordes y sombras.
+- [ ] Definir tokens de color y movimiento.
+- [ ] Definir tratamiento de fotografía.
+- [ ] Definir iconografía.
+- [ ] Definir apariencia de tarjetas de proyecto.
+- [ ] Definir estados hover, focus, active y disabled.
+
+### Prototipo
+
+- [ ] Crear prototipo estático de alta fidelidad.
+- [ ] Revisar desktop.
+- [ ] Revisar tablet.
+- [ ] Revisar mobile.
+- [ ] Revisar modo claro.
+- [ ] Revisar modo oscuro.
+- [ ] Validar contraste.
+- [ ] Validar legibilidad sin animaciones.
+
+## Entregables
+
+- Mapa del sitio.
+- Wireframes.
+- Prototipo de alta fidelidad.
+- Tokens de diseño.
+- Especificación responsive.
+
+## Criterios de aceptación
+
+- El diseño se reconoce como profesional y técnico.
+- No parece una web de agencia, videojuego o criptomonedas.
+- La fotografía y el mensaje backend dominan el hero.
+- La página funciona visualmente sin animación.
+- Los dos temas tienen calidad equivalente.
+- El diseño móvil no es una versión recortada sin criterio.
+
+---
+
+# Fase 3 — Arquitectura técnica y entorno Docker
+
+## Objetivo
+
+Crear una base reproducible para frontend, backend, base de datos y administración.
+
+## Tareas
+
+### Repositorio
+
+- [ ] Inicializar monorepositorio.
+- [ ] Crear estructura para `web`, `api`, `infra` y `docs`.
+- [ ] Configurar `.editorconfig`.
+- [ ] Configurar política de variables de entorno.
+- [ ] Crear archivos de ejemplo sin secretos.
+- [ ] Documentar comandos principales.
+
+### Frontend
+
+- [ ] Inicializar Next.js con App Router.
+- [ ] Activar TypeScript estricto.
+- [ ] Configurar Tailwind CSS.
+- [ ] Configurar lint y formato.
+- [ ] Preparar rutas localizadas.
+- [ ] Preparar sistema de tema.
+- [ ] Preparar cliente de API tipado.
+- [ ] Definir estrategia de Server y Client Components.
+
+### Backend
+
+- [ ] Inicializar Laravel.
+- [ ] Configurar MySQL.
+- [ ] Configurar API versionada.
+- [ ] Configurar recursos JSON.
+- [ ] Configurar autenticación administrativa.
+- [ ] Instalar y configurar Filament.
+- [ ] Preparar almacenamiento de medios.
+- [ ] Configurar CORS.
+- [ ] Configurar rate limiting.
+- [ ] Configurar logs.
+
+### Docker
+
+- [ ] Crear entorno de desarrollo.
+- [ ] Crear servicio frontend.
+- [ ] Crear servicio backend.
+- [ ] Crear servicio MySQL.
+- [ ] Crear gateway/reverse proxy del portfolio y enlazar únicamente `127.0.0.1:8000`.
+- [ ] Verificar compatibilidad del stack con el `cloudflared` global del servidor; no crear `cloudflared` dentro del proyecto.
+- [ ] Definir redes Docker internas del portfolio (`front` y `data` o equivalente).
+- [ ] Confirmar que MySQL no publica puertos al host ni a Internet.
+- [ ] Agregar health checks.
+- [ ] Agregar volúmenes.
+- [ ] Configurar red interna.
+- [ ] Definir estrategia de migraciones.
+- [ ] Definir seed inicial.
+- [ ] Documentar arranque, parada y reinicio.
+- [ ] Comprobar funcionamiento en Windows con WSL2.
+
+## Entregables
+
+- Repositorio inicial.
+- Entorno local reproducible.
+- Frontend base.
+- API base.
+- Panel administrativo accesible.
+- Documentación de instalación.
+
+## Criterios de aceptación
+
+- El entorno completo se levanta mediante un procedimiento único documentado.
+- Frontend y backend se comunican.
+- La base de datos persiste.
+- No hay secretos en Git.
+- Los builds básicos terminan correctamente.
+- La administración requiere autenticación.
+- Frontend, backend, gateway y MySQL pueden ejecutarse de forma reproducible mediante Docker; `cloudflared` permanece como servicio compartido del host.
+
+---
+
+# Fase 4 — CMS y modelo de datos
+
+## Objetivo
+
+Permitir administrar todo el contenido relevante desde Laravel/Filament.
+
+## Tareas
+
+### Modelado
+
+- [ ] Crear perfil.
+- [ ] Crear experiencias.
+- [ ] Crear casos de trabajo.
+- [ ] Crear proyectos.
+- [ ] Crear tecnologías.
+- [ ] Crear enlaces.
+- [ ] Crear configuración del sitio.
+- [ ] Crear medios.
+- [ ] Crear estados borrador y publicado.
+- [ ] Crear orden manual.
+- [ ] Crear visibilidad por elemento.
+- [ ] Crear campos bilingües.
+
+### Administración
+
+- [ ] CRUD de perfil.
+- [ ] CRUD de experiencias.
+- [ ] CRUD de casos.
+- [ ] CRUD de proyectos.
+- [ ] CRUD de tecnologías.
+- [ ] Gestión de enlaces.
+- [ ] Gestión del CV.
+- [ ] Gestión de imágenes.
+- [ ] Filtros por estado.
+- [ ] Ordenamiento.
+- [ ] Validaciones.
+- [ ] Confirmaciones de eliminación.
+- [ ] Vista previa o mecanismo de revisión.
+
+### API
+
+- [ ] Endpoint público de configuración.
+- [ ] Endpoint público de perfil.
+- [ ] Endpoint público de experiencia.
+- [ ] Endpoint público de casos.
+- [ ] Endpoint público de proyectos.
+- [ ] Endpoint público de tecnologías.
+- [ ] Respuestas por idioma.
+- [ ] Solo contenido publicado.
+- [ ] Recursos JSON consistentes.
+- [ ] Caché inicial.
+- [ ] Errores controlados.
+- [ ] Documentación del contrato.
+
+## Entregables
+
+- Migraciones.
+- Modelos.
+- Panel administrable.
+- API pública.
+- Seed de demostración.
+- Documento del contrato de API.
+
+## Criterios de aceptación
+
+- Se puede modificar el contenido sin tocar React.
+- Los borradores no aparecen públicamente.
+- El contenido español e inglés se administra sin confusión.
+- Los proyectos pueden quedar ocultos hasta estar listos.
+- El sitio puede funcionar con cero proyectos.
+- La API no expone datos administrativos.
+
+---
+
+# Fase 5 — Implementación del sitio público
+
+## Objetivo
+
+Construir una versión funcional, accesible y responsive antes de añadir la capa cinematográfica.
+
+## Tareas
+
+### Base
+
+- [ ] Layout global.
+- [ ] Header.
+- [ ] Navegación.
+- [ ] Selector de idioma.
+- [ ] Selector de tema.
+- [ ] Footer.
+- [ ] Estados de carga.
+- [ ] Estados de error.
+- [ ] Página 404.
+
+### Secciones
+
+- [ ] Hero.
+- [ ] Presentación.
+- [ ] Experiencia.
+- [ ] Casos de trabajo.
+- [ ] Especializaciones.
+- [ ] Proyectos.
+- [ ] Tecnologías.
+- [ ] Forma de trabajo.
+- [ ] Contacto.
+- [ ] Descarga de CV.
+
+### Integración
+
+- [ ] Consumo de API.
+- [ ] Tipado de respuestas.
+- [ ] Manejo de errores.
+- [ ] Estrategia de caché.
+- [ ] Revalidación.
+- [ ] Fallback si la API no está disponible.
+- [ ] Optimización de imágenes.
+- [ ] Integración de fotografía.
+- [ ] Metadata inicial.
+
+### Responsive y accesibilidad
+
+- [ ] Navegación por teclado.
+- [ ] Focus visible.
+- [ ] Contraste.
+- [ ] Jerarquía de encabezados.
+- [ ] Textos alternativos.
+- [ ] Lectura con zoom.
+- [ ] Menú móvil accesible.
+- [ ] Prueba con lector de pantalla.
+- [ ] Prueba sin animaciones.
+
+## Entregables
+
+- Portfolio funcional.
+- Dos idiomas.
+- Dos temas.
+- Contenido conectado al CMS.
+- Versión responsive.
+- Versión accesible base.
+
+## Criterios de aceptación
+
+- Todo el contenido principal es utilizable.
+- Los enlaces de contacto funcionan.
+- El CV se descarga correctamente.
+- El sitio es navegable con teclado.
+- La experiencia es clara sin animaciones.
+- No hay errores de hidratación.
+- El backend sigue siendo el centro del mensaje.
+
+---
+
+# Fase 6 — Sistema de movimiento
+
+## Objetivo
+
+Agregar movimiento cinematográfico de forma progresiva y medible.
+
+## Orden obligatorio
+
+1. Microinteracciones.
+2. Entradas de secciones.
+3. Transiciones de layout.
+4. Secuencias de scroll.
+5. Campo de nodos.
+6. Ajustes de rendimiento.
+7. Degradación móvil y movimiento reducido.
+
+## Tareas
+
+### Motion
+
+- [ ] Animación inicial del hero.
+- [ ] Estados de botones.
+- [ ] Estados de enlaces.
+- [ ] Selector de tema.
+- [ ] Selector de idioma.
+- [ ] Tarjetas de experiencia.
+- [ ] Tarjetas de proyecto.
+- [ ] Transiciones de secciones.
+- [ ] Presencia y salida de menú móvil.
+
+### GSAP y ScrollTrigger
+
+- [ ] Definir storyboard de scroll.
+- [ ] Elegir un máximo de dos secuencias complejas.
+- [ ] Implementar entrada tipográfica.
+- [ ] Implementar transición narrativa de experiencia.
+- [ ] Evaluar una sección fijada.
+- [ ] Probar scroll rápido.
+- [ ] Probar cambio de tamaño.
+- [ ] Limpiar timelines al desmontar.
+- [ ] Eliminar efectos que no aporten.
+
+### Campo de nodos interactivos
+
+- [ ] Crear prototipo Canvas 2D.
+- [ ] Medir rendimiento.
+- [ ] Crear prototipo WebGL solo si es necesario.
+- [ ] Comparar consumo y resultado.
+- [ ] Reacción por proximidad al cursor.
+- [ ] Conexiones entre nodos.
+- [ ] Límites de densidad.
+- [ ] Pausa fuera de viewport.
+- [ ] Pausa con pestaña oculta.
+- [ ] Reducción automática en móvil.
+- [ ] Versión estática para movimiento reducido.
+- [ ] Integración con tema claro y oscuro.
+- [ ] Verificar que no tape la fotografía ni el texto.
+
+### Rendimiento
+
+- [ ] Importación dinámica.
+- [ ] Medición de FPS.
+- [ ] Medición de CPU.
+- [ ] Medición de memoria.
+- [ ] Medición de JavaScript transferido.
+- [ ] Prueba en notebook media.
+- [ ] Prueba en teléfono Android medio.
+- [ ] Prueba con ahorro de batería.
+- [ ] Desactivar efectos fuera del viewport.
+- [ ] Revisar Core Web Vitals.
+
+## Entregables
+
+- Sistema de movimiento documentado.
+- Campo de nodos interactivo.
+- Versión reducida.
+- Storyboard.
+- Informe de rendimiento antes y después.
+
+## Criterios de aceptación
+
+- Las animaciones refuerzan la narrativa.
+- El contenido nunca queda bloqueado.
+- El hero es usable inmediatamente.
+- No hay scroll-jacking.
+- El campo de nodos responde con suavidad.
+- La versión móvil mantiene fluidez.
+- `prefers-reduced-motion` funciona.
+- El sitio sigue siendo profesional.
+
+---
+
+# Fase 7 — Proyectos nuevos
+
+## Objetivo
+
+Crear y publicar proyectos que respalden el perfil backend.
+
+Esta fase puede desarrollarse en paralelo después de que el CMS acepte proyectos.
+
+## Criterios para elegir proyectos
+
+Cada proyecto debe demostrar al menos una capacidad relevante:
+
+- API REST con Laravel.
+- Autenticación y autorización.
+- Integración externa.
+- Pagos o webhooks simulados de forma segura.
+- Procesos en cola.
+- Tareas programadas.
+- MySQL y modelado.
+- Pruebas.
+- Docker.
+- CI/CD.
+- Documentación.
+- Observabilidad.
+- Manejo de errores.
+- Seguridad.
+
+## Material obligatorio por proyecto
+
+- [ ] Repositorio público limpio.
+- [ ] README completo.
+- [ ] Capturas profesionales.
+- [ ] Video breve o demo.
+- [ ] Diagrama.
+- [ ] Tecnologías.
+- [ ] Problema.
+- [ ] Solución.
+- [ ] Instrucciones de instalación.
+- [ ] Docker.
+- [ ] Pruebas.
+- [ ] Licencia.
+- [ ] Demo estable.
+- [ ] Datos de demostración seguros.
+- [ ] Texto español e inglés para la tarjeta.
+
+## Publicación
+
+- [ ] Cargar proyecto en CMS.
+- [ ] Revisar imagen.
+- [ ] Verificar enlaces.
+- [ ] Verificar responsive.
+- [ ] Verificar traducción.
+- [ ] Verificar accesibilidad.
+- [ ] Publicar solamente después de completar el checklist.
+
+## Criterios de aceptación
+
+- Ningún proyecto parece un tutorial sin evolución.
+- Cada proyecto explica decisiones técnicas.
+- El material visual tiene calidad consistente.
+- Las demos funcionan.
+- Los repositorios no contienen secretos.
+- Los proyectos apoyan la búsqueda de empleo Laravel.
+
+---
+
+# Fase 8 — SEO, metadata y analítica
+
+## Objetivo
+
+Hacer que el portfolio sea encontrable, compartible y medible.
+
+## Tareas
+
+- [ ] Metadata en español.
+- [ ] Metadata en inglés.
+- [ ] Canonical.
+- [ ] `hreflang`.
+- [ ] Sitemap.
+- [ ] Robots.
+- [ ] Open Graph.
+- [ ] Twitter card.
+- [ ] Imagen social.
+- [ ] Datos estructurados Person.
+- [ ] Datos estructurados WebSite.
+- [ ] Favicon.
+- [ ] Manifest opcional.
+- [ ] Página 404.
+- [ ] Exclusión de administración.
+- [ ] Analítica respetuosa de privacidad.
+- [ ] Eventos de clic en CV, GitHub, LinkedIn y correo.
+- [ ] No registrar información sensible.
+- [ ] Revisar indexación por idioma.
+
+## Entregables
+
+- Configuración SEO.
+- Imagen social.
+- Analítica.
+- Checklist de indexación.
+
+## Criterios de aceptación
+
+- Los enlaces compartidos muestran imagen, título y descripción correctos.
+- Cada idioma tiene metadata propia.
+- Administración y previews no se indexan.
+- Los eventos de contacto pueden medirse sin invadir privacidad.
+
+---
+
+# Fase 9 — Seguridad y endurecimiento
+
+## Objetivo
+
+Preparar el sistema para exposición pública.
+
+## Tareas
+
+- [ ] Revisar autenticación del panel.
+- [ ] Desactivar registro público.
+- [ ] Rate limiting.
+- [ ] CORS por dominio.
+- [ ] Validación de archivos.
+- [ ] Límites de tamaño.
+- [ ] Sanitización.
+- [ ] Cabeceras de seguridad.
+- [ ] Gestión de secretos.
+- [ ] Rotación de credenciales iniciales.
+- [ ] Backups.
+- [ ] Restauración de prueba.
+- [ ] Actualización de dependencias.
+- [ ] Auditoría de paquetes.
+- [ ] Revisión de logs.
+- [ ] Ocultar información interna en errores.
+- [ ] Política de contraseñas.
+- [ ] Protección de rutas administrativas.
+- [ ] Revisión del CV público.
+- [ ] Revisión de información confidencial.
+
+## Entregables
+
+- Checklist de seguridad.
+- Política de secretos.
+- Procedimiento de backup.
+- Procedimiento de recuperación.
+
+## Criterios de aceptación
+
+- No hay secretos en cliente ni repositorio.
+- Los archivos están restringidos.
+- Los errores no filtran información interna.
+- El panel no permite registro.
+- Existe un backup recuperable.
+
+---
+
+# Fase 10 — Pruebas y control de calidad
+
+## Objetivo
+
+Comprobar el funcionamiento completo antes del lanzamiento.
+
+## Frontend
+
+- [ ] Lint.
+- [ ] Type check.
+- [ ] Build.
+- [ ] Pruebas unitarias críticas.
+- [ ] Pruebas de integración.
+- [ ] Pruebas E2E.
+- [ ] Idioma.
+- [ ] Tema.
+- [ ] Navegación.
+- [ ] Contacto.
+- [ ] Descarga del CV.
+- [ ] Proyectos con y sin contenido.
+- [ ] API caída.
+- [ ] 404.
+- [ ] Accesibilidad automática.
+- [ ] Accesibilidad manual.
+- [ ] Responsive.
+- [ ] Navegadores principales.
+
+## Backend
+
+- [ ] Pruebas unitarias.
+- [ ] Pruebas de API.
+- [ ] Autenticación.
+- [ ] Autorización.
+- [ ] Publicación.
+- [ ] Borradores.
+- [ ] Traducciones.
+- [ ] Archivos.
+- [ ] Rate limiting.
+- [ ] CORS.
+- [ ] Validaciones.
+- [ ] Recursos JSON.
+- [ ] Migraciones desde cero.
+- [ ] Seed.
+- [ ] Análisis estático.
+- [ ] Formato.
+
+## Animaciones
+
+- [ ] Mouse.
+- [ ] Touchpad.
+- [ ] Touch.
+- [ ] Teclado.
+- [ ] Movimiento reducido.
+- [ ] Pestaña en segundo plano.
+- [ ] Scroll rápido.
+- [ ] Resize.
+- [ ] Rotación móvil.
+- [ ] Bajo rendimiento.
+- [ ] Modo claro.
+- [ ] Modo oscuro.
+
+## Entregables
+
+- Matriz de pruebas.
+- Reporte de errores.
+- Reporte de accesibilidad.
+- Reporte de rendimiento.
+- Evidencia de builds correctos.
+
+## Criterios de aceptación
+
+- No hay errores críticos.
+- No hay enlaces rotos.
+- No hay contenido faltante en un idioma.
+- No hay fallos graves de accesibilidad.
+- No hay degradación severa por animaciones.
+- Frontend y backend pasan CI.
+
+---
+
+# Fase 11 — CI/CD y despliegues
+
+## Objetivo
+
+Automatizar validaciones y publicar la primera versión.
+
+## Tareas
+
+### GitHub Actions
+
+- [ ] Workflow frontend.
+- [ ] Workflow backend.
+- [ ] Workflow Docker.
+- [ ] Caché de dependencias.
+- [ ] Lint.
+- [ ] Type check.
+- [ ] Pruebas.
+- [ ] Build.
+- [ ] Auditoría.
+- [ ] Protección de rama principal.
+- [ ] Revisión obligatoria antes de producción.
+
+### Servidor Linux multiproyecto
+
+- [ ] Preparar `/srv/apps` o la raíz definitiva de proyectos.
+- [ ] Preparar `/srv/backups`.
+- [ ] Crear un registro central de puertos asignados.
+- [ ] Reservar `8000` para el portfolio.
+- [ ] Instalar/validar Docker y Compose.
+- [ ] Configurar Docker para iniciar con Linux.
+- [ ] Instalar/configurar `cloudflared` como servicio global de Linux.
+- [ ] Confirmar que el tunnel está healthy.
+- [ ] Confirmar que no se necesitan puertos HTTP/HTTPS abiertos en el router.
+- [ ] Configurar firewall del host.
+- [ ] Documentar reinicio y recuperación del servidor.
+
+### Portfolio en producción
+
+- [ ] Clonar el portfolio en `/srv/apps/portfolio`.
+- [ ] Crear variables de producción.
+- [ ] Levantar MySQL persistente.
+- [ ] Levantar Laravel.
+- [ ] Levantar Next.js.
+- [ ] Levantar gateway.
+- [ ] Exponer solo `127.0.0.1:8000`.
+- [ ] Ejecutar migraciones.
+- [ ] Crear administrador.
+- [ ] Verificar health checks.
+- [ ] Verificar `http://127.0.0.1:8000`.
+
+### Cloudflare Tunnel compartido
+
+- [ ] Agregar/configurar el dominio en Cloudflare.
+- [ ] Crear o confirmar el tunnel compartido del servidor.
+- [ ] Publicar `lucianogonzalez.dev` hacia `http://localhost:8000`.
+- [ ] Guardar token/credenciales únicamente a nivel del servidor.
+- [ ] Verificar HTTPS público.
+- [ ] Verificar `/api` bajo el mismo dominio.
+- [ ] Verificar `/admin`.
+- [ ] Evaluar Cloudflare Access para `/admin` como segunda capa.
+- [ ] Verificar que MySQL no sea alcanzable públicamente.
+
+### Preparación para futuros proyectos
+
+- [ ] Documentar cómo reservar un nuevo puerto local.
+- [ ] Documentar cómo crear un nuevo subdominio.
+- [ ] Documentar cómo agregar un nuevo hostname al tunnel.
+- [ ] Confirmar que reiniciar una demo no afecta portfolio ni `cloudflared`.
+- [ ] Confirmar aislamiento de redes, volúmenes y credenciales entre proyectos.
+
+### CI y deploy
+
+- [ ] Usar GitHub Actions para lint, tests y build validation.
+- [ ] Mantener deploy manual reproducible durante la primera versión.
+- [ ] No usar SSH público desde GitHub Actions hacia la IP doméstica.
+- [ ] Elegir posteriormente una estrategia segura de automatización.
+- [ ] Si se usa self-hosted runner, limitarlo a repositorios privados/controlados de infraestructura.
+- [ ] Documentar rollback.
+
+## Entregables
+
+- Portfolio ejecutándose en la raíz de aplicaciones del servidor.
+- Stack Docker aislado del portfolio.
+- Gateway disponible solo en `127.0.0.1:8000`.
+- `cloudflared` compartido a nivel del host.
+- Dominio público servido mediante Cloudflare Tunnel.
+- Base de datos privada y persistente.
+- Pipeline de CI.
+- Deploy inicial reproducible y documentado.
+- Procedimiento documentado de rollback.
+- Manual de backup y restauración.
+
+## Criterios de aceptación
+
+- Cada cambio relevante pasa validaciones automáticas.
+- Producción solo sale desde una versión/rama aprobada.
+- El dominio público responde por HTTPS a través de Cloudflare Tunnel.
+- No hay puertos públicos de MySQL.
+- La administración funciona en producción.
+- Los contenedores se recuperan correctamente después de reiniciar el host.
+- Existe procedimiento de rollback.
+- Existe un backup restaurable.
+
+---
+
+# Fase 12 — Lanzamiento
+
+## Objetivo
+
+Publicar el portfolio y comenzar a utilizarlo en postulaciones.
+
+## Tareas
+
+- [ ] Revisión final de contenido.
+- [ ] Revisión final en inglés.
+- [ ] Revisión de fotografía.
+- [ ] Revisión de CV.
+- [ ] Revisión de enlaces.
+- [ ] Revisión de confidencialidad.
+- [ ] Revisión móvil.
+- [ ] Lighthouse final.
+- [ ] Core Web Vitals.
+- [ ] Prueba desde otra red.
+- [ ] Prueba sin sesión de administrador.
+- [ ] Backup inicial.
+- [ ] Etiqueta de versión.
+- [ ] Publicación.
+- [ ] Actualizar LinkedIn.
+- [ ] Actualizar GitHub.
+- [ ] Agregar enlace al CV.
+- [ ] Preparar mensaje de presentación para postulaciones.
+
+## Entregables
+
+- Versión 1.0 pública.
+- Release notes.
+- Backup inicial.
+- Enlaces profesionales actualizados.
+
+## Criterios de aceptación
+
+- El sitio puede enviarse a un reclutador sin explicación adicional.
+- La propuesta profesional se entiende rápido.
+- Los cuatro contactos funcionan.
+- El contenido real tiene prioridad sobre los efectos.
+- La experiencia es estable en móvil y escritorio.
+
+---
+
+# Fase 13 — Postlanzamiento
+
+## Objetivo
+
+Mejorar el portfolio mediante evidencia y no por impulso.
+
+## Primera semana
+
+- [ ] Revisar errores.
+- [ ] Revisar logs.
+- [ ] Revisar analítica.
+- [ ] Verificar indexación.
+- [ ] Verificar descargas del CV.
+- [ ] Corregir enlaces.
+- [ ] Consultar a dos personas técnicas.
+- [ ] Consultar a una persona no técnica.
+
+## Primer mes
+
+- [ ] Publicar el primer proyecto nuevo fuerte.
+- [ ] Revisar qué secciones reciben interacción.
+- [ ] Mejorar textos con feedback.
+- [ ] Ajustar rendimiento.
+- [ ] Revisar dependencias.
+- [ ] Revisar backups.
+- [ ] Evaluar dominio propio.
+
+## Mejoras futuras posibles
+
+- [ ] Dominio personalizado.
+- [ ] Página individual de proyecto, solo si las tarjetas resultan insuficientes.
+- [ ] Blog técnico.
+- [ ] RSS.
+- [ ] Página de notas técnicas.
+- [ ] Open source de componentes.
+- [ ] Automatización de proyectos desde GitHub.
+- [ ] Observabilidad avanzada.
+- [ ] Panel de métricas.
+- [ ] Migración de medios a almacenamiento dedicado.
+- [ ] Nuevos idiomas, solo si existe una necesidad real.
+
+---
+
+# Hitos
+
+## Hito A — Base definida
+
+Incluye fases 0 a 2.
+
+Resultado:
+
+- Mensaje profesional.
+- Contenido.
+- Arquitectura.
+- Diseño aprobado.
+
+## Hito B — Producto funcional
+
+Incluye fases 3 a 5.
+
+Resultado:
+
+- Docker.
+- Laravel.
+- Filament.
+- API.
+- Next.js.
+- Español e inglés.
+- Tema claro y oscuro.
+- Sitio sin animación avanzada.
+
+## Hito C — Experiencia cinematográfica
+
+Incluye fase 6.
+
+Resultado:
+
+- Motion.
+- GSAP.
+- ScrollTrigger.
+- Campo de nodos.
+- Movimiento reducido.
+- Rendimiento validado.
+
+## Hito D — Portfolio demostrable
+
+Incluye fases 7 y 8.
+
+Resultado:
+
+- Proyectos nuevos.
+- Material visual.
+- SEO.
+- Analítica.
+
+## Hito E — Producción
+
+Incluye fases 9 a 12.
+
+Resultado:
+
+- Seguridad.
+- Pruebas.
+- CI/CD.
+- Servidor propio + Docker.
+- Cloudflare Tunnel.
+- Frontend, backend y MySQL desplegados localmente.
+- Lanzamiento.
+
+---
+
+# Prioridades
+
+## Prioridad 1
+
+- Mensaje profesional.
+- Contenido real.
+- Arquitectura.
+- Accesibilidad.
+- Rendimiento.
+- CMS.
+- Backend Laravel.
+- Docker.
+- Bilingüe.
+- Responsive.
+
+## Prioridad 2
+
+- Animaciones.
+- Campo de nodos.
+- Transiciones cinematográficas.
+- SEO avanzado.
+- Analítica.
+
+## Prioridad 3
+
+- Blog.
+- Páginas individuales.
+- Automatizaciones externas.
+- Funciones adicionales.
+
+No avanzar con prioridades 3 mientras existan problemas en prioridades 1.
+
+---
+
+# Riesgos principales
+
+## Exceso de animación
+
+Riesgo:
+
+- El portfolio puede parecer frontend-first o perder legibilidad.
+
+Mitigación:
+
+- Aprobar diseño estático primero.
+- Limitar secuencias complejas.
+- Medir rendimiento.
+- Eliminar cualquier efecto que compita con el contenido.
+
+## Complejidad de dos aplicaciones
+
+Riesgo:
+
+- Next.js y Laravel aumentan despliegue y mantenimiento.
+
+Mitigación:
+
+- Separación clara.
+- Docker.
+- Contrato de API.
+- CI.
+- Documentación.
+- Evitar duplicación.
+
+## Administración demasiado grande
+
+Riesgo:
+
+- Invertir más tiempo en el CMS que en el portfolio.
+
+Mitigación:
+
+- Usar Filament.
+- Implementar solo CRUD necesario.
+- Un único administrador.
+- No personalizar en exceso.
+
+## Falta de proyectos listos
+
+Riesgo:
+
+- Lanzamiento sin evidencia pública suficiente.
+
+Mitigación:
+
+- Diseñar estado sin proyectos.
+- Mostrar experiencia profesional anonimizada.
+- Publicar proyectos solo cuando sean fuertes.
+- Desarrollar proyectos en paralelo.
+
+## Información confidencial
+
+Riesgo:
+
+- Exponer detalles del trabajo real.
+
+Mitigación:
+
+- Matriz de confidencialidad.
+- Anonimización.
+- Revisión manual antes de publicar.
+- No inventar ni revelar nombres o datos internos.
+
+## Servidor físico como punto único de producción
+
+Riesgo:
+
+- Energía, conexión, disco, Linux o Docker pueden dejar fuera de línea todas las demos.
+
+Mitigación:
+
+- Reinicio automático de Docker.
+- `cloudflared` como servicio systemd.
+- Health checks.
+- Backups externos al disco principal.
+- Restore probado.
+- Monitoreo básico.
+- Procedimiento de recuperación.
+- UPS y redundancia futura si el proyecto lo justifica.
+
+## Colisión entre proyectos
+
+Riesgo:
+
+- Dos proyectos pueden intentar usar el mismo puerto, volumen, red o recurso.
+
+Mitigación:
+
+- Registro central de puertos.
+- Nombres/prefijos por proyecto.
+- Redes independientes.
+- Volúmenes independientes.
+- Un directorio/repositorio por proyecto.
+
+## Automatización insegura del deploy
+
+Riesgo:
+
+- Un runner o SSH expuesto de forma incorrecta puede dar acceso al servidor.
+
+Mitigación:
+
+- CI separado de deploy.
+- No exponer SSH públicamente solo para GitHub Actions.
+- Mantener deploy manual al principio.
+- Si se usa self-hosted runner, asociarlo a infraestructura privada/controlada.
+
+---
+
+# Backlog inicial sugerido
+
+1. Aprobar arquitectura.
+2. Aprobar contenido.
+3. Crear wireframes.
+4. Crear prototipo visual estático.
+5. Inicializar monorepositorio.
+6. Crear Docker.
+7. Crear Laravel y Filament.
+8. Modelar contenido.
+9. Crear API.
+10. Crear Next.js.
+11. Integrar idiomas.
+12. Integrar temas.
+13. Construir secciones.
+14. Conectar CMS.
+15. Agregar Motion.
+16. Agregar GSAP.
+17. Crear campo de nodos.
+18. Medir y optimizar.
+19. Crear proyectos nuevos.
+20. Implementar SEO.
+21. Implementar pruebas.
+22. Configurar CI/CD.
+23. Desplegar.
+24. Lanzar.
