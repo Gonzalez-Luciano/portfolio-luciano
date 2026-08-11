@@ -37,6 +37,12 @@ Por lo tanto, el repositorio del portfolio no debe intentar administrar los dem�
 
 ## Estructura del repositorio del portfolio
 
+Identidad del repositorio:
+
+- Workspace local: `portfolio-luciano`.
+- Repositorio GitHub canónico: `portfolio`.
+- El nombre del directorio local no necesita coincidir con el slug remoto.
+
 ```text
 portfolio/
 ├── AGENTS.md
@@ -165,7 +171,19 @@ Beneficios:
 - `cloudflared` no necesita conocer la red Docker interna.
 - Los contenedores web/api/mysql no se exponen directamente.
 
-La implementación exacta del gateway se decidirá al crear la infraestructura.
+La implementación exacta del gateway se decidirá al crear la infraestructura. Debe soportar correctamente el tráfico WebSocket/HMR de Next.js durante desarrollo.
+
+URLs canónicas de desarrollo:
+
+```text
+http://localhost:8000/        -> redirección localizada
+http://localhost:8000/es      -> portfolio en español
+http://localhost:8000/en      -> portfolio en inglés
+http://localhost:8000/api/v1  -> API pública versionada
+http://localhost:8000/admin   -> Filament
+```
+
+Los puertos internos de `web`, `api`, `mysql` y futuros servicios no son URLs canónicas y no se publican al host.
 
 ---
 
@@ -176,7 +194,9 @@ Dirección:
 - React.
 - Next.js App Router.
 - TypeScript estricto.
-- Tailwind CSS.
+- Tailwind CSS 4+.
+- `pnpm`.
+- `next-intl`.
 
 ### Renderizado
 
@@ -198,10 +218,13 @@ Evitar hidratar contenido estático innecesariamente.
 
 Dirección:
 
-- PHP.
-- Laravel.
-- MySQL.
-- Filament.
+- PHP 8.5.
+- Laravel 13.
+- MySQL 8.4 LTS mediante `mysql:8.4`.
+- Filament 5.
+- Livewire 4+ como requisito de Filament 5.
+
+Usar releases estables compatibles dentro de estas líneas mayores. No degradar PHP, Laravel o Filament automáticamente: una incompatibilidad concreta requiere detenerse y reportarla antes de cambiar el stack acordado.
 
 Laravel es la fuente de verdad del contenido administrable.
 
@@ -329,8 +352,11 @@ Reglas:
 - No duplicar manualmente toda la aplicación.
 - Contenido administrado traducible.
 - Metadata localizada.
-- Rutas previsibles como `/es` y `/en`.
-- Persistir selección del usuario.
+- `next-intl` como arquitectura de routing e internacionalización.
+- `/es` y `/en` son las entradas canónicas; `/` siempre redirige.
+- Resolver primero una preferencia explícita válida, luego `Accept-Language` y finalmente español.
+- Persistir solo una selección explícita del usuario; ignorar valores almacenados inválidos.
+- No duplicar la detección de locale entre capas.
 - No traducir nombres de marcas/tecnologías innecesariamente.
 
 ---

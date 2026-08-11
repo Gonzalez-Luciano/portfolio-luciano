@@ -40,28 +40,28 @@ La estética será experimental, pero el mensaje central siempre será backend.
 
 ## Objetivo
 
-Cerrar las decisiones necesarias antes de iniciar el repositorio.
+Cerrar las decisiones necesarias antes de inicializar el workspace de aplicaciones y los frameworks. El repositorio Git y su baseline documental ya existen.
 
 ## Tareas
 
-- [ ] Definir nombre del proyecto y repositorio.
-- [ ] Definir si será un monorepositorio desde el inicio.
-- [ ] Elegir herramienta de paquetes para frontend.
-- [ ] Confirmar Laravel 13 y versión de PHP.
-- [ ] Confirmar MySQL y versión de imagen Docker.
-- [ ] Elegir librería de internacionalización para Next.js App Router.
-- [ ] Confirmar Filament 5.
-- [ ] Definir estructura inicial de rutas `/es` y `/en`.
-- [ ] Definir URL local del frontend, API y administración.
-- [ ] Definir política inicial de ramas.
-- [ ] Reservar `127.0.0.1:8000` para el portfolio en el registro de puertos del servidor.
-- [ ] Confirmar dominio principal definitivo.
-- [ ] Definir convención de subdominios para futuros proyectos.
-- [ ] Confirmar que `cloudflared` será un servicio global del host y no un contenedor por proyecto.
-- [ ] Confirmar distribución Linux, CPU, RAM y almacenamiento de la computadora que funcionará como servidor.
-- [ ] Confirmar raíz de aplicaciones del servidor (`/srv/apps` recomendado) y raíz de backups (`/srv/backups` recomendado).
-- [ ] Definir formato del CV público.
-- [ ] Preparar listado de información confidencial que no se puede publicar.
+- [x] Definir nombre del proyecto y repositorio.
+- [x] Definir si será un monorepositorio desde el inicio.
+- [x] Elegir herramienta de paquetes para frontend.
+- [x] Confirmar Laravel 13 y versión de PHP.
+- [x] Confirmar MySQL y versión de imagen Docker.
+- [x] Elegir librería de internacionalización para Next.js App Router.
+- [x] Confirmar Filament 5.
+- [x] Definir estructura inicial de rutas `/es` y `/en`.
+- [x] Definir URL local del frontend, API y administración.
+- [x] Definir política inicial de ramas.
+- [x] Reservar `127.0.0.1:8000` para el portfolio en el registro de puertos del servidor.
+- [x] Confirmar dominio principal definitivo.
+- [x] Definir convención de subdominios para futuros proyectos.
+- [x] Confirmar que `cloudflared` será un servicio global del host y no un contenedor por proyecto.
+- [x] Diferir distribución Linux, CPU, RAM, almacenamiento y layout físico al preflight de deployment.
+- [x] Confirmar `/srv/apps` como raíz de aplicaciones y `/srv/backups` como raíz de backups.
+- [x] Definir formato del CV público.
+- [x] Preparar política de publicación y confidencialidad.
 
 ## Entregables
 
@@ -231,7 +231,7 @@ Crear una base reproducible para frontend, backend, base de datos y administraci
 
 ### Repositorio
 
-- [ ] Inicializar monorepositorio.
+- [ ] Inicializar el workspace de aplicaciones del monorepositorio existente.
 - [ ] Crear estructura para `web`, `api`, `infra` y `docs`.
 - [ ] Configurar `.editorconfig`.
 - [ ] Configurar política de variables de entorno.
@@ -805,7 +805,8 @@ Automatizar validaciones y publicar la primera versión.
 
 ### Servidor Linux multiproyecto
 
-- [ ] Preparar `/srv/apps` o la raíz definitiva de proyectos.
+- [ ] Ejecutar preflight y registrar Linux, CPU, RAM, almacenamiento, filesystem y ubicación física de datos persistentes.
+- [ ] Preparar `/srv/apps` como raíz definitiva de proyectos.
 - [ ] Preparar `/srv/backups`.
 - [ ] Crear un registro central de puertos asignados.
 - [ ] Reservar `8000` para el portfolio.
@@ -955,11 +956,9 @@ Mejorar el portfolio mediante evidencia y no por impulso.
 - [ ] Ajustar rendimiento.
 - [ ] Revisar dependencias.
 - [ ] Revisar backups.
-- [ ] Evaluar dominio propio.
 
 ## Mejoras futuras posibles
 
-- [ ] Dominio personalizado.
 - [ ] Página individual de proyecto, solo si las tarjetas resultan insuficientes.
 - [ ] Blog técnico.
 - [ ] RSS.
@@ -1196,7 +1195,7 @@ Mitigación:
 2. Aprobar contenido.
 3. Crear wireframes.
 4. Crear prototipo visual estático.
-5. Inicializar monorepositorio.
+5. Inicializar el workspace de aplicaciones del monorepositorio existente.
 6. Crear Docker.
 7. Crear Laravel y Filament.
 8. Modelar contenido.

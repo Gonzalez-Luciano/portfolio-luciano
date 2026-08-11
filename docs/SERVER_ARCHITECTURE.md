@@ -56,13 +56,13 @@ Un mismo Cloudflare Tunnel puede publicar múltiples aplicaciones, cada una asoc
 
 ---
 
-## Estructura física recomendada
+## Estructura lógica del servidor
 
 Los proyectos no deben vivir todos dentro del repositorio del portfolio.
 
 Cada aplicación es independiente.
 
-Estructura recomendada:
+Estructura definida:
 
 ```text
 /srv/apps/
@@ -101,7 +101,9 @@ Infraestructura compartida del host:
 /var/log/                    # logs del sistema/servicios
 ```
 
-`/srv/apps` es una convención recomendada para separar software servido de archivos personales. Si se decide usar `/home/<usuario>/proyectos`, toda la documentación y scripts deben usar una única convención.
+`/srv/apps` es la raíz definitiva de aplicaciones desplegadas y `/srv/backups` es la raíz definitiva de backups. El portfolio usa `/srv/apps/portfolio` y `/srv/backups/portfolio`.
+
+La distribución y versión de Linux, CPU, RAM, discos, capacidades, layout físico y ubicación final de los datos persistentes se relevan al iniciar el preflight de deployment. No se infieren durante la fase de diseño local.
 
 ---
 
@@ -143,12 +145,11 @@ Ejemplo inicial:
 | Puerto host | Proyecto | Dominio |
 |---:|---|---|
 | `127.0.0.1:8000` | Portfolio | `lucianogonzalez.dev` |
-| `127.0.0.1:8080` | Reserva Hub / SaaS | `reservas.lucianogonzalez.dev` |
-| `127.0.0.1:8081` | Proyecto futuro | `proyecto2.lucianogonzalez.dev` |
+| Sin reservar | Proyecto futuro | Sin reservar |
 
-Los nombres y puertos son configurables.
+No reservar nombres ni puertos para proyectos inexistentes.
 
-Mantener un registro central para evitar colisiones.
+El registro central debe guardar, antes de cada deployment, el identificador del proyecto, hostname público, puerto loopback, ruta de deployment y mapeo de Cloudflare Tunnel.
 
 ### Regla
 
@@ -320,16 +321,16 @@ Nunca debe estar dentro de un repositorio.
 
 El dominio principal se administra desde Cloudflare.
 
-Convención sugerida:
+Convención definitiva:
 
 ```text
 lucianogonzalez.dev             portfolio
-reservas.lucianogonzalez.dev    demo Reserva Hub
-tickets.lucianogonzalez.dev     demo sistema tickets
-api-xxx.lucianogonzalez.dev     solo si un proyecto realmente necesita API separada
+<slug>.lucianogonzalez.dev      proyecto independiente desplegado
 ```
 
-Preferir un solo hostname por proyecto cuando frontend y API puedan convivir bajo el mismo origen.
+El slug debe ser minúsculo, conciso, descriptivo y DNS-safe, con guiones solo cuando sean necesarios. No se reservan slugs concretos para proyectos que todavía no existen.
+
+Frontend, API y administración comparten un solo hostname mediante el gateway del proyecto. Un hostname separado para API o administración es una excepción y requiere documentar por qué el mismo origen no resulta adecuado.
 
 Esto simplifica:
 

@@ -4,6 +4,12 @@ Portfolio profesional orientado a:
 
 **Backend Developer | PHP & Laravel**
 
+Identidad del repositorio:
+
+- Workspace local: `portfolio-luciano`.
+- Repositorio GitHub canónico: `portfolio`.
+- Producción: `lucianogonzalez.dev`.
+
 ## Antes de trabajar en el proyecto
 
 Leer:
@@ -21,6 +27,14 @@ Leer:
 - `api/` — Laravel API + administración.
 - `infra/` — Docker e infraestructura específica del portfolio.
 - `docs/` — documentación del producto, arquitectura y servidor.
+
+La inicialización de `web/`, `api/` e `infra/` pertenece a la Fase 3. El repositorio Git y la documentación base ya existen.
+
+## Flujo Git
+
+`main` es la única rama estable de larga duración. El trabajo usa ramas cortas con prefijos como `feat/`, `fix/`, `docs/`, `refactor/`, `test/`, `chore/` e `infra/`, y llega a `main` mediante pull request después de las validaciones relevantes. No existe una rama permanente `develop`, no se reescribe historial compartido y ningún trabajo se integra en `main` sin aprobación explícita.
+
+Los tags anotados se crean desde commits aprobados de `main` solo para hitos o releases significativos.
 
 ## Contexto de producción
 

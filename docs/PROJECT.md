@@ -184,6 +184,8 @@ Versión inicial:
 - Email.
 - Descarga de CV.
 
+El CV público se ofrece únicamente en PDF, con archivos separados para español e inglés administrados desde Filament. Las rutas estables son `/cv/luciano-gonzalez-es.pdf` y `/cv/luciano-gonzalez-en.pdf`. Cada idioma usa su archivo correspondiente; si falta, se oculta esa descarga. Los formatos editables no son públicos.
+
 Sin formulario de contacto.
 Sin WhatsApp.
 Sin calendario de reuniones.
@@ -222,6 +224,16 @@ Debe permitir gestionar:
 - Estado borrador/publicado.
 
 El panel será una herramienta de mantenimiento, no un segundo proyecto visual.
+
+## Política de confidencialidad
+
+Queda prohibido publicar secretos, endpoints internos, datos personales o financieros reales, reglas privadas, código propietario, documentos internos, identidades confidenciales o material sujeto a obligaciones de confidencialidad.
+
+Empleadores/clientes no públicos, instituciones, proveedores financieros, workflows, incidentes, infraestructura, capturas, logs, ejemplos de base de datos, payloads y afirmaciones cuantitativas requieren anonimización y revisión manual. Los artefactos visuales y técnicos deben revisarse también por datos ocultos y metadata.
+
+Se puede publicar, tras revisar exactitud, la responsabilidad profesional propia, identidades ya intencionalmente públicas si no existe restricción, tecnologías públicas, patrones genéricos, aprendizajes, resultados cualitativos seguros y proyectos propios/open source.
+
+Nunca inventar métricas, identidades, instituciones, logros ni escala. Toda afirmación cuantitativa debe ser verificable. Ante duda, no publicar. En Fase 1 se completa una matriz específica antes de ingresar contenido profesional real al CMS.
 
 ---
 

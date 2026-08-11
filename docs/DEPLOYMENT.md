@@ -12,7 +12,7 @@ Arquitectura global:
 
 ## Asignación del portfolio
 
-Directorio recomendado:
+Directorio definitivo:
 
 ```text
 /srv/apps/portfolio
@@ -36,6 +36,23 @@ Mapeo de Cloudflare Tunnel:
 lucianogonzalez.dev
     -> http://localhost:8000
 ```
+
+Backup root definitivo:
+
+```text
+/srv/backups/portfolio
+```
+
+Antes de configurar producción se realiza un preflight que registra, sin inferencias:
+
+- Distribución y versión de Linux.
+- CPU y cantidad de núcleos/hilos.
+- RAM.
+- Dispositivos y capacidades de almacenamiento.
+- Layout real del filesystem.
+- Ubicación física definitiva de datos persistentes Docker.
+
+Este relevamiento pertenece a deployment y no bloquea el diseño ni la implementación local.
 
 ---
 
