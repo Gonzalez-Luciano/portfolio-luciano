@@ -90,44 +90,50 @@ Definir qué verá y entenderá el reclutador antes de diseñar la interfaz fina
 
 ### Posicionamiento
 
-- [ ] Redactar titular principal en español.
-- [ ] Redactar titular principal en inglés.
-- [ ] Redactar resumen profesional corto.
-- [ ] Redactar presentación extendida.
-- [ ] Definir llamado a la acción principal.
-- [ ] Definir mensaje de disponibilidad laboral.
+- [x] Redactar titular principal en español.
+- [x] Redactar titular principal en inglés.
+- [x] Redactar resumen profesional corto.
+- [x] Redactar presentación extendida.
+- [x] Definir llamado a la acción principal.
+- [x] Definir mensaje de disponibilidad laboral.
 
 ### Experiencia
 
-- [ ] Crear una versión pública y anonimizada de la experiencia en gestión educativa.
-- [ ] Crear una versión pública y anonimizada de las integraciones con APIs bancarias.
-- [ ] Describir trabajo con APIs REST.
-- [ ] Describir automatizaciones y tareas programadas.
+- [x] Crear una versión pública y anonimizada de la experiencia en gestión educativa.
+- [x] Crear una versión pública y anonimizada de las integraciones con APIs bancarias.
+- [x] Describir trabajo con APIs REST.
+- [x] Describir automatizaciones y tareas programadas.
 - [ ] Describir optimización de consultas y soporte multiinstitución.
-- [ ] Revisar que no se expongan clientes, credenciales, rutas, datos ni reglas privadas.
-- [ ] Separar responsabilidades propias de logros del equipo.
+- [x] Revisar que no se expongan clientes, credenciales, rutas, datos ni reglas privadas.
+- [x] Separar responsabilidades propias de logros del equipo.
+
+> Pendiente: el contenido aprobado describe optimización de consultas, pero no incluye una descripción pública y aprobada de soporte multiinstitución; por eso el ítem combinado permanece abierto.
 
 ### Contacto
 
-- [ ] Confirmar LinkedIn.
-- [ ] Confirmar GitHub.
-- [ ] Confirmar correo público.
-- [ ] Aprobar versión del CV descargable.
+- [x] Confirmar LinkedIn.
+- [x] Confirmar GitHub.
+- [x] Confirmar correo público.
+- [x] Aprobar versión del CV descargable.
+
+> Los dos PDF están aprobados como activos para futura publicación, pero su extracción y comparación textual siguen pendientes; no se usaron para respaldar nuevas afirmaciones. Además, el PDF español declara actualmente `/Lang(en-US)` y debe reexportarse o retagearse como español, con nueva aprobación, antes de ser servido.
 
 ### Fotografía
 
-- [ ] Elegir o producir fotografía profesional.
+- [x] Elegir o producir fotografía profesional.
 - [ ] Preparar recorte horizontal y vertical.
 - [ ] Preparar versión optimizada.
-- [ ] Definir texto alternativo.
+- [x] Definir texto alternativo.
 - [ ] Verificar integración en modo claro y oscuro.
+
+> Pendiente: no se crearon derivados ni se integró la fotografía; faltan los recortes, la optimización y la verificación visual en ambos temas mediante el futuro flujo CMS/media.
 
 ### Traducción
 
-- [ ] Crear glosario técnico español/inglés.
-- [ ] Traducir el contenido profesional.
-- [ ] Revisar el inglés de forma humana.
-- [ ] Mantener consistencia en términos como backend, API, payment integration y education management system.
+- [x] Crear glosario técnico español/inglés.
+- [x] Traducir el contenido profesional.
+- [x] Revisar el inglés de forma humana.
+- [x] Mantener consistencia en términos como backend, API, payment integration y education management platform/system según el alcance aprobado.
 
 ## Entregables
 
