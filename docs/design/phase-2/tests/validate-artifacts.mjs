@@ -50,6 +50,7 @@ const prototypeFiles = [
   'docs/prototypes/phase-2/styles/layout.css',
   'docs/prototypes/phase-2/styles/header.css',
   'docs/prototypes/phase-2/styles/work.css',
+  'docs/prototypes/phase-2/styles/content.css',
   'docs/prototypes/phase-2/scripts/theme.js',
   'docs/prototypes/phase-2/scripts/main.js',
   'docs/prototypes/phase-2/scripts/menu.js',
@@ -67,11 +68,12 @@ const requiredContentKeys = [
 ];
 
 const contentKeys = (html) => [...html.matchAll(/data-content-key="([^"]+)"/g)].map((match) => match[1]).sort();
-const externalRuntimeReference = /(?:src|href)="https?:\/\//i;
+const externalRuntimeReference = /src="https?:\/\//i;
 const prototypeTokens = read('docs/prototypes/phase-2/styles/tokens.css');
 const prototypeNavigation = read('docs/prototypes/phase-2/scripts/navigation.js');
 const prototypeHero = read('docs/prototypes/phase-2/styles/hero.css');
 const prototypeWork = read('docs/prototypes/phase-2/styles/work.css');
+const prototypeContent = read('docs/prototypes/phase-2/styles/content.css');
 const prototypeWorkTabs = read('docs/prototypes/phase-2/scripts/work-tabs.js');
 const fontFaceBlocks = [...prototypeTokens.matchAll(/@font-face\s*\{([^}]*)\}/gis)].map((match) => match[1]);
 const fontFaceSources = fontFaceBlocks.flatMap((block) => [...block.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^\s)]+))\s*\)/gi)]
@@ -92,6 +94,8 @@ assert.match(prototypeWorkTabs, /export function initWorkTabs\(\)/, 'Missing ini
 assert.match(prototypeWorkTabs, /matchMedia\('\(min-width: 64rem\)'\)/, 'Work tabs must use the approved desktop breakpoint');
 assert.match(prototypeWorkTabs, /tablist\.setAttribute\('role', 'tablist'\)/, 'Desktop enhancement must introduce the tablist role');
 assert.match(prototypeWorkTabs, /tablist\.removeAttribute\('role'\)/, 'Narrow mode must remove the tablist role');
+assert.match(prototypeContent, /\.project-dossier/, 'Missing reusable project dossier contract');
+assert.match(prototypeContent, /@media\s*\(min-width:\s*48rem\)/, 'Project dossiers must become horizontal at 48rem');
 
 for (const [locale, path] of [['es', prototypeFiles[2]], ['en', prototypeFiles[3]]]) {
   const page = read(path);
@@ -131,6 +135,33 @@ for (const [locale, path] of [['es', prototypeFiles[2]], ['en', prototypeFiles[3
   assert.ok(casesEnd >= 0 && experienceStart > casesEnd, `Experience must follow Work cases in ${path}`);
   assert.ok(!/carousel|role="(?:scrollbar|region)"[^>]*horizontal/i.test(page), `Disallowed scrolling UI in ${path}`);
   assert.ok(!/\b\d+(?:[.,]\d+)?\s*(?:%|ms|x|users|transactions|institutions|clients)\b/i.test(page), `Invented numeric metric in ${path}`);
+  assert.match(page, /<section(?=[^>]*id="expertise")(?=[^>]*aria-labelledby="expertise-heading")[^>]*>/i, `Missing semantic Expertise section in ${path}`);
+  const specializationList = page.match(/<ul class="expertise__statements"[\s\S]*?<\/ul>/i)?.[0] ?? '';
+  assert.equal((specializationList.match(/<li>/g) ?? []).length, 6, `Expected six specialization statements in ${path}`);
+  assert.match(page, /class="expertise__technologies"/, `Missing technology groups in ${path}`);
+  assert.match(page, /<section(?=[^>]*id="projects")(?=[^>]*aria-labelledby="projects-heading")[^>]*>/i, `Missing semantic Projects section in ${path}`);
+  assert.equal((page.match(/class="projects-zero"/g) ?? []).length, 1, `Expected one zero-project state in ${path}`);
+  const renderedPage = page.replace(/<!--[\s\S]*?-->/g, '');
+  assert.equal((renderedPage.match(/class="project-dossier"/g) ?? []).length, 0, `Default page must not contain project dossiers in ${path}`);
+  const zeroCopy = locale === 'es'
+    ? 'Actualmente no hay proyectos publicados en el portfolio. Los próximos proyectos se incorporarán cuando cuenten con una presentación técnica y pública adecuada.'
+    : 'There are currently no published projects in the portfolio. Future projects will be added when they have an appropriate technical and public presentation.';
+  assert.ok(page.includes(zeroCopy), `Missing approved zero-project copy in ${path}`);
+  const approachCopy = locale === 'es'
+    ? 'Priorizo entender el problema, cuidar la consistencia de la lógica y dejar soluciones mantenibles. El trabajo se comunica con claridad y se adapta al contexto técnico de cada aplicación.'
+    : 'I prioritize understanding the problem, maintaining logic consistency, and leaving maintainable solutions. Work is communicated clearly and adapted to the technical context of each application.';
+  assert.ok(page.includes(approachCopy), `Missing approved approach copy in ${path}`);
+  assert.match(page, /class="approach__beats"/, `Missing supported approach reading beats in ${path}`);
+  assert.match(page, /href="https:\/\/www\.linkedin\.com\/in\/luciano-gonz(?:%C3%A1|á)lez-590350294"/, `Missing approved LinkedIn URL in ${path}`);
+  assert.match(page, /href="https:\/\/github\.com\/Gonzalez-Luciano"/, `Missing approved GitHub URL in ${path}`);
+  assert.match(page, /href="mailto:lucianogonzalez12004@gmail\.com"/, `Missing approved email URL in ${path}`);
+  assert.match(page, /rel="me noopener noreferrer"/, `External links need safe relationship metadata in ${path}`);
+  if (locale === 'es') {
+    assert.ok(!/\.pdf(?:["?#]|$)/i.test(page), `Spanish page must omit the unavailable CV action in ${path}`);
+  } else {
+    assert.match(page, /href="[^"\n]*cv-en\.pdf"/, `English page needs its own CV PDF action in ${path}`);
+    assert.match(page, /Download Luciano González's CV in English \(PDF\)/, `English CV action needs its explicit accessible label in ${path}`);
+  }
   for (const id of ['top', 'work', 'expertise', 'projects', 'approach', 'contact']) {
     assert.match(page, new RegExp(`id="${id}"`), `Missing shell ID ${id} in ${path}`);
   }

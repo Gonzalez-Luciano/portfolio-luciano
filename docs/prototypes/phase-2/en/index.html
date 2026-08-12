@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="../styles/header.css">
     <link rel="stylesheet" href="../styles/hero.css">
     <link rel="stylesheet" href="../styles/work.css">
+    <link rel="stylesheet" href="../styles/content.css">
     <script type="module" src="../scripts/main.js"></script>
   </head>
   <body>
@@ -99,32 +100,30 @@
       <section class="container" id="expertise" aria-labelledby="expertise-heading">
         <h2 id="expertise-heading">Areas of specialization</h2>
         <!-- sources: SRC-005, SRC-006; publication: PUB-001, PUB-003, PUB-004, PUB-005, PUB-007, PUB-010, PUB-014 -->
-        <ul data-content-key="expertise.list"><li>Development and maintenance with PHP and Laravel.</li><li>REST APIs and business logic.</li><li>Integrations with external services.</li><li>MySQL and query improvement.</li><li>Scheduled processes and backend automation.</li><li>Application and legacy code maintenance.</li></ul>
+        <ul class="expertise__statements" data-content-key="expertise.list"><li>Development and maintenance with PHP and Laravel.</li><li>REST APIs and business logic.</li><li>Integrations with external services.</li><li>MySQL and query improvement.</li><li>Scheduled processes and backend automation.</li><li>Application and legacy code maintenance.</li></ul>
         <!-- sources: SRC-005, SRC-006; publication: PUB-001, PUB-013 -->
-        <p data-content-key="technologies.list">PHP · Laravel · MySQL · REST APIs · Angular</p>
+        <div class="expertise__technologies" data-content-key="technologies.list" aria-labelledby="technologies-heading">
+          <h3 id="technologies-heading">Technologies</h3>
+          <dl><div><dt>Backend</dt><dd>PHP · Laravel</dd></div><div><dt>Data</dt><dd>MySQL</dd></div><div><dt>Integration</dt><dd>REST APIs</dd></div><div><dt>Collaboration across layers</dt><dd>Angular</dd></div></dl>
+        </div>
       </section>
       <section class="container" id="projects" aria-labelledby="projects-heading">
         <h2 id="projects-heading">Projects</h2>
         <!-- sources: SRC-011; publication: PUB-034 -->
-        <p data-content-key="projects.zero">There are currently no published projects in the portfolio. Future projects will be added when they have an appropriate technical and public presentation.</p>
+        <div class="projects-zero"><p class="utility-label">Portfolio status</p><p data-content-key="projects.zero">There are currently no published projects in the portfolio. Future projects will be added when they have an appropriate technical and public presentation.</p></div>
+        <!-- Future published record contract: <article class="project-dossier"><figure class="project-dossier__media">optional reviewed media</figure><div class="project-dossier__body"><p class="utility-label">ordered project index</p><h3>localized name</h3><p>localized technical summary</p><ul class="project-dossier__technologies">technology names</ul><div class="project-dossier__links">render only existing destinations</div></div></article> -->
       </section>
       <section class="container" id="approach" aria-labelledby="approach-heading">
         <h2 id="approach-heading">Working approach</h2>
         <!-- sources: SRC-005; publication: PUB-001 -->
         <p data-content-key="approach.body">I prioritize understanding the problem, maintaining logic consistency, and leaving maintainable solutions. Work is communicated clearly and adapted to the technical context of each application.</p>
+        <ol class="approach__beats"><li>Understand</li><li>Consistency</li><li>Maintainability</li><li>Communication</li></ol>
       </section>
       <section class="container" id="contact" aria-labelledby="contact-heading">
         <h2 id="contact-heading">Contact and CV</h2>
         <!-- sources: SRC-002, SRC-003, SRC-004, SRC-009; publication: PUB-027, PUB-028, PUB-029 -->
         <p data-content-key="contact.body">You can find me on LinkedIn and GitHub, or contact me by email. The CV will be available to download from the portfolio.</p>
-        <!-- sources: SRC-003; publication: PUB-027 -->
-        <span data-content-key="contact.linkedin">Luciano González's LinkedIn</span>
-        <!-- sources: SRC-004; publication: PUB-028 -->
-        <span data-content-key="contact.github">Luciano González's GitHub</span>
-        <!-- sources: SRC-009; publication: PUB-029 -->
-        <span data-content-key="contact.email">Email Luciano González</span>
-        <!-- sources: SRC-002; publication: future CMS/media workflow -->
-        <a href="../../../content/approved-assets/cv-en.pdf">Download CV in English (PDF)</a>
+        <div class="contact__actions"><!-- sources: SRC-003; publication: PUB-027 --><a data-content-key="contact.linkedin" href="https://www.linkedin.com/in/luciano-gonz%C3%A1lez-590350294" target="_blank" rel="me noopener noreferrer">Luciano González's LinkedIn</a><!-- sources: SRC-004; publication: PUB-028 --><a data-content-key="contact.github" href="https://github.com/Gonzalez-Luciano" target="_blank" rel="me noopener noreferrer">Luciano González's GitHub</a><!-- sources: SRC-009; publication: PUB-029 --><a data-content-key="contact.email" href="mailto:lucianogonzalez12004@gmail.com">Email Luciano González</a><!-- sources: SRC-002; publication: future CMS/media workflow --><a href="../../../content/approved-assets/cv-en.pdf">Download Luciano González's CV in English (PDF)</a></div>
       </section>
     </main>
     <dialog id="mobile-menu" aria-labelledby="mobile-menu-title">

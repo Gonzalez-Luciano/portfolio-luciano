@@ -1,0 +1,47 @@
+.expertise__statements,
+.approach__beats {
+  display: grid;
+  gap: var(--space-3);
+  max-width: none;
+  padding: 0;
+  list-style: none;
+}
+
+.expertise__statements li {
+  border-block-start: var(--rule-standard) solid var(--color-border);
+  padding-block-start: var(--space-3);
+}
+
+.expertise__technologies { margin-block-start: var(--space-8); }
+.expertise__technologies dl { display: grid; gap: var(--space-3); margin: 0; }
+.expertise__technologies dl div { border-block-start: var(--rule-standard) solid var(--color-border); padding-block-start: var(--space-3); }
+.expertise__technologies dt { color: var(--color-muted); font-family: var(--font-family-mono); font-size: var(--font-size-utility); text-transform: uppercase; }
+.expertise__technologies dd { margin: var(--space-1) 0 0; }
+
+.projects-zero,
+.project-dossier { min-block-size: 12rem; border-block-start: var(--rule-standard) solid var(--color-border); padding-block: var(--space-6); }
+
+.project-dossier { display: grid; gap: var(--space-5); }
+.project-dossier__media { margin: 0; }
+.project-dossier__body { min-inline-size: 0; }
+.project-dossier__technologies { padding-inline-start: 1.25em; }
+.project-dossier__links,
+.contact__actions { display: grid; gap: var(--space-2); }
+
+.approach__beats { counter-reset: beat; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: var(--space-6) 0 0; }
+.approach__beats li { border-block-start: var(--rule-standard) solid var(--color-border); padding: var(--space-3) 0; }
+.approach__beats li::before { counter-increment: beat; content: "0" counter(beat); display: block; color: var(--color-accent); font-family: var(--font-family-mono); font-size: var(--font-size-utility); margin-block-end: var(--space-1); }
+
+.contact__actions a { display: flex; align-items: center; min-height: var(--target-minimum); border-block-start: var(--rule-standard) solid var(--color-border); padding: var(--space-2) 0; }
+
+@media (min-width: 48rem) {
+  .expertise__statements { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--space-7); }
+  .expertise__technologies dl { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--space-7); }
+  .project-dossier { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+  .project-dossier--no-media .project-dossier__body { grid-column: 1 / -1; }
+  .contact__actions { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--space-6); }
+}
+
+@media (max-width: 47.99rem) {
+  .contact__actions a { inline-size: 100%; }
+}
