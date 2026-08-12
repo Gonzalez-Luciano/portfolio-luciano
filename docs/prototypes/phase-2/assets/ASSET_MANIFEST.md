@@ -27,12 +27,14 @@
 
 ## Files
 
+Text-license hashes use canonical LF line endings so Git checkout line-ending conversion does not change their content-integrity check.
+
 | File | Dimensions / format | Bytes | SHA-256 |
 | --- | --- | ---: | --- |
 | `fonts/InstrumentSans-Variable.woff2` | WOFF2 variable | 88,784 | `aa72922aafcc0dc18f36ec1d805b0212057dabe8b9d5b8b57f67035aea1b826d` |
 | `fonts/IBMPlexMono-Regular-Latin1.woff2` | WOFF2 | 17,544 | `e8993d946649b9d01abb1ed06d574b19d8ea3e66b5c3948602db335c44c18e56` |
 | `fonts/IBMPlexMono-SemiBold-Latin1.woff2` | WOFF2 | 17,872 | `b7acd05041ab65f3b7039e218ddd893065e11a07e85ea85019473152a51b6b7d` |
 | `fonts/InstrumentSans-OFL.txt` | SIL Open Font License text | 4,402 | `bc29b497c4e8316b2d248322a9cea670c2f0afc24ae0eb7bbaa54e02e00eebab` |
-| `fonts/IBMPlexMono-OFL.txt` | SIL Open Font License text | 4,454 | `d7f63cdccf0c57f3ea47c7e1d45b002b85044dbe4935989f0522e780f6fc8511` |
+| `fonts/IBMPlexMono-OFL.txt` | SIL Open Font License text | 4,362 | `d741e57d5f865e294df801f96b7b5161a88b211df65887e4358d271c9fc5fb4f` |
 | `images/profile-portrait.webp` | 900 × 1200 WEBP; EXIF empty | 77,638 | `3999cd8675b6923cf4a5c63455791b7cceb1faa237ac596d5e37afd640492489` |
 | `images/profile-wide.webp` | 1200 × 900 WEBP; EXIF empty | 45,342 | `37b0647960591aeee3b3cae9821dd55a930d2bef3a4150dc3fbba91b9449c29f` |
