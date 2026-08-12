@@ -14,12 +14,17 @@ function focusDestination(hash) {
 }
 
 export function initNavigation() {
+  const scheduleFragmentFocus = (hash) => {
+    if (hash && hash !== '#') window.setTimeout(() => focusDestination(hash), 100);
+  };
+
   document.querySelectorAll('a[href^="#"]').forEach((link) => {
     link.addEventListener('click', () => {
-      const hash = link.getAttribute('href');
-      if (hash && hash !== '#') window.setTimeout(() => focusDestination(hash), 100);
+      scheduleFragmentFocus(link.getAttribute('href'));
     });
   });
+  window.addEventListener('hashchange', () => scheduleFragmentFocus(window.location.hash));
+  scheduleFragmentFocus(window.location.hash);
 
   if (!('IntersectionObserver' in window)) return;
 

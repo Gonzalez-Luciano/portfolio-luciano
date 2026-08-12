@@ -67,6 +67,7 @@ const requiredContentKeys = [
 const contentKeys = (html) => [...html.matchAll(/data-content-key="([^"]+)"/g)].map((match) => match[1]).sort();
 const externalRuntimeReference = /(?:src|href)="https?:\/\//i;
 const prototypeTokens = read('docs/prototypes/phase-2/styles/tokens.css');
+const prototypeNavigation = read('docs/prototypes/phase-2/scripts/navigation.js');
 const fontFaceBlocks = [...prototypeTokens.matchAll(/@font-face\s*\{([^}]*)\}/gis)].map((match) => match[1]);
 const fontFaceSources = fontFaceBlocks.flatMap((block) => [...block.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^\s)]+))\s*\)/gi)]
   .map((match) => match[1] ?? match[2] ?? match[3]));
@@ -75,6 +76,9 @@ assert.ok(fontFaceSources.length > 0, 'Missing local prototype @font-face source
 for (const source of fontFaceSources) {
   assert.ok(!/^https?:\/\//i.test(source), `External runtime font URL in tokens.css: ${source}`);
 }
+
+assert.match(prototypeNavigation, /window\.addEventListener\('hashchange'/, 'Missing hashchange fragment-focus handling');
+assert.match(prototypeNavigation, /scheduleFragmentFocus\(window\.location\.hash\)/, 'Missing initial fragment-focus handling');
 
 for (const [locale, path] of [['es', prototypeFiles[2]], ['en', prototypeFiles[3]]]) {
   const page = read(path);
