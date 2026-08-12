@@ -94,7 +94,7 @@ Additional focused evidence: `mobile-menu-es-light.png`, `work-tabs-en-light.png
 | Active and focus treatment | PASS | Browser visual evidence shows 3px orange outline plus geometry; active desktop navigation uses index, accent rule, and weight rather than color only. |
 | Contact and external links | PASS | Validator checks exact LinkedIn, GitHub, `mailto:`, safe `rel`, English CV action, and Spanish CV omission. |
 | States and confidentiality | PASS | Each state has no overflow in light and dark; loading has `aria-busy`/status/static skeletons; errors are plain-language alerts; the fixture is structural, labeled, and URL-free. |
-| Static/reduced-motion policy | PASS | Search found no active transition or animation. Skeletons declare `animation: none; transition: none`; the reduced-motion rule additionally clamps nonessential timing. No Phase 6 runtime, canvas, WebGL, GSAP, Motion, or timers exists. |
+| Static/reduced-motion policy | PASS | Search found no active transition or animation. Skeletons declare `animation: none; transition: none`; the reduced-motion rule additionally clamps nonessential timing. `navigation.js` uses one one-shot `window.setTimeout` only to schedule fragment-heading focus after navigation; it is not a continuous timer or Phase 6 motion. No Phase 6 runtime, canvas, WebGL, GSAP, or Motion exists. |
 
 ### Browser-control limitations recorded honestly
 
