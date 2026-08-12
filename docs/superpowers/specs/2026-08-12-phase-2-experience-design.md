@@ -1,8 +1,8 @@
 # Phase 2 Experience Design
 
-**Date:** 2026-08-12  
-**Status:** Design approved; written specification awaiting user review  
-**Scope:** Complete experience design, design artifacts, and a static high-fidelity prototype. No Next.js/Laravel initialization, production frontend code, CMS integration, implementation dependencies, or Phase 6 motion system.
+- **Date:** 2026-08-12
+- **Status:** Design approved; written specification awaiting user review
+- **Scope:** Complete experience design, design artifacts, and a static high-fidelity prototype. No Next.js/Laravel initialization, production frontend code, CMS integration, implementation dependencies, or Phase 6 motion system.
 
 ## 1. Purpose and success condition
 
