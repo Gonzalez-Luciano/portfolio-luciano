@@ -121,12 +121,12 @@ Definir qué verá y entenderá el reclutador antes de diseñar la interfaz fina
 ### Fotografía
 
 - [x] Elegir o producir fotografía profesional.
-- [ ] Preparar recorte horizontal y vertical.
-- [ ] Preparar versión optimizada.
+- [x] Preparar recorte horizontal y vertical.
+- [x] Preparar versión optimizada.
 - [x] Definir texto alternativo.
-- [ ] Verificar integración en modo claro y oscuro.
+- [x] Verificar integración en modo claro y oscuro.
 
-> Pendiente: no se crearon derivados ni se integró la fotografía; faltan los recortes, la optimización y la verificación visual en ambos temas mediante el futuro flujo CMS/media.
+> Los derivados optimizados y la validación visual en ambos temas se completaron en el prototipo de Fase 2. La integración de medios mediante el futuro flujo CMS sigue pendiente.
 
 ### Traducción
 
@@ -163,50 +163,50 @@ Diseñar la experiencia completa antes de implementar animaciones complejas.
 
 ### Arquitectura de información
 
-- [ ] Definir orden definitivo de secciones.
-- [ ] Definir navegación de escritorio.
-- [ ] Definir navegación móvil.
-- [ ] Definir comportamiento de enlaces internos.
-- [ ] Definir ubicación de idioma y tema.
-- [ ] Definir estados con y sin proyectos publicados.
+- [x] Definir orden definitivo de secciones.
+- [x] Definir navegación de escritorio.
+- [x] Definir navegación móvil.
+- [x] Definir comportamiento de enlaces internos.
+- [x] Definir ubicación de idioma y tema.
+- [x] Definir estados con y sin proyectos publicados.
 
 ### Wireframes
 
-- [ ] Wireframe del hero.
-- [ ] Wireframe de experiencia.
-- [ ] Wireframe de casos de trabajo.
-- [ ] Wireframe de especializaciones.
-- [ ] Wireframe de proyectos.
-- [ ] Wireframe de tecnologías.
-- [ ] Wireframe de forma de trabajo.
-- [ ] Wireframe de contacto.
-- [ ] Wireframe de menú móvil.
-- [ ] Wireframe de estados de carga y error.
+- [x] Wireframe del hero.
+- [x] Wireframe de experiencia.
+- [x] Wireframe de casos de trabajo.
+- [x] Wireframe de especializaciones.
+- [x] Wireframe de proyectos.
+- [x] Wireframe de tecnologías.
+- [x] Wireframe de forma de trabajo.
+- [x] Wireframe de contacto.
+- [x] Wireframe de menú móvil.
+- [x] Wireframe de estados de carga y error.
 
 ### Sistema visual
 
-- [ ] Elegir paleta clara.
-- [ ] Elegir paleta oscura.
-- [ ] Elegir tipografías.
-- [ ] Definir escala tipográfica.
-- [ ] Definir espaciado.
-- [ ] Definir radios, bordes y sombras.
-- [ ] Definir tokens de color y movimiento.
-- [ ] Definir tratamiento de fotografía.
-- [ ] Definir iconografía.
-- [ ] Definir apariencia de tarjetas de proyecto.
-- [ ] Definir estados hover, focus, active y disabled.
+- [x] Elegir paleta clara.
+- [x] Elegir paleta oscura.
+- [x] Elegir tipografías.
+- [x] Definir escala tipográfica.
+- [x] Definir espaciado.
+- [x] Definir radios, bordes y sombras.
+- [x] Definir tokens de color y movimiento.
+- [x] Definir tratamiento de fotografía.
+- [x] Definir iconografía.
+- [x] Definir apariencia de tarjetas de proyecto.
+- [x] Definir estados hover, focus, active y disabled.
 
 ### Prototipo
 
-- [ ] Crear prototipo estático de alta fidelidad.
-- [ ] Revisar desktop.
-- [ ] Revisar tablet.
-- [ ] Revisar mobile.
-- [ ] Revisar modo claro.
-- [ ] Revisar modo oscuro.
-- [ ] Validar contraste.
-- [ ] Validar legibilidad sin animaciones.
+- [x] Crear prototipo estático de alta fidelidad.
+- [x] Revisar desktop.
+- [x] Revisar tablet.
+- [x] Revisar mobile.
+- [x] Revisar modo claro.
+- [x] Revisar modo oscuro.
+- [x] Validar contraste.
+- [x] Validar legibilidad sin animaciones.
 
 ## Entregables
 

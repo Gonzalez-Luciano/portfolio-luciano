@@ -83,7 +83,10 @@ const stateAnimationValues = [...prototypeStates.matchAll(/(?:^|[;{])\s*(?:anima
   .map((match) => match[1].trim());
 assert.ok(stateAnimationValues.every((value) => value === 'none'), 'State styles must not introduce an active animation');
 for (const page of stateFiles.slice(0, 5)) {
-  assert.match(read(page), /href="\.\.\/styles\/states\.css"/, `${page} must import state styles`);
+  const statePage = read(page);
+  assert.match(statePage, /href="\.\.\/styles\/states\.css"/, `${page} must import state styles`);
+  assert.match(statePage, /const savedTheme = saved === 'light' \|\| saved === 'dark' \? saved : null;/, `${page} must validate a stored theme value`);
+  assert.match(statePage, /document\.documentElement\.dataset\.theme = dark \? 'dark' : 'light';/, `${page} must initialize an explicit or system theme`);
 }
 assert.match(prototypeStates, /var\(--color-(?:text-primary|border-meaningful|error|surface-raised)\)/, 'State styles must use semantic color tokens');
 assert.match(prototypeStates, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?animation:\s*none;[\s\S]*?transition:\s*none;/, 'State styles must retain explicit reduced-motion static behavior');
