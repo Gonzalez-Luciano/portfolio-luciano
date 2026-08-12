@@ -1,0 +1,89 @@
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("../assets/fonts/InstrumentSans-Variable.woff2") format("woff2-variations");
+  font-style: normal;
+  font-weight: 400 700;
+  font-stretch: 75% 100%;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("../assets/fonts/IBMPlexMono-Regular-Latin1.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light dark;
+  --color-canvas: #EEE9DE;
+  --color-surface: #F6F2E9;
+  --color-text: #1B1E1C;
+  --color-muted: #565B56;
+  --color-accent: #A94322;
+  --color-border: #817B70;
+  --color-disabled: #5F635E;
+  --color-selected: #E4D8C9;
+  --color-error: #8B2E24;
+  --color-surface-raised: var(--color-surface);
+  --color-text-primary: var(--color-text);
+  --color-text-muted: var(--color-muted);
+  --color-border-meaningful: var(--color-border);
+  --color-text-disabled: var(--color-disabled);
+  --color-surface-selected: var(--color-selected);
+  --font-family-sans: "Instrument Sans", sans-serif;
+  --font-family-mono: "IBM Plex Mono", monospace;
+  --font-size-display: clamp(3.5rem, 2rem + 6vw, 7rem);
+  --font-size-section: clamp(2.5rem, 1.75rem + 3vw, 4.5rem);
+  --font-size-subheading: clamp(1.75rem, 1.4rem + 1.4vw, 2.75rem);
+  --font-size-lead: clamp(1.25rem, 1.1rem + 0.6vw, 1.625rem);
+  --font-size-body: clamp(1.0625rem, 1.025rem + 0.15vw, 1.1875rem);
+  --font-size-utility: clamp(0.75rem, 0.72rem + 0.1vw, 0.875rem);
+  --line-height-body: 1.6;
+  --measure-reading: 65ch;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+  --radius-none: 0;
+  --radius-small: 4px;
+  --radius-medium: 8px;
+  --rule-standard: 1px;
+  --rule-emphasis: 2px;
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+  --target-minimum: 44px;
+  --breakpoint-desktop: 64rem;
+  --content-max-width: 90rem;
+  --container-max: var(--content-max-width);
+  --page-gutter: 1.25rem;
+  --header-height: 4rem;
+  --shadow-sticky-header: 0 8px 24px rgb(0 0 0 / 8%);
+  --icon-box-compact: 20px;
+  --icon-box-standard: 24px;
+  --icon-stroke: 1.5px;
+  --duration-fast: 120ms;
+  --duration-standard: 200ms;
+  --duration-deliberate: 320ms;
+  --easing-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root[data-theme="dark"] {
+  --color-canvas: #171918;
+  --color-surface: #202321;
+  --color-text: #F1ECE1;
+  --color-muted: #B8B3A9;
+  --color-accent: #F07A4B;
+  --color-border: #777A74;
+  --color-disabled: #96958F;
+  --color-selected: #2B2926;
+  --color-error: #FF9B8A;
+  --shadow-sticky-header: 0 8px 24px rgb(0 0 0 / 24%);
+}

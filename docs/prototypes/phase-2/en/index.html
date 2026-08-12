@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Luciano González — Backend Developer | PHP &amp; Laravel</title>
+    <script>
+      (() => {
+        const saved = localStorage.getItem('portfolio-prototype-theme');
+        const dark = saved === 'dark' || (!saved && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      })();
+    </script>
+    <link rel="stylesheet" href="../styles/tokens.css">
+    <link rel="stylesheet" href="../styles/base.css">
+    <link rel="stylesheet" href="../styles/layout.css">
+    <script type="module" src="../scripts/main.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <header class="container">
+      <button class="theme-toggle" type="button" data-theme-toggle data-label-light="Switch to light theme" data-label-dark="Switch to dark theme">Theme</button>
+    </header>
+    <main id="main-content">
+      <section class="hero container" id="top" aria-labelledby="hero-title">
+        <!-- sources: SRC-010; publication: future CMS/media workflow -->
+        <img class="hero__portrait" src="../assets/images/profile-portrait.webp" alt="Professional portrait of Luciano González against an orange background">
+        <!-- sources: SRC-005; publication: PUB-001 -->
+        <h1 id="hero-title" data-content-key="hero.title">Backend Developer | PHP &amp; Laravel</h1>
+        <!-- sources: SRC-005; publication: PUB-001 -->
+        <p data-content-key="hero.value">Backend development focused on APIs, business logic, data, and application maintenance.</p>
+        <!-- sources: SRC-005; publication: PUB-001 -->
+        <a data-content-key="hero.cta" href="#work">View experience</a>
+        <!-- sources: SRC-005; publication: PUB-001 -->
+        <p data-content-key="hero.availability">Available to discuss backend opportunities with PHP and Laravel.</p>
+      </section>
+      <section class="container" aria-label="Professional introduction">
+        <!-- sources: SRC-005, SRC-006; publication: PUB-001, PUB-003, PUB-004, PUB-005, PUB-014 -->
+        <p data-content-key="intro.body">I am Luciano González, a Backend Developer focused on PHP, Laravel, MySQL, and REST APIs. I am interested in building and maintaining clear, reliable, and sustainable solutions, addressing both feature development and the evolution of existing applications.</p>
+      </section>
+      <section class="container" id="work" aria-labelledby="work-heading">
+        <h2 id="work-heading">Experience</h2>
+        <!-- sources: SRC-007; publication: PUB-015 -->
+        <article><h3>Integrations and synchronization</h3><p data-content-key="work.case.integrations">Backend work to integrate and maintain communication with external APIs, with attention to flow consistency and responsible integration maintenance.</p></article>
+        <!-- sources: SRC-007; publication: PUB-016, PUB-019 -->
+        <article><h3>Education management</h3><p data-content-key="work.case.education">Development and maintenance of features for an education management platform, with a focus on backend processes and the evolution of existing code.</p></article>
+        <!-- sources: SRC-007; publication: PUB-017, PUB-018 -->
+        <article><h3>Data and automation</h3><p data-content-key="work.case.data-automation">Improving MySQL queries and developing scheduled backend processes to support the operational continuity of applications.</p></article>
+        <!-- sources: SRC-007; publication: PUB-020 -->
+        <article><h3>Integration across layers</h3><p data-content-key="work.case.layers">Participation in integrations between a Laravel API and an Angular interface, keeping the scope at the level of technologies and technical collaboration.</p></article>
+        <!-- sources: SRC-006; publication: PUB-003, PUB-004, PUB-005, PUB-014 -->
+        <p data-content-key="work.experience.primary">Experience in backend development and maintenance with PHP and Laravel, working with REST APIs, MySQL queries, application flows, and existing code.</p>
+        <!-- sources: SRC-006; publication: PUB-006, PUB-007, PUB-008, PUB-009, PUB-010, PUB-011, PUB-012, PUB-013 -->
+        <p data-content-key="work.experience.secondary">I have also taken part in responsibilities related to education management platforms, integrations with external payment APIs, and scheduled backend processing. The details of each context remain anonymized.</p>
+      </section>
+      <section class="container" id="expertise" aria-labelledby="expertise-heading">
+        <h2 id="expertise-heading">Areas of specialization</h2>
+        <!-- sources: SRC-005, SRC-006; publication: PUB-001, PUB-003, PUB-004, PUB-005, PUB-007, PUB-010, PUB-014 -->
+        <ul data-content-key="expertise.list"><li>Development and maintenance with PHP and Laravel.</li><li>REST APIs and business logic.</li><li>Integrations with external services.</li><li>MySQL and query improvement.</li><li>Scheduled processes and backend automation.</li><li>Application and legacy code maintenance.</li></ul>
+        <!-- sources: SRC-005, SRC-006; publication: PUB-001, PUB-013 -->
+        <p data-content-key="technologies.list">PHP · Laravel · MySQL · REST APIs · Angular</p>
+      </section>
+      <section class="container" id="projects" aria-labelledby="projects-heading">
+        <h2 id="projects-heading">Projects</h2>
+        <!-- sources: SRC-011; publication: PUB-034 -->
+        <p data-content-key="projects.zero">There are currently no published projects in the portfolio. Future projects will be added when they have an appropriate technical and public presentation.</p>
+      </section>
+      <section class="container" id="approach" aria-labelledby="approach-heading">
+        <h2 id="approach-heading">Working approach</h2>
+        <!-- sources: SRC-005; publication: PUB-001 -->
+        <p data-content-key="approach.body">I prioritize understanding the problem, maintaining logic consistency, and leaving maintainable solutions. Work is communicated clearly and adapted to the technical context of each application.</p>
+      </section>
+      <section class="container" id="contact" aria-labelledby="contact-heading">
+        <h2 id="contact-heading">Contact and CV</h2>
+        <!-- sources: SRC-002, SRC-003, SRC-004, SRC-009; publication: PUB-027, PUB-028, PUB-029 -->
+        <p data-content-key="contact.body">You can find me on LinkedIn and GitHub, or contact me by email. The CV will be available to download from the portfolio.</p>
+        <!-- sources: SRC-003; publication: PUB-027 -->
+        <span data-content-key="contact.linkedin">Luciano González's LinkedIn</span>
+        <!-- sources: SRC-004; publication: PUB-028 -->
+        <span data-content-key="contact.github">Luciano González's GitHub</span>
+        <!-- sources: SRC-009; publication: PUB-029 -->
+        <span data-content-key="contact.email">Email Luciano González</span>
+        <!-- sources: SRC-002; publication: future CMS/media workflow -->
+        <a href="../../../content/approved-assets/cv-en.pdf">Download CV in English (PDF)</a>
+      </section>
+    </main>
+  </body>
+</html>

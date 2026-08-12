@@ -40,4 +40,42 @@ for (const literal of ['320px', '360px', '390px', '768px', '1024px', '1440px', '
   assert.ok(responsive.includes(literal), `Missing responsive contract ${literal}`);
 }
 
+const prototypeFiles = [
+  'docs/prototypes/phase-2/README.md',
+  'docs/prototypes/phase-2/index.html',
+  'docs/prototypes/phase-2/es/index.html',
+  'docs/prototypes/phase-2/en/index.html',
+  'docs/prototypes/phase-2/styles/tokens.css',
+  'docs/prototypes/phase-2/styles/base.css',
+  'docs/prototypes/phase-2/styles/layout.css',
+  'docs/prototypes/phase-2/scripts/theme.js',
+  'docs/prototypes/phase-2/scripts/main.js',
+];
+
+for (const path of prototypeFiles) assert.ok(existsSync(resolve(root, path)), `Missing ${path}`);
+
+const requiredContentKeys = [
+  'hero.title', 'hero.value', 'hero.cta', 'hero.availability', 'intro.body',
+  'work.case.integrations', 'work.case.education', 'work.case.data-automation', 'work.case.layers',
+  'work.experience.primary', 'work.experience.secondary', 'expertise.list', 'projects.zero',
+  'technologies.list', 'approach.body', 'contact.body', 'contact.linkedin', 'contact.github', 'contact.email',
+];
+
+const contentKeys = (html) => [...html.matchAll(/data-content-key="([^"]+)"/g)].map((match) => match[1]).sort();
+const externalRuntimeReference = /(?:src|href)="https?:\/\//i;
+
+for (const [locale, path] of [['es', prototypeFiles[2]], ['en', prototypeFiles[3]]]) {
+  const page = read(path);
+  assert.match(page, new RegExp(`<html[^>]+lang="${locale}"`, 'i'), `Missing ${locale} html language`);
+  assert.equal((page.match(/<main\s+id="main-content"/gi) ?? []).length, 1, `Expected one main landmark in ${path}`);
+  assert.equal((page.match(/<h1\b/gi) ?? []).length, 1, `Expected one H1 in ${path}`);
+  assert.match(page, /<h1[^>]*>\s*Backend Developer \| PHP &(?:amp;)? Laravel\s*<\/h1>/i, `Missing hero title in ${path}`);
+  for (const id of ['top', 'work', 'expertise', 'projects', 'approach', 'contact']) {
+    assert.match(page, new RegExp(`id="${id}"`), `Missing shell ID ${id} in ${path}`);
+  }
+  assert.match(page, /<a(?=[^>]*href="#main-content")(?=[^>]*class="[^"]*skip-link)[^>]*>/, `Missing skip link in ${path}`);
+  assert.ok(!externalRuntimeReference.test(page), `External runtime reference in ${path}`);
+  assert.deepEqual(contentKeys(page), [...requiredContentKeys].sort(), `Unexpected content-key contract in ${path}`);
+}
+
 console.log('Phase 2 artifact contracts pass.');
