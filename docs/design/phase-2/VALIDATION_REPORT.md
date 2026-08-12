@@ -13,7 +13,7 @@
 | Bilingual high-fidelity prototype | `docs/prototypes/phase-2/es/index.html`, `en/index.html`, local CSS and progressive-enhancement scripts |
 | States | loading, section error, site error, missing-CV, and explicitly structural populated-project fixture under `docs/prototypes/phase-2/states/` |
 | Asset provenance | `docs/prototypes/phase-2/assets/ASSET_MANIFEST.md` |
-| Visual evidence | 10 required baseline PNGs plus menu, Work, zero-project, and state screenshots under `docs/prototypes/phase-2/evidence/` |
+| Visual evidence | 10 required baseline PNGs plus corrected focused, no-JS, and state screenshots under `docs/prototypes/phase-2/evidence/` |
 
 ## Automated verification
 
@@ -80,7 +80,7 @@ mobile-390-es-light.png     mobile-390-en-dark.png
 mobile-360-es-light.png     mobile-360-en-dark.png
 ```
 
-Additional focused evidence: `mobile-menu-es-light.png`, `work-tabs-en-light.png`, `zero-project-es-light.png`, and `state-*-dark.png`.
+Additional focused evidence: `mobile-menu-es-light.png`, `work-tabs-en-light.png`, and `zero-project-es-light.png` were recaptured with an actual light document theme. `state-site-error-mobile-light.png`, `state-site-error-mobile-dark.png`, `state-site-error-tablet-light.png`, and `state-site-error-dark.png` prove the corrected broad-failure shell. `no-js-390-es-light.png` and `no-js-390-en-dark.png` prove the genuine disabled-JavaScript fallback.
 
 ## Interaction and accessibility checks
 
@@ -94,14 +94,16 @@ Additional focused evidence: `mobile-menu-es-light.png`, `work-tabs-en-light.png
 | Active and focus treatment | PASS | Browser visual evidence shows 3px orange outline plus geometry; active desktop navigation uses index, accent rule, and weight rather than color only. |
 | Contact and external links | PASS | Validator checks exact LinkedIn, GitHub, `mailto:`, safe `rel`, English CV action, and Spanish CV omission. |
 | States and confidentiality | PASS | Each state has no overflow in light and dark; loading has `aria-busy`/status/static skeletons; errors are plain-language alerts; the fixture is structural, labeled, and URL-free. |
+| Broad site-error shell below 64rem | PASS | At 390 x 844 and 768 x 1024 in light/dark, both visible controls have 44px minimum heights: language was 46–47px wide and Theme 82–84px wide; the Theme click changed the mobile document state to dark with `aria-pressed="true"`. |
+| Genuine disabled-JavaScript fallback | PASS | Regular Playwright contexts with `javaScriptEnabled: false` checked ES/light and EN/dark at 390px: system canvas colors applied, `data-theme` and `.js` were absent, Menu/Theme controls were hidden, localized `noscript` navigation was visible, all dossiers remained visible, and no horizontal overflow occurred. |
 | Static/reduced-motion policy | PASS | Search found no active transition or animation. Skeletons declare `animation: none; transition: none`; the reduced-motion rule additionally clamps nonessential timing. `navigation.js` uses one one-shot `window.setTimeout` only to schedule fragment-heading focus after navigation; it is not a continuous timer or Phase 6 motion. No Phase 6 runtime, canvas, WebGL, GSAP, or Motion exists. |
 
 ### Browser-control limitations recorded honestly
 
-The in-app Browser exposes viewport overrides but no JavaScript-disable, forced-colors emulation, or page-zoom capability.
+The original in-app Browser session supported the base matrix, then became unavailable during review follow-up (`agent.browsers.list()` returned `[]`). The permitted frontend-testing fallback used the locally available Playwright package and installed Chromium 1217 after the in-app Browser path was exhausted. Its only non-app console noise was the static server's absent `/favicon.ico`; no prototype resource or runtime error was observed.
 
 - **200% browser zoom: NOT RUN as an exact browser-zoom check.** Both attempted `Ctrl++` spellings left `visualViewport.scale` at `1`. An equivalent 512px CSS-viewport reflow check passed for both locales, but it is not recorded as a 200% browser-zoom PASS.
-- **JavaScript-disabled visual run: NOT RUN in-browser.** A source-level check passed: both localized HTML files contain the complete sections and all four Work dossiers in source order plus `noscript` navigation; Work hiding is only enhancement code. This is not labeled as a browser-disabled-JS PASS.
+- **JavaScript-disabled visual run: PASS with fallback Playwright.** The disabled-JavaScript contexts described above exercised the actual local pages, not a source-only substitute.
 - **Forced-colors visual run: NOT RUN in-browser.** The capability is unavailable. Source review confirms the Hero has a forced-colors fallback and all semantics/outline focus remain present; this is not labeled as emulated forced-colors PASS.
 - **Complete native-dialog Tab/Shift+Tab/Escape traversal: NOT RUN end-to-end.** The browser bridge did not surface native dialog default actions for those key probes, although button, destination, and Work keyboard commands work. Source review confirms native `<dialog>`, `cancel`, scroll-lock, and restoration logic. A human assistive-technology/browser pass remains appropriate before release.
 
@@ -114,10 +116,13 @@ The wide and portrait derivatives preserve Luciano's face, hair, shoulders, natu
 | Finding | Viewport/locale/theme | Owning file | Correction | Retest |
 | --- | --- | --- | --- | --- |
 | Four state pages had no safe theme bootstrap, so a stored/system dark preference could not reach them. | State pages, both themes | `states/loading.html`, `section-error.html`, `missing-cv.html`, `projects-populated.html`; site-error bootstrap was also inconsistent | Added the same validated `light`/`dark` bootstrap used by the localized pages and extended the artifact contract for every state page. | Artifact, contrast, asset validators passed; all five state pages passed in light and dark at 768 x 1024. |
+| The broad site-error shell hid its only language control below `64rem`. | 390 x 844 and 768 x 1024, light/dark | `states/site-error.html`, `styles/header.css` | Added a state-specific language-control hook and a below-`64rem` visibility rule; Theme remains visible without relying on a mobile menu. | Four rendered Playwright combinations passed, including 44px targets, no overflow, safe links, and a mobile Theme interaction. |
+| Focused screenshot filenames said `light` while their pixels showed dark theme. | Focused evidence | `docs/prototypes/phase-2/evidence/` | Recaptured `zero-project-es-light.png`, `mobile-menu-es-light.png`, and `work-tabs-en-light.png` in a fresh light Playwright context, asserting `data-theme="light"` before capture. | Visual inspection and runtime checks confirm light canvas and the expected focused state. |
+| No-JS behavior relied on JavaScript to choose a theme and displayed unusable JS-only controls. | 390px, ES/light and EN/dark | `styles/tokens.css`, `styles/header.css`, `scripts/main.js`, locale HTML behavior, `README.md` | Added a CSS `prefers-color-scheme` fallback when no `data-theme` exists; gates Theme/Menu behind `html.js`; preserves `noscript` navigation. | Validator contract plus genuine `javaScriptEnabled: false` Playwright checks passed in both system themes. |
 
 ## Remaining non-blocking considerations
 
-- Perform exact 200% zoom, JavaScript-disabled, forced-colors, and full native-dialog keyboard traversal manually in a browser that exposes those controls before a production release.
+- Perform exact 200% zoom, forced-colors, and full native-dialog keyboard traversal manually in a browser that exposes those controls before a production release.
 - The Spanish CV metadata/reapproval issue remains unresolved; the Spanish action remains omitted. The combined multi-institution wording remains intentionally unapproved and absent.
 - Phase 6 motion was **not implemented**. This Phase 2 prototype is static and dependency-free.
 - The final whole-branch GPT-5.6 Sol review is intentionally deferred to the controller; this implementer did not perform or claim that review.

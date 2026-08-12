@@ -87,3 +87,18 @@
   --color-error: #FF9B8A;
   --shadow-sticky-header: 0 8px 24px rgb(0 0 0 / 24%);
 }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-canvas: #171918;
+    --color-surface: #202321;
+    --color-text: #F1ECE1;
+    --color-muted: #B8B3A9;
+    --color-accent: #F07A4B;
+    --color-border: #777A74;
+    --color-disabled: #96958F;
+    --color-selected: #2B2926;
+    --color-error: #FF9B8A;
+    --shadow-sticky-header: 0 8px 24px rgb(0 0 0 / 24%);
+  }
+}

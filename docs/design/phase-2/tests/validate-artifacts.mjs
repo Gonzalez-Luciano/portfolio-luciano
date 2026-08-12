@@ -102,6 +102,8 @@ const siteErrorState = read(stateFiles[2]);
 for (const literal of ['data-site-header', 'data-theme-toggle', 'linkedin.com', 'github.com', 'mailto:', 'href="../index.html"']) {
   assert.ok(siteErrorState.includes(literal), `Site error must retain ${literal}`);
 }
+assert.match(siteErrorState, /state-page--site-error/, 'Site error needs a state-specific shell hook');
+assert.match(siteErrorState, /site-error__language/, 'Site error needs a dedicated visible mobile language control');
 assert.match(siteErrorState, /We couldn't load the portfolio content|No pudimos cargar el contenido del portfolio/, 'Site error needs safe copy');
 assert.doesNotMatch(siteErrorState, /stack trace|status code|api\/|endpoint|exception/i, 'Site error must not expose internal details');
 
@@ -136,6 +138,8 @@ const requiredContentKeys = [
 const contentKeys = (html) => [...html.matchAll(/data-content-key="([^"]+)"/g)].map((match) => match[1]).sort();
 const externalRuntimeReference = /src="https?:\/\//i;
 const prototypeTokens = read('docs/prototypes/phase-2/styles/tokens.css');
+const prototypeHeader = read('docs/prototypes/phase-2/styles/header.css');
+const prototypeMain = read('docs/prototypes/phase-2/scripts/main.js');
 const prototypeNavigation = read('docs/prototypes/phase-2/scripts/navigation.js');
 const prototypeHero = read('docs/prototypes/phase-2/styles/hero.css');
 const prototypeWork = read('docs/prototypes/phase-2/styles/work.css');
@@ -149,6 +153,13 @@ assert.ok(fontFaceSources.length > 0, 'Missing local prototype @font-face source
 for (const source of fontFaceSources) {
   assert.ok(!/^https?:\/\//i.test(source), `External runtime font URL in tokens.css: ${source}`);
 }
+
+assert.match(prototypeTokens, /@media\s*\(prefers-color-scheme:\s*dark\)\s*\{\s*:root:not\(\[data-theme\]\)/s, 'Missing no-JS system dark-theme fallback');
+assert.match(prototypeHeader, /\[data-theme-toggle\],\s*\[data-menu-open\]\s*\{\s*display:\s*none;/s, 'JS-dependent controls must be hidden without JavaScript');
+assert.match(prototypeHeader, /html\.js\s+\[data-theme-toggle\],\s*html\.js\s+\[data-menu-open\]\s*\{\s*display:\s*inline-flex;/s, 'JS-dependent controls must reappear after enhancement');
+assert.match(prototypeHeader, /@media\s*\(min-width:\s*64rem\)\s*\{[\s\S]*?html\.js\s+\.site-header__menu-button\s*\{\s*display:\s*none;/s, 'Desktop enhancement must keep the mobile menu trigger hidden');
+assert.match(prototypeHeader, /@media\s*\(max-width:\s*63\.99rem\)\s*\{[\s\S]*?\.state-page--site-error\s+\.site-error__language\s*\{\s*display:\s*inline-flex;/s, 'Site error language control must remain visible below 64rem');
+assert.match(prototypeMain, /document\.documentElement\.classList\.add\('js'\);/, 'Main enhancement must identify JavaScript availability');
 
 assert.match(prototypeNavigation, /window\.addEventListener\('hashchange'/, 'Missing hashchange fragment-focus handling');
 assert.match(prototypeNavigation, /scheduleFragmentFocus\(window\.location\.hash\)/, 'Missing initial fragment-focus handling');
