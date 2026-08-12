@@ -15,9 +15,9 @@ def main() -> None:
         portrait = ImageOps.fit(
             image, (900, 1200), Image.Resampling.LANCZOS, centering=(0.5, 0.42)
         )
-        wide = ImageOps.fit(
-            image, (1200, 900), Image.Resampling.LANCZOS, centering=(0.5, 0.34)
-        )
+        wide = Image.new("RGB", (1200, 900), image.getpixel((0, 0)))
+        contained = ImageOps.contain(image, wide.size, Image.Resampling.LANCZOS)
+        wide.paste(contained, ((wide.width - contained.width) // 2, 0))
         portrait.save(OUTPUT / "profile-portrait.webp", "WEBP", quality=82, method=6)
         wide.save(OUTPUT / "profile-wide.webp", "WEBP", quality=82, method=6)
 

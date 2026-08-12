@@ -38,6 +38,11 @@ def main() -> None:
             assert image.format == "WEBP", f"Image is not WEBP: {name}"
             assert image.size == dimensions, f"Unexpected dimensions for {name}: {image.size}"
             assert not image.getexif(), f"EXIF metadata remains in {name}"
+            if name == "profile-wide.webp":
+                red, green, blue = image.convert("RGB").getpixel((600, 0))
+                assert (
+                    red >= 200 and red > green + 50 and green > blue + 20
+                ), "Wide asset must preserve an orange background above the uncropped portrait"
     for name in EXPECTED_FONTS:
         path = FONTS / name
         assert path.is_file(), f"Missing font or license asset: {path.relative_to(ROOT)}"
