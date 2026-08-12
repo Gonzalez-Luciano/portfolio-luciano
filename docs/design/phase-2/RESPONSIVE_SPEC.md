@@ -21,7 +21,7 @@ Responsive behavior follows content fit, with `/es` and `/en` independently veri
 | `48rem` through `63.99rem` | 8 columns; `32px` gutters | Project Dossiers become horizontal at `48rem`; mobile menu, portrait-first hero, and Work Numbered Dossiers remain. |
 | `64rem` through `79.99rem` | 12 columns; `48px` gutters | Sticky desktop header replaces menu; hero changes to split; Work changes to Indexed Detail vertical tabs. |
 | `80rem` through `90rem` | 12 columns; `64px` gutters | Same desktop compositions with wide-desktop gutters. |
-| At and above `90rem` | Centered primary content max-width `90rem` | Do not widen reading measures beyond the max-width contract. |
+| At and above `90rem` | Centered primary content max-width `90rem`; retain `64px` gutters | Do not widen reading measures beyond the max-width contract. |
 
 The full-screen numbered Menu is used below `64rem`; the desktop header is used at `64rem+`. Below `64rem`, every Work case is a sequential semantic Numbered Dossier. At `64rem+`, Work is Indexed Detail with vertical tabs; inactive panels may hide only after enhancement, and all cases remain expanded without JavaScript. Hero split/stack switches at `64rem`. Project horizontal/stack switches at `48rem`.
 
