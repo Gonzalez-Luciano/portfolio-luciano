@@ -7,7 +7,8 @@
     <script>
       (() => {
         const saved = localStorage.getItem('portfolio-prototype-theme');
-        const dark = saved === 'dark' || (!saved && matchMedia('(prefers-color-scheme: dark)').matches);
+        const savedTheme = saved === 'light' || saved === 'dark' ? saved : null;
+        const dark = savedTheme ? savedTheme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
       })();
     </script>

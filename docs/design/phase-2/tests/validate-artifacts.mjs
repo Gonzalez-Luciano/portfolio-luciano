@@ -63,6 +63,13 @@ const requiredContentKeys = [
 
 const contentKeys = (html) => [...html.matchAll(/data-content-key="([^"]+)"/g)].map((match) => match[1]).sort();
 const externalRuntimeReference = /(?:src|href)="https?:\/\//i;
+const prototypeTokens = read('docs/prototypes/phase-2/styles/tokens.css');
+const fontFaceSources = [...prototypeTokens.matchAll(/@font-face\s*\{[^}]*?src:\s*url\((['"]?)([^)'"\s]+)\1\)/gis)].map((match) => match[2]);
+
+assert.ok(fontFaceSources.length > 0, 'Missing local prototype @font-face sources');
+for (const source of fontFaceSources) {
+  assert.ok(!/^https?:\/\//i.test(source), `External runtime font URL in tokens.css: ${source}`);
+}
 
 for (const [locale, path] of [['es', prototypeFiles[2]], ['en', prototypeFiles[3]]]) {
   const page = read(path);
