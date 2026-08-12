@@ -71,12 +71,12 @@ const stateFiles = [
 
 for (const path of stateFiles) assert.ok(existsSync(resolve(root, path)), `Missing ${path}`);
 const prototypeStates = read(stateFiles[5]);
+const stateTokens = read('docs/prototypes/phase-2/styles/tokens.css');
 
 const loadingState = read(stateFiles[0]);
 assert.match(loadingState, /aria-busy="true"/, 'Loading state must expose busy status');
-assert.match(loadingState, /Loading portfolio content|Cargando contenido del portfolio/, 'Loading state needs localized status copy');
 assert.match(loadingState, /class="[^"]*skeleton/, 'Loading state needs skeleton blocks');
-assert.match(loadingState, /role="status"/, 'Loading state must expose its message as a status');
+assert.match(loadingState, /<([a-z][\w-]*)\b[^>]*role="status"[^>]*>[\s\S]*?Loading portfolio content[\s\S]*?Cargando contenido del portfolio[\s\S]*?<\/\1>/i, 'Loading state must bind both localized messages to the same status element');
 assert.match(prototypeStates, /\.skeleton\s*\{[^}]*animation:\s*none;[^}]*transition:\s*none;/s, 'Skeletons must be explicitly static by default');
 assert.doesNotMatch(prototypeStates, /\bshimmer\b/i, 'State styles must not introduce shimmer');
 const stateAnimationValues = [...prototypeStates.matchAll(/(?:^|[;{])\s*(?:animation|animation-name)\s*:\s*([^;]+)/g)]
@@ -87,6 +87,7 @@ for (const page of stateFiles.slice(0, 5)) {
 }
 assert.match(prototypeStates, /var\(--color-(?:text-primary|border-meaningful|error|surface-raised)\)/, 'State styles must use semantic color tokens');
 assert.match(prototypeStates, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?animation:\s*none;[\s\S]*?transition:\s*none;/, 'State styles must retain explicit reduced-motion static behavior');
+assert.match(stateTokens, /--target-minimum:\s*44px;/, 'State interaction sizing requires the 44px minimum token contract');
 
 const sectionErrorState = read(stateFiles[1]);
 assert.match(sectionErrorState, /role="alert"/, 'Section error needs an alert');
