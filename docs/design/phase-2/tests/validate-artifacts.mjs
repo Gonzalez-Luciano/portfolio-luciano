@@ -70,16 +70,29 @@ const stateFiles = [
 ];
 
 for (const path of stateFiles) assert.ok(existsSync(resolve(root, path)), `Missing ${path}`);
+const prototypeStates = read(stateFiles[5]);
 
 const loadingState = read(stateFiles[0]);
 assert.match(loadingState, /aria-busy="true"/, 'Loading state must expose busy status');
 assert.match(loadingState, /Loading portfolio content|Cargando contenido del portfolio/, 'Loading state needs localized status copy');
 assert.match(loadingState, /class="[^"]*skeleton/, 'Loading state needs skeleton blocks');
+assert.match(loadingState, /role="status"/, 'Loading state must expose its message as a status');
+assert.match(prototypeStates, /\.skeleton\s*\{[^}]*animation:\s*none;[^}]*transition:\s*none;/s, 'Skeletons must be explicitly static by default');
+assert.doesNotMatch(prototypeStates, /\bshimmer\b/i, 'State styles must not introduce shimmer');
+const stateAnimationValues = [...prototypeStates.matchAll(/(?:^|[;{])\s*(?:animation|animation-name)\s*:\s*([^;]+)/g)]
+  .map((match) => match[1].trim());
+assert.ok(stateAnimationValues.every((value) => value === 'none'), 'State styles must not introduce an active animation');
+for (const page of stateFiles.slice(0, 5)) {
+  assert.match(read(page), /href="\.\.\/styles\/states\.css"/, `${page} must import state styles`);
+}
+assert.match(prototypeStates, /var\(--color-(?:text-primary|border-meaningful|error|surface-raised)\)/, 'State styles must use semantic color tokens');
+assert.match(prototypeStates, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?animation:\s*none;[\s\S]*?transition:\s*none;/, 'State styles must retain explicit reduced-motion static behavior');
 
 const sectionErrorState = read(stateFiles[1]);
 assert.match(sectionErrorState, /role="alert"/, 'Section error needs an alert');
 assert.match(sectionErrorState, /couldn.t load|No pudimos cargar/i, 'Section error needs plain-language copy');
 assert.match(sectionErrorState, /class="[^"]*retry-button/, 'Section error needs a retry button');
+assert.match(prototypeStates, /\.retry-button\s*\{[^}]*min-height:\s*var\(--target-minimum\)/s, 'Retry button must use the 44px minimum target token');
 
 const siteErrorState = read(stateFiles[2]);
 for (const literal of ['data-site-header', 'data-theme-toggle', 'linkedin.com', 'github.com', 'mailto:', 'href="../index.html"']) {
@@ -105,6 +118,9 @@ for (const label of ['Prototype project record A', 'Prototype project record B',
   assert.ok(populatedProjectsState.includes(label), `Populated fixture must include ${label}`);
 }
 assert.doesNotMatch(populatedProjectsState, /<a\b[^>]*href=/i, 'Populated fixture must not contain real, demo, or repository links');
+const populatedFixtureContent = populatedProjectsState.match(/<body\b[^>]*>[\s\S]*<\/body>/i)?.[0] ?? '';
+assert.doesNotMatch(populatedFixtureContent, /\b(?:https?|mailto|ftp):/i, 'Populated fixture content must not contain a URL scheme');
+assert.doesNotMatch(populatedFixtureContent, /\b(?:achievement|award|client|employer|production|deployed|users|transactions|revenue|increased|reduced|improved|successful|professional experience)\b/i, 'Populated fixture must not imply an achievement or professional claim');
 
 const requiredContentKeys = [
   'hero.title', 'hero.value', 'hero.cta', 'hero.availability', 'intro.body',

@@ -2,7 +2,7 @@
 .state-page section { padding-block: var(--space-7); }
 .state-banner { margin: 0; border-block: var(--rule-emphasis) solid var(--color-border-meaningful); padding: var(--space-3) 0; color: var(--color-text-primary); font-family: var(--font-family-mono); font-size: var(--font-size-utility); }
 .state-stack { display: grid; gap: var(--space-5); }
-.skeleton { min-block-size: 1.25rem; background: var(--color-selected); border-radius: var(--radius-small); }
+.skeleton { min-block-size: 1.25rem; background: var(--color-selected); border-radius: var(--radius-small); animation: none; transition: none; }
 .skeleton--hero { min-block-size: 18rem; }
 .skeleton--section { min-block-size: 12rem; }
 .skeleton--contact { min-block-size: 7rem; }
