@@ -60,6 +60,52 @@ const prototypeFiles = [
 
 for (const path of prototypeFiles) assert.ok(existsSync(resolve(root, path)), `Missing ${path}`);
 
+const stateFiles = [
+  'docs/prototypes/phase-2/states/loading.html',
+  'docs/prototypes/phase-2/states/section-error.html',
+  'docs/prototypes/phase-2/states/site-error.html',
+  'docs/prototypes/phase-2/states/missing-cv.html',
+  'docs/prototypes/phase-2/states/projects-populated.html',
+  'docs/prototypes/phase-2/styles/states.css',
+];
+
+for (const path of stateFiles) assert.ok(existsSync(resolve(root, path)), `Missing ${path}`);
+
+const loadingState = read(stateFiles[0]);
+assert.match(loadingState, /aria-busy="true"/, 'Loading state must expose busy status');
+assert.match(loadingState, /Loading portfolio content|Cargando contenido del portfolio/, 'Loading state needs localized status copy');
+assert.match(loadingState, /class="[^"]*skeleton/, 'Loading state needs skeleton blocks');
+
+const sectionErrorState = read(stateFiles[1]);
+assert.match(sectionErrorState, /role="alert"/, 'Section error needs an alert');
+assert.match(sectionErrorState, /couldn.t load|No pudimos cargar/i, 'Section error needs plain-language copy');
+assert.match(sectionErrorState, /class="[^"]*retry-button/, 'Section error needs a retry button');
+
+const siteErrorState = read(stateFiles[2]);
+for (const literal of ['data-site-header', 'data-theme-toggle', 'linkedin.com', 'github.com', 'mailto:', 'href="../index.html"']) {
+  assert.ok(siteErrorState.includes(literal), `Site error must retain ${literal}`);
+}
+assert.match(siteErrorState, /We couldn't load the portfolio content|No pudimos cargar el contenido del portfolio/, 'Site error needs safe copy');
+assert.doesNotMatch(siteErrorState, /stack trace|status code|api\/|endpoint|exception/i, 'Site error must not expose internal details');
+
+const missingCvState = read(stateFiles[3]);
+for (const literal of ['Spanish / Español', 'English / Inglés', 'A locale never receives the other locale\'s CV as fallback.']) {
+  assert.ok(missingCvState.includes(literal), `Missing-CV state must include ${literal}`);
+}
+assert.match(missingCvState, /CV unavailable in Spanish/, 'Spanish CV must be explicitly unavailable');
+assert.match(missingCvState, /Download CV in English/, 'English CV must retain its own action');
+
+const populatedProjectsState = read(stateFiles[4]);
+const fixtureBanner = `Structural prototype fixture ${String.fromCodePoint(0x2014)} not Luciano's public work`;
+assert.ok(populatedProjectsState.includes(fixtureBanner), 'Populated fixture needs the exact safety banner');
+assert.match(populatedProjectsState, /data-fixture="structural"/, 'Populated fixture needs its structural data marker');
+assert.match(populatedProjectsState, /class="project-dossier"/, 'Populated fixture needs a dossier with media');
+assert.match(populatedProjectsState, /class="project-dossier project-dossier--no-media"/, 'Populated fixture needs a no-media dossier');
+for (const label of ['Prototype project record A', 'Prototype project record B', 'Problem', 'Backend solution', 'Technical decisions', 'Technologies', 'Demo link absent', 'Repository link absent']) {
+  assert.ok(populatedProjectsState.includes(label), `Populated fixture must include ${label}`);
+}
+assert.doesNotMatch(populatedProjectsState, /<a\b[^>]*href=/i, 'Populated fixture must not contain real, demo, or repository links');
+
 const requiredContentKeys = [
   'hero.title', 'hero.value', 'hero.cta', 'hero.availability', 'intro.body',
   'work.case.integrations', 'work.case.education', 'work.case.data-automation', 'work.case.layers',
