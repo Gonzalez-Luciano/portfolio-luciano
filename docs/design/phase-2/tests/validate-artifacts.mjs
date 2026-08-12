@@ -48,8 +48,11 @@ const prototypeFiles = [
   'docs/prototypes/phase-2/styles/tokens.css',
   'docs/prototypes/phase-2/styles/base.css',
   'docs/prototypes/phase-2/styles/layout.css',
+  'docs/prototypes/phase-2/styles/header.css',
   'docs/prototypes/phase-2/scripts/theme.js',
   'docs/prototypes/phase-2/scripts/main.js',
+  'docs/prototypes/phase-2/scripts/menu.js',
+  'docs/prototypes/phase-2/scripts/navigation.js',
 ];
 
 for (const path of prototypeFiles) assert.ok(existsSync(resolve(root, path)), `Missing ${path}`);
@@ -83,6 +86,16 @@ for (const [locale, path] of [['es', prototypeFiles[2]], ['en', prototypeFiles[3
     assert.match(page, new RegExp(`id="${id}"`), `Missing shell ID ${id} in ${path}`);
   }
   assert.match(page, /<a(?=[^>]*href="#main-content")(?=[^>]*class="[^"]*skip-link)[^>]*>/, `Missing skip link in ${path}`);
+  for (const literal of [
+    'data-site-header', 'href="#work"', 'href="#expertise"', 'href="#projects"',
+    'href="#approach"', 'href="#contact"', 'data-theme-toggle', 'data-menu-open',
+    '<dialog id="mobile-menu"', 'aria-labelledby="mobile-menu-title"', 'data-menu-close',
+  ]) assert.ok(page.includes(literal), `Missing ${literal} in ${path}`);
+  for (const index of ['01', '02', '03', '04', '05']) {
+    assert.match(page, new RegExp(`>\\s*${index}\\s*<`), `Missing mobile menu index ${index} in ${path}`);
+  }
+  const otherLocale = locale === 'es' ? '../en/' : '../es/';
+  assert.match(page, new RegExp(`href="${otherLocale}"`), `Missing ${otherLocale} language link in ${path}`);
   assert.ok(!externalRuntimeReference.test(page), `External runtime reference in ${path}`);
   assert.deepEqual(contentKeys(page), [...requiredContentKeys].sort(), `Unexpected content-key contract in ${path}`);
 }

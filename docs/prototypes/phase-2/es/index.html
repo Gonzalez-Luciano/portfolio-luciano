@@ -15,13 +15,33 @@
     <link rel="stylesheet" href="../styles/tokens.css">
     <link rel="stylesheet" href="../styles/base.css">
     <link rel="stylesheet" href="../styles/layout.css">
+    <link rel="stylesheet" href="../styles/header.css">
     <script type="module" src="../scripts/main.js"></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
-    <header class="container">
-      <button class="theme-toggle" type="button" data-theme-toggle data-label-light="Cambiar a modo claro" data-label-dark="Cambiar a modo oscuro">Tema</button>
+    <header data-site-header>
+      <div class="site-header__inner container">
+        <a class="site-header__identity" href="#top">LG / Backend</a>
+        <nav data-desktop-nav aria-label="Navegación principal">
+          <a href="#work" data-index="01">Trabajo</a>
+          <a href="#expertise" data-index="02">Especialización</a>
+          <a href="#projects" data-index="03">Proyectos</a>
+          <a href="#approach" data-index="04">Forma de trabajo</a>
+          <a href="#contact" data-index="05">Contacto</a>
+        </nav>
+        <div class="site-header__utilities">
+          <a class="site-header__utility site-header__language" href="../en/" lang="en">EN</a>
+          <button class="theme-toggle site-header__utility" type="button" data-theme-toggle data-label-light="Cambiar a modo claro" data-label-dark="Cambiar a modo oscuro">Tema</button>
+          <button class="site-header__menu-button" type="button" data-menu-open aria-haspopup="dialog" aria-controls="mobile-menu">Menú</button>
+        </div>
+      </div>
     </header>
+    <noscript>
+      <nav class="no-js-nav container" aria-label="Navegación principal">
+        <a href="#work">01 Trabajo</a><a href="#expertise">02 Especialización</a><a href="#projects">03 Proyectos</a><a href="#approach">04 Forma de trabajo</a><a href="#contact">05 Contacto</a><a href="../en/" lang="en">View in English</a>
+      </nav>
+    </noscript>
     <main id="main-content">
       <section class="hero container" id="top" aria-labelledby="hero-title">
         <!-- sources: SRC-010; publication: future CMS/media workflow -->
@@ -83,5 +103,26 @@
         <span data-content-key="contact.email">Enviar un correo a Luciano González</span>
       </section>
     </main>
+    <dialog id="mobile-menu" aria-labelledby="mobile-menu-title">
+      <div class="mobile-menu__inner">
+        <div class="mobile-menu__header">
+          <h2 class="mobile-menu__title" id="mobile-menu-title">Navegación</h2>
+          <button class="mobile-menu__close" type="button" data-menu-close>Cerrar</button>
+        </div>
+        <nav class="mobile-menu__nav" data-mobile-nav aria-label="Navegación principal">
+          <ol>
+            <li><a href="#work"><span class="mobile-menu__index">01</span><span>Trabajo</span></a></li>
+            <li><a href="#expertise"><span class="mobile-menu__index">02</span><span>Especialización</span></a></li>
+            <li><a href="#projects"><span class="mobile-menu__index">03</span><span>Proyectos</span></a></li>
+            <li><a href="#approach"><span class="mobile-menu__index">04</span><span>Forma de trabajo</span></a></li>
+            <li><a href="#contact"><span class="mobile-menu__index">05</span><span>Contacto</span></a></li>
+          </ol>
+        </nav>
+        <div class="mobile-menu__footer">
+          <p class="mobile-menu__availability">Disponible para conversar sobre oportunidades backend con PHP y Laravel.</p>
+          <a class="site-header__utility mobile-menu__language" href="../en/" lang="en">View in English</a>
+        </div>
+      </div>
+    </dialog>
   </body>
 </html>
