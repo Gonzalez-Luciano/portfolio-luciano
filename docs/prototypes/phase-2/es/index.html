@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="../styles/base.css">
     <link rel="stylesheet" href="../styles/layout.css">
     <link rel="stylesheet" href="../styles/header.css">
+    <link rel="stylesheet" href="../styles/hero.css">
     <script type="module" src="../scripts/main.js"></script>
   </head>
   <body>
@@ -44,18 +45,25 @@
     </noscript>
     <main id="main-content">
       <section class="hero container" id="top" aria-labelledby="hero-title">
+        <div class="hero__copy">
+          <p class="utility-label">Backend Developer / PHP &amp; Laravel</p>
+          <!-- sources: SRC-005; publication: PUB-001 -->
+          <h1 id="hero-title" data-content-key="hero.title">Backend Developer | PHP &amp; Laravel</h1>
+          <!-- sources: SRC-005; publication: PUB-001 -->
+          <p class="hero__value" data-content-key="hero.value">Desarrollo backend orientado a APIs, lógica de negocio, datos y mantenimiento de aplicaciones.</p>
+          <!-- sources: SRC-005; publication: PUB-001 -->
+          <a class="text-action" href="#work" data-content-key="hero.cta">Ver experiencia</a>
+          <!-- sources: SRC-005; publication: PUB-001 -->
+          <p class="hero__availability" data-content-key="hero.availability">Disponible para conversar sobre oportunidades backend con PHP y Laravel.</p>
+        </div>
         <!-- sources: SRC-010; publication: future CMS/media workflow -->
-        <img class="hero__portrait" src="../assets/images/profile-portrait.webp" alt="Retrato profesional de Luciano González sobre fondo naranja">
-        <!-- sources: SRC-005; publication: PUB-001 -->
-        <h1 id="hero-title" data-content-key="hero.title">Backend Developer | PHP &amp; Laravel</h1>
-        <!-- sources: SRC-005; publication: PUB-001 -->
-        <p data-content-key="hero.value">Desarrollo backend orientado a APIs, lógica de negocio, datos y mantenimiento de aplicaciones.</p>
-        <!-- sources: SRC-005; publication: PUB-001 -->
-        <a data-content-key="hero.cta" href="#work">Ver experiencia</a>
-        <!-- sources: SRC-005; publication: PUB-001 -->
-        <p data-content-key="hero.availability">Disponible para conversar sobre oportunidades backend con PHP y Laravel.</p>
+        <picture class="hero__portrait">
+          <source media="(max-width: 63.99rem)" srcset="../assets/images/profile-wide.webp">
+          <img src="../assets/images/profile-portrait.webp" width="900" height="1200" alt="Retrato profesional de Luciano González sobre fondo naranja">
+        </picture>
       </section>
-      <section class="container" aria-label="Presentación profesional">
+      <section class="editorial-bridge container" aria-labelledby="intro-title">
+        <h2 id="intro-title" class="visually-hidden">Presentación profesional</h2>
         <!-- sources: SRC-005, SRC-006; publication: PUB-001, PUB-003, PUB-004, PUB-005, PUB-014 -->
         <p data-content-key="intro.body">Soy Luciano González, Backend Developer con foco en PHP, Laravel, MySQL y APIs REST. Me interesa construir y mantener soluciones claras, confiables y sostenibles, atendiendo tanto al desarrollo de funcionalidades como a la evolución de aplicaciones existentes.</p>
       </section>

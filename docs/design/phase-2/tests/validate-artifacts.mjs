@@ -86,6 +86,19 @@ for (const [locale, path] of [['es', prototypeFiles[2]], ['en', prototypeFiles[3
   assert.equal((page.match(/<main\s+id="main-content"/gi) ?? []).length, 1, `Expected one main landmark in ${path}`);
   assert.equal((page.match(/<h1\b/gi) ?? []).length, 1, `Expected one H1 in ${path}`);
   assert.match(page, /<h1[^>]*>\s*Backend Developer \| PHP &(?:amp;)? Laravel\s*<\/h1>/i, `Missing hero title in ${path}`);
+  assert.match(page, /<section(?=[^>]*class="[^"]*hero)(?=[^>]*id="top")(?=[^>]*aria-labelledby="hero-title")[^>]*>/i, `Missing semantic hero section in ${path}`);
+  assert.match(page, /<picture\s+class="hero__portrait">/i, `Missing art-directed hero picture in ${path}`);
+  assert.match(page, /<source(?=[^>]*media="\(max-width: 63\.99rem\)")(?=[^>]*srcset="\.\.\/assets\/images\/profile-wide\.webp")[^>]*>/i, `Missing narrow hero source in ${path}`);
+  assert.match(page, /<img(?=[^>]*src="\.\.\/assets\/images\/profile-portrait\.webp")(?=[^>]*width="900")(?=[^>]*height="1200")(?=[^>]*alt="[^"]+")[^>]*>/i, `Missing portrait hero fallback in ${path}`);
+  const expectedAlt = locale === 'es'
+    ? 'Retrato profesional de Luciano González sobre fondo naranja'
+    : 'Professional portrait of Luciano González against an orange background';
+  assert.ok(page.includes(`alt="${expectedAlt}"`), `Missing approved ${locale} portrait alt text in ${path}`);
+  assert.match(page, /<div\s+class="hero__copy">/i, `Missing hero copy wrapper in ${path}`);
+  assert.match(page, /<h1(?=[^>]*id="hero-title")(?=[^>]*data-content-key="hero\.title")[^>]*>/i, `Missing keyed hero title in ${path}`);
+  assert.match(page, /<a(?=[^>]*class="[^"]*text-action)(?=[^>]*href="#work")(?=[^>]*data-content-key="hero\.cta")[^>]*>/i, `Missing hero Work CTA in ${path}`);
+  assert.match(page, /<section(?=[^>]*class="[^"]*editorial-bridge)[^>]*aria-labelledby="intro-title"[^>]*>/i, `Missing editorial bridge in ${path}`);
+  assert.match(page, /<[^>]+data-content-key="intro\.body"[^>]*>/i, `Missing keyed introduction in ${path}`);
   for (const id of ['top', 'work', 'expertise', 'projects', 'approach', 'contact']) {
     assert.match(page, new RegExp(`id="${id}"`), `Missing shell ID ${id} in ${path}`);
   }

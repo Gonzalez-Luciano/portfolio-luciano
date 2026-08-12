@@ -1,0 +1,94 @@
+.hero {
+  display: grid;
+  gap: var(--space-5);
+  padding-block: var(--space-5) var(--space-8);
+}
+
+.hero__copy {
+  order: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--space-6) var(--space-5);
+  background: var(--color-surface-raised);
+  border-block-start: var(--rule-emphasis) solid var(--color-accent);
+}
+
+.hero__copy > :last-child { margin-block-end: 0; }
+.hero__copy .utility-label { margin-block-end: var(--space-4); }
+
+.hero__value {
+  max-width: 32ch;
+  font-size: var(--font-size-lead);
+  line-height: 1.35;
+}
+
+.text-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-minimum);
+  margin-block: 0 var(--space-5);
+  border-block-end: var(--rule-emphasis) solid currentColor;
+  color: var(--color-text-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.text-action::after { content: "↓"; margin-inline-start: var(--space-2); color: var(--color-accent); }
+.text-action:hover { color: var(--color-accent); }
+
+.hero__availability {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-utility);
+}
+
+.hero__portrait {
+  order: 1;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  background: var(--color-selected);
+}
+
+.hero__portrait img {
+  width: 100%;
+  min-height: 15rem;
+  object-fit: cover;
+  object-position: center center;
+}
+
+.editorial-bridge {
+  padding-block: var(--space-7) var(--space-8);
+  border-block-start: var(--rule-standard) solid var(--color-border-meaningful);
+}
+
+.editorial-bridge p {
+  margin: 0;
+  font-size: var(--font-size-lead);
+  line-height: 1.45;
+}
+
+@media (min-width: 64rem) {
+  .hero {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    align-items: stretch;
+    gap: var(--space-7);
+    min-height: min(48rem, calc(100svh - var(--header-height)));
+    padding-block: var(--space-8);
+  }
+
+  .hero__copy {
+    order: 1;
+    align-self: center;
+    padding: var(--space-8) var(--space-7);
+  }
+
+  .hero__portrait { order: 2; min-height: 100%; }
+  .hero__portrait img { height: 100%; min-height: 0; object-fit: cover; object-position: center 42%; }
+  .editorial-bridge { padding-block: var(--space-8) var(--space-9); }
+}
+
+@media (forced-colors: active) {
+  .hero__copy, .hero__portrait { background: Canvas; }
+  .text-action::after { content: ""; }
+}
