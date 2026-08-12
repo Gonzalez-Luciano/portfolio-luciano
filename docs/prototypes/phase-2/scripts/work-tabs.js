@@ -2,7 +2,7 @@ export function initWorkTabs() {
   const workTabs = document.querySelector('[data-work-tabs]');
   if (!workTabs) return;
 
-  const tablist = workTabs.querySelector('[role="tablist"]');
+  const tablist = workTabs.querySelector('.work-cases__index');
   const tabs = [...workTabs.querySelectorAll('[data-work-tab]')];
   const panels = tabs.map((tab) => document.getElementById(tab.getAttribute('aria-controls')));
   const desktopQuery = matchMedia('(min-width: 64rem)');
@@ -22,6 +22,8 @@ export function initWorkTabs() {
   const setDesktopMode = () => {
     if (desktopQuery.matches) {
       workTabs.dataset.workEnhanced = '';
+      tablist.setAttribute('role', 'tablist');
+      tablist.setAttribute('aria-label', tablist.dataset.workTabsLabel);
       tablist.setAttribute('aria-orientation', 'vertical');
       tabs.forEach((tab) => tab.setAttribute('role', 'tab'));
       panels.forEach((panel) => panel.setAttribute('role', 'tabpanel'));
@@ -30,6 +32,8 @@ export function initWorkTabs() {
     }
 
     delete workTabs.dataset.workEnhanced;
+    tablist.removeAttribute('role');
+    tablist.removeAttribute('aria-label');
     tablist.removeAttribute('aria-orientation');
     tabs.forEach((tab) => {
       tab.removeAttribute('role');

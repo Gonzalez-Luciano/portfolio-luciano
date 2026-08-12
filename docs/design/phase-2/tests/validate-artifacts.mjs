@@ -90,6 +90,8 @@ assert.match(prototypeWork, /@media\s*\(min-width:\s*64rem\)/, 'Work desktop det
 assert.match(prototypeWork, /--color-selected/, 'Selected work detail must use the approved selected surface token');
 assert.match(prototypeWorkTabs, /export function initWorkTabs\(\)/, 'Missing initWorkTabs export');
 assert.match(prototypeWorkTabs, /matchMedia\('\(min-width: 64rem\)'\)/, 'Work tabs must use the approved desktop breakpoint');
+assert.match(prototypeWorkTabs, /tablist\.setAttribute\('role', 'tablist'\)/, 'Desktop enhancement must introduce the tablist role');
+assert.match(prototypeWorkTabs, /tablist\.removeAttribute\('role'\)/, 'Narrow mode must remove the tablist role');
 
 for (const [locale, path] of [['es', prototypeFiles[2]], ['en', prototypeFiles[3]]]) {
   const page = read(path);
@@ -112,7 +114,7 @@ for (const [locale, path] of [['es', prototypeFiles[2]], ['en', prototypeFiles[3
   assert.match(page, /<[^>]+data-content-key="intro\.body"[^>]*>/i, `Missing keyed introduction in ${path}`);
   assert.match(page, /<section(?=[^>]*id="work")(?=[^>]*aria-labelledby="work-heading")[^>]*>/i, `Missing semantic Work section in ${path}`);
   assert.match(page, /<[^>]+data-work-tabs[^>]*>/i, `Missing Work tab container in ${path}`);
-  assert.match(page, /<[^>]+role="tablist"[^>]*>/i, `Missing Work tablist in ${path}`);
+  assert.ok(!/<[^>]+role="tablist"[^>]*>/i.test(page), `Work source must not include a tablist role in ${path}`);
   const caseIds = ['case-integrations', 'case-education', 'case-data-automation', 'case-layers'];
   const caseKeys = ['work.case.integrations', 'work.case.education', 'work.case.data-automation', 'work.case.layers'];
   for (let index = 0; index < caseIds.length; index += 1) {

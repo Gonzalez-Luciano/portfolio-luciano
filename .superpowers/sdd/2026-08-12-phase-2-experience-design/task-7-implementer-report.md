@@ -24,3 +24,7 @@ The available in-app browser could not reach a local file URL because its URL po
 - No Task 8+ markup, CSS, scripts, dependencies, or roadmap changes were made.
 - The work panels are visible in the source HTML and remain visible when JavaScript is unavailable; desktop-only hiding is applied by `initWorkTabs()` after enhancement.
 - Professional copy is the exact approved bilingual text and contains no identity, dates, metrics, institution count, or new claims.
+
+## Reviewer P2 follow-up
+
+The source HTML now has no `role="tablist"` or other composite tab roles. `initWorkTabs()` selects the index through its class, then adds `role="tablist"`, its localized accessible name, orientation, tab roles, and tabpanel roles only when `(min-width: 64rem)` matches. On the narrow transition it removes those roles and ARIA attributes before restoring all dossier panels. The validator now protects the source-role absence and the desktop add/narrow remove contract.
