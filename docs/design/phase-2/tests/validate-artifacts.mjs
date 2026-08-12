@@ -68,6 +68,7 @@ const contentKeys = (html) => [...html.matchAll(/data-content-key="([^"]+)"/g)].
 const externalRuntimeReference = /(?:src|href)="https?:\/\//i;
 const prototypeTokens = read('docs/prototypes/phase-2/styles/tokens.css');
 const prototypeNavigation = read('docs/prototypes/phase-2/scripts/navigation.js');
+const prototypeHero = read('docs/prototypes/phase-2/styles/hero.css');
 const fontFaceBlocks = [...prototypeTokens.matchAll(/@font-face\s*\{([^}]*)\}/gis)].map((match) => match[1]);
 const fontFaceSources = fontFaceBlocks.flatMap((block) => [...block.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^\s)]+))\s*\)/gi)]
   .map((match) => match[1] ?? match[2] ?? match[3]));
@@ -79,6 +80,8 @@ for (const source of fontFaceSources) {
 
 assert.match(prototypeNavigation, /window\.addEventListener\('hashchange'/, 'Missing hashchange fragment-focus handling');
 assert.match(prototypeNavigation, /scheduleFragmentFocus\(window\.location\.hash\)/, 'Missing initial fragment-focus handling');
+assert.match(prototypeHero, /\.hero__copy\s*\{[^}]*min-inline-size:\s*0;/s, 'Hero copy must shrink within narrow grid gutters');
+assert.match(prototypeHero, /\.hero__copy\s+h1\s*\{[^}]*overflow-wrap:\s*anywhere;/s, 'Hero title must wrap safely at narrow widths');
 
 for (const [locale, path] of [['es', prototypeFiles[2]], ['en', prototypeFiles[3]]]) {
   const page = read(path);

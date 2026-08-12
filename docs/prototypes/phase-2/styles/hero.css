@@ -5,6 +5,7 @@
 }
 
 .hero__copy {
+  min-inline-size: 0;
   order: 2;
   display: flex;
   flex-direction: column;
@@ -16,6 +17,7 @@
 
 .hero__copy > :last-child { margin-block-end: 0; }
 .hero__copy .utility-label { margin-block-end: var(--space-4); }
+.hero__copy h1 { overflow-wrap: anywhere; }
 
 .hero__value {
   max-width: 32ch;
