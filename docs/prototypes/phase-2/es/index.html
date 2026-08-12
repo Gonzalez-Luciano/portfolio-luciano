@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="../styles/layout.css">
     <link rel="stylesheet" href="../styles/header.css">
     <link rel="stylesheet" href="../styles/hero.css">
+    <link rel="stylesheet" href="../styles/work.css">
     <script type="module" src="../scripts/main.js"></script>
   </head>
   <body>
@@ -68,19 +69,32 @@
         <p data-content-key="intro.body">Soy Luciano González, Backend Developer con foco en PHP, Laravel, MySQL y APIs REST. Me interesa construir y mantener soluciones claras, confiables y sostenibles, atendiendo tanto al desarrollo de funcionalidades como a la evolución de aplicaciones existentes.</p>
       </section>
       <section class="container" id="work" aria-labelledby="work-heading">
-        <h2 id="work-heading">Experiencia</h2>
+        <h2 id="work-heading">Casos de trabajo</h2>
+        <div class="work-cases" data-work-tabs>
+          <div class="work-cases__index" role="tablist" aria-label="Casos de trabajo">
+            <button class="work-cases__tab" type="button" data-work-tab id="case-integrations-tab" aria-controls="case-integrations-panel"><span>01</span> Integraciones y sincronización</button>
+            <button class="work-cases__tab" type="button" data-work-tab id="case-education-tab" aria-controls="case-education-panel"><span>02</span> Gestión educativa</button>
+            <button class="work-cases__tab" type="button" data-work-tab id="case-data-automation-tab" aria-controls="case-data-automation-panel"><span>03</span> Datos y automatización</button>
+            <button class="work-cases__tab" type="button" data-work-tab id="case-layers-tab" aria-controls="case-layers-panel"><span>04</span> Integración entre capas</button>
+          </div>
+          <div class="work-cases__panels">
         <!-- sources: SRC-007; publication: PUB-015 -->
-        <article><h3>Integraciones y sincronización</h3><p data-content-key="work.case.integrations">Trabajo backend para integrar y mantener comunicación con APIs externas, con atención a la consistencia de los flujos y al mantenimiento responsable de la integración.</p></article>
+        <article class="work-dossier" data-work-panel id="case-integrations-panel" aria-labelledby="case-integrations-tab"><p class="work-dossier__index">01</p><h3>Integraciones y sincronización</h3><p data-content-key="work.case.integrations">Trabajo backend para integrar y mantener comunicación con APIs externas, con atención a la consistencia de los flujos y al mantenimiento responsable de la integración.</p><p class="work-dossier__technologies">APIs externas</p></article>
         <!-- sources: SRC-007; publication: PUB-016, PUB-019 -->
-        <article><h3>Gestión educativa</h3><p data-content-key="work.case.education">Desarrollo y mantenimiento de funcionalidades para una plataforma de gestión educativa, con una mirada centrada en los procesos backend y en la evolución del código existente.</p></article>
+        <article class="work-dossier" data-work-panel id="case-education-panel" aria-labelledby="case-education-tab"><p class="work-dossier__index">02</p><h3>Gestión educativa</h3><p data-content-key="work.case.education">Desarrollo y mantenimiento de funcionalidades para una plataforma de gestión educativa, con una mirada centrada en los procesos backend y en la evolución del código existente.</p><p class="work-dossier__technologies">Gestión educativa</p></article>
         <!-- sources: SRC-007; publication: PUB-017, PUB-018 -->
-        <article><h3>Datos y automatización</h3><p data-content-key="work.case.data-automation">Mejora de consultas MySQL y desarrollo de procesos backend programados para apoyar la continuidad operativa de aplicaciones.</p></article>
+        <article class="work-dossier" data-work-panel id="case-data-automation-panel" aria-labelledby="case-data-automation-tab"><p class="work-dossier__index">03</p><h3>Datos y automatización</h3><p data-content-key="work.case.data-automation">Mejora de consultas MySQL y desarrollo de procesos backend programados para apoyar la continuidad operativa de aplicaciones.</p><p class="work-dossier__technologies">MySQL · Procesos programados</p></article>
         <!-- sources: SRC-007; publication: PUB-020 -->
-        <article><h3>Integración entre capas</h3><p data-content-key="work.case.layers">Participación en integraciones entre una API Laravel y una interfaz Angular, manteniendo el alcance en el nivel de tecnologías y colaboración técnica.</p></article>
+        <article class="work-dossier" data-work-panel id="case-layers-panel" aria-labelledby="case-layers-tab"><p class="work-dossier__index">04</p><h3>Integración entre capas</h3><p data-content-key="work.case.layers">Participación en integraciones entre una API Laravel y una interfaz Angular, manteniendo el alcance en el nivel de tecnologías y colaboración técnica.</p><p class="work-dossier__technologies">Laravel · Angular</p></article>
+          </div><!-- /.work-cases -->
+        </div>
+        <div class="work-experience" aria-labelledby="experience-heading">
+          <h3 id="experience-heading">Experiencia</h3>
         <!-- sources: SRC-006; publication: PUB-003, PUB-004, PUB-005, PUB-014 -->
         <p data-content-key="work.experience.primary">Experiencia en desarrollo y mantenimiento backend con PHP y Laravel, trabajando sobre APIs REST, consultas MySQL, flujos de aplicación y código existente.</p>
         <!-- sources: SRC-006; publication: PUB-006, PUB-007, PUB-008, PUB-009, PUB-010, PUB-011, PUB-012, PUB-013 -->
         <p data-content-key="work.experience.secondary">También he participado en responsabilidades relacionadas con plataformas de gestión educativa, integraciones con APIs externas de pago y procesamiento backend programado. El detalle de cada contexto se mantiene anonimizado.</p>
+        </div>
       </section>
       <section class="container" id="expertise" aria-labelledby="expertise-heading">
         <h2 id="expertise-heading">Áreas de especialización</h2>

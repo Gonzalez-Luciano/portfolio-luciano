@@ -49,10 +49,12 @@ const prototypeFiles = [
   'docs/prototypes/phase-2/styles/base.css',
   'docs/prototypes/phase-2/styles/layout.css',
   'docs/prototypes/phase-2/styles/header.css',
+  'docs/prototypes/phase-2/styles/work.css',
   'docs/prototypes/phase-2/scripts/theme.js',
   'docs/prototypes/phase-2/scripts/main.js',
   'docs/prototypes/phase-2/scripts/menu.js',
   'docs/prototypes/phase-2/scripts/navigation.js',
+  'docs/prototypes/phase-2/scripts/work-tabs.js',
 ];
 
 for (const path of prototypeFiles) assert.ok(existsSync(resolve(root, path)), `Missing ${path}`);
@@ -69,6 +71,8 @@ const externalRuntimeReference = /(?:src|href)="https?:\/\//i;
 const prototypeTokens = read('docs/prototypes/phase-2/styles/tokens.css');
 const prototypeNavigation = read('docs/prototypes/phase-2/scripts/navigation.js');
 const prototypeHero = read('docs/prototypes/phase-2/styles/hero.css');
+const prototypeWork = read('docs/prototypes/phase-2/styles/work.css');
+const prototypeWorkTabs = read('docs/prototypes/phase-2/scripts/work-tabs.js');
 const fontFaceBlocks = [...prototypeTokens.matchAll(/@font-face\s*\{([^}]*)\}/gis)].map((match) => match[1]);
 const fontFaceSources = fontFaceBlocks.flatMap((block) => [...block.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^\s)]+))\s*\)/gi)]
   .map((match) => match[1] ?? match[2] ?? match[3]));
@@ -82,6 +86,10 @@ assert.match(prototypeNavigation, /window\.addEventListener\('hashchange'/, 'Mis
 assert.match(prototypeNavigation, /scheduleFragmentFocus\(window\.location\.hash\)/, 'Missing initial fragment-focus handling');
 assert.match(prototypeHero, /\.hero__copy\s*\{[^}]*min-inline-size:\s*0;/s, 'Hero copy must shrink within narrow grid gutters');
 assert.match(prototypeHero, /\.hero__copy\s+h1\s*\{[^}]*overflow-wrap:\s*anywhere;/s, 'Hero title must wrap safely at narrow widths');
+assert.match(prototypeWork, /@media\s*\(min-width:\s*64rem\)/, 'Work desktop detail must begin at 64rem');
+assert.match(prototypeWork, /--color-selected/, 'Selected work detail must use the approved selected surface token');
+assert.match(prototypeWorkTabs, /export function initWorkTabs\(\)/, 'Missing initWorkTabs export');
+assert.match(prototypeWorkTabs, /matchMedia\('\(min-width: 64rem\)'\)/, 'Work tabs must use the approved desktop breakpoint');
 
 for (const [locale, path] of [['es', prototypeFiles[2]], ['en', prototypeFiles[3]]]) {
   const page = read(path);
@@ -102,6 +110,25 @@ for (const [locale, path] of [['es', prototypeFiles[2]], ['en', prototypeFiles[3
   assert.match(page, /<a(?=[^>]*class="[^"]*text-action)(?=[^>]*href="#work")(?=[^>]*data-content-key="hero\.cta")[^>]*>/i, `Missing hero Work CTA in ${path}`);
   assert.match(page, /<section(?=[^>]*class="[^"]*editorial-bridge)[^>]*aria-labelledby="intro-title"[^>]*>/i, `Missing editorial bridge in ${path}`);
   assert.match(page, /<[^>]+data-content-key="intro\.body"[^>]*>/i, `Missing keyed introduction in ${path}`);
+  assert.match(page, /<section(?=[^>]*id="work")(?=[^>]*aria-labelledby="work-heading")[^>]*>/i, `Missing semantic Work section in ${path}`);
+  assert.match(page, /<[^>]+data-work-tabs[^>]*>/i, `Missing Work tab container in ${path}`);
+  assert.match(page, /<[^>]+role="tablist"[^>]*>/i, `Missing Work tablist in ${path}`);
+  const caseIds = ['case-integrations', 'case-education', 'case-data-automation', 'case-layers'];
+  const caseKeys = ['work.case.integrations', 'work.case.education', 'work.case.data-automation', 'work.case.layers'];
+  for (let index = 0; index < caseIds.length; index += 1) {
+    const id = caseIds[index];
+    const key = caseKeys[index];
+    assert.match(page, new RegExp(`<button(?=[^>]*data-work-tab)(?=[^>]*id="${id}-tab")(?=[^>]*aria-controls="${id}-panel")[^>]*>`, 'i'), `Missing linked Work tab ${id} in ${path}`);
+    assert.match(page, new RegExp(`<article(?=[^>]*data-work-panel)(?=[^>]*id="${id}-panel")(?=[^>]*aria-labelledby="${id}-tab")[^>]*>`, 'i'), `Missing linked Work panel ${id} in ${path}`);
+    assert.match(page, new RegExp(`<[^>]+data-content-key="${key.replaceAll('.', '\\.') }"[^>]*>`, 'i'), `Missing Work content key ${key} in ${path}`);
+  }
+  assert.equal((page.match(/\bdata-work-tab(?=\s|>|=)/g) ?? []).length, 4, `Expected four Work tabs in ${path}`);
+  assert.equal((page.match(/data-work-panel/g) ?? []).length, 4, `Expected four Work panels in ${path}`);
+  const casesEnd = page.indexOf('</div><!-- /.work-cases -->');
+  const experienceStart = page.indexOf('data-content-key="work.experience.primary"');
+  assert.ok(casesEnd >= 0 && experienceStart > casesEnd, `Experience must follow Work cases in ${path}`);
+  assert.ok(!/carousel|role="(?:scrollbar|region)"[^>]*horizontal/i.test(page), `Disallowed scrolling UI in ${path}`);
+  assert.ok(!/\b\d+(?:[.,]\d+)?\s*(?:%|ms|x|users|transactions|institutions|clients)\b/i.test(page), `Invented numeric metric in ${path}`);
   for (const id of ['top', 'work', 'expertise', 'projects', 'approach', 'contact']) {
     assert.match(page, new RegExp(`id="${id}"`), `Missing shell ID ${id} in ${path}`);
   }

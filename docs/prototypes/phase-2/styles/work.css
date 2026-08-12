@@ -1,0 +1,66 @@
+.work-cases__index { display: none; }
+
+.work-dossier {
+  padding-block: var(--space-6);
+  border-block-start: var(--rule-standard) solid var(--color-border);
+}
+
+.work-dossier:last-child { border-block-end: var(--rule-standard) solid var(--color-border); }
+
+.work-dossier__index,
+.work-dossier__technologies {
+  color: var(--color-muted);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-utility);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.work-dossier__index { margin-block: 0 var(--space-3); }
+.work-dossier__technologies { margin-block-end: 0; }
+.work-experience { padding-block-start: var(--space-8); }
+.work-experience h3 { font-size: var(--font-size-subheading); }
+
+@media (min-width: 64rem) {
+  .work-cases[data-work-enhanced] {
+    display: grid;
+    grid-template-columns: 4fr 8fr;
+    gap: var(--space-7);
+    align-items: stretch;
+  }
+
+  .work-cases[data-work-enhanced] .work-cases__index {
+    display: grid;
+    align-content: start;
+    border-block-start: var(--rule-standard) solid var(--color-border);
+  }
+
+  .work-cases__tab {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr;
+    gap: var(--space-3);
+    width: 100%;
+    min-height: var(--target-minimum);
+    padding: var(--space-3) 0;
+    border: 0;
+    border-block-end: var(--rule-standard) solid var(--color-border);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .work-cases__tab > span { color: var(--color-muted); font-family: var(--font-family-mono); font-size: var(--font-size-utility); }
+  .work-cases__tab[aria-selected="true"] { border-block-end-width: var(--rule-emphasis); border-block-end-color: var(--color-accent); font-weight: 600; }
+  .work-cases__tab[aria-selected="true"] > span { color: var(--color-accent); }
+  .work-cases[data-work-enhanced] .work-cases__panels { min-block-size: 26rem; }
+  .work-cases[data-work-enhanced] .work-dossier {
+    min-block-size: 26rem;
+    padding: var(--space-7);
+    border: 0;
+    background: var(--color-selected);
+  }
+
+  .work-cases[data-work-enhanced] .work-dossier h3 { max-width: 16ch; }
+}
