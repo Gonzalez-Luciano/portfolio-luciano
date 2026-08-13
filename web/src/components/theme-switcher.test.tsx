@@ -34,7 +34,9 @@ describe('ThemeSwitcher', () => {
   it('renders statically without reading the browser document', () => {
     vi.stubGlobal('document', undefined);
 
-    expect(() => renderToStaticMarkup(<ThemeSwitcher {...labels} />)).not.toThrow();
+    expect(() =>
+      renderToStaticMarkup(<ThemeSwitcher {...labels} />),
+    ).not.toThrow();
   });
 
   it('persists an explicit selection and keeps it after the control is recreated', () => {

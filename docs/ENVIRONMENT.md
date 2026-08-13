@@ -1,23 +1,44 @@
 # Environment contract
 
 The tracked [`.env.example`](../.env.example) defines the root Compose
-interpolation contract. Copy it to an untracked root `.env` before running a
-future local stack:
+interpolation contract. Copy it to an untracked root `.env` before running the
+local stack. These commands are for a verified fresh checkout only: they refuse
+to overwrite an existing `.env`, which may contain local configuration or
+secrets.
 
 ```powershell
-Copy-Item .env.example .env
+if (Test-Path -LiteralPath .env) { throw 'Refusing to overwrite existing .env' }
+Copy-Item -LiteralPath .env.example -Destination .env -ErrorAction Stop
 ```
 
 ```bash
-cp .env.example .env
+if [ -e .env ]; then
+  printf '%s\n' 'Refusing to overwrite existing .env' >&2
+else
+  cp .env.example .env
+fi
 ```
 
+The Bash guard leaves an interactive WSL shell running after a refusal.
+
 Replace every `replace-with-` value before use and never commit `.env`.
+
+## Local platform contract
+
+Windows development uses PowerShell/Windows Terminal with Docker Desktop's WSL2
+backend. Ubuntu WSL2 must be enabled in Docker Desktop integration and uses that
+same engine; do not install or start a second Ubuntu Docker Engine. The checked
+out Windows path is supported. Moving it under the WSL filesystem is optional
+only after measuring a material bind-mount performance problem.
+
+The equivalent Ubuntu command surface is Bash plus the same `docker compose`
+commands. It does not require a distinct `.env`, project name, image, network,
+or volume. See the tested command set in the repository root `README.md`.
 
 ## Ownership and exposure
 
 The root `.env` is Compose interpolation input; it is not blanket container
-injection. Future `compose.yaml` entries must deliberately pass each service
+injection. `compose.yaml` deliberately passes each service
 only the variables it owns.
 
 | Variable | Owner | Recipient service | Secret | Browser exposure |

@@ -133,6 +133,18 @@ La documentación de handoff debe permitir a operaciones identificar:
 
 Fase 3 no crea targets de producción especulativos ni un Compose final del servidor. Las definiciones de desarrollo deben evitar supuestos exclusivos de Windows y mantener límites claros que operaciones pueda adaptar después del preflight real.
 
+La validación local de aceptación usó Caddy `2.11.4-alpine`, Node `24.18.0`,
+pnpm `11.20.0`, Next `16.2.12`, React `19.2.4`, PHP `8.5.8`, Laravel
+`13.25.0`, Filament `5.7.6` y MySQL `8.4`. Los puertos internos son Caddy
+`80`, Next `3000`, Apache/Laravel `80` y MySQL `3306`; el único publish local
+es Caddy `127.0.0.1:8000`. Las señales de aplicación entregadas son Caddy
+`/__gateway/health`, Next `/health`, Laravel `/up` y `mysqladmin ping`.
+
+El bootstrap local instala desde lockfiles, espera health, ejecuta migraciones
+y crea `public/storage`. El bootstrap administrativo es separado e interactivo.
+Operaciones adapta este contrato al servidor real después del preflight; el
+repositorio no ejecuta ni prescribe acciones de host.
+
 ## Migraciones y bootstrap
 
 - Las migraciones de Laravel son la fuente reproducible del esquema.
@@ -143,6 +155,12 @@ Fase 3 no crea targets de producción especulativos ni un Compose final del serv
 - En desarrollo, el primer administrador de Filament se crea mediante `php artisan portfolio:bootstrap-admin`, un comando interactivo create-only con password oculto y confirmación.
 - El comando rechaza duplicados/estados ambiguos, no actualiza usuarios y no imprime ni registra secretos.
 - Si producción necesita un mecanismo no interactivo, operaciones lo decide después del preflight real; Fase 3 no especula cómo inyectar ese secreto.
+
+Las unidades persistentes relevantes son MySQL y `storage/app/public` de
+Laravel (media y, cuando exista, CV administrado). En desarrollo se
+materializan como `mysql_data` y `api_public_media`; `web_node_modules` y
+`api_vendor` son cachés regenerables. `mysql-test` usa `tmpfs`, no entra en
+backups y no contiene datos de desarrollo.
 
 ## Health checks y smoke checks
 

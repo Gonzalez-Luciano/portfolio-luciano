@@ -506,6 +506,29 @@ El código de desarrollo usa bind mounts. Volúmenes Linux administrados por Doc
 
 PowerShell con Docker Desktop/WSL2 es el flujo Windows canónico. Ubuntu WSL2 opera el mismo engine mediante integración de Docker Desktop, sin instalar un segundo Docker Engine.
 
+### Runtime verificado de Fase 3
+
+La aceptación local verificó Caddy `2.11.4-alpine`, Node `24.18.0`, pnpm
+`11.20.0`, Next `16.2.12`, React `19.2.4`, PHP `8.5.8`, Laravel `13.25.0`,
+Filament `5.7.6` y MySQL `8.4`. Los puertos internos son Caddy `80`, Next
+`3000`, Apache/Laravel `80` y MySQL `3306`; solo Caddy se publica como
+`127.0.0.1:8000`.
+
+Las señales de health son `GET /__gateway/health` para Caddy, `GET /health`
+para Next, `GET /up` para Laravel y `mysqladmin ping` para MySQL. El bootstrap
+frío instala dependencias desde los lockfiles, espera servicios saludables,
+ejecuta migraciones y crea el link estándar `public/storage`. No crea seeds ni
+un administrador. El comando interactivo `portfolio:bootstrap-admin` crea una
+sola cuenta administradora y nunca acepta ni muestra contraseñas por argumentos,
+variables o logs.
+
+Los volúmenes persistentes del desarrollo son `mysql_data` y
+`api_public_media`; `web_node_modules` y `api_vendor` son cachés reproducibles
+de dependencias. `mysql-test` usa `tmpfs`, no tiene volumen nombrado y no puede
+reutilizar la base de desarrollo. La evidencia de rutas, Caddy y smoke manual
+está en `infra/caddy/GATEWAY_INTEGRATION_EVIDENCE.md` y
+`docs/testing/PHASE_3_VERIFICATION.md`.
+
 ---
 
 ## CI

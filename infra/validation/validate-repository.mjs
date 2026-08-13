@@ -6,7 +6,13 @@ import {resolve} from 'node:path';
 const root = resolve(import.meta.dirname, '../..');
 const read = (path) => readFileSync(resolve(root, path), 'utf8');
 
-for (const path of ['.editorconfig', '.env.example', '.dockerignore', 'docs/ENVIRONMENT.md']) {
+for (const path of [
+  '.editorconfig',
+  '.env.example',
+  '.dockerignore',
+  'docs/ENVIRONMENT.md',
+  'docs/testing/PHASE_3_VERIFICATION.md',
+]) {
   assert.ok(existsSync(resolve(root, path)), `Missing ${path}`);
 }
 
@@ -114,4 +120,18 @@ assert.match(caddy, /handle \{\n\t\treverse_proxy web:3000\n\t}\n}/, 'Caddy must
 const routeInventory = JSON.parse(read('infra/caddy/laravel-routes.json'));
 assert.ok(routeInventory.some((route) => route.uri === 'api/v1'));
 assert.ok(routeInventory.some((route) => /^livewire-[^/]+\//.test(route.uri)));
+
+const readme = read('README.md');
+assert.match(readme, /docker compose up -d --wait/);
+assert.match(readme, /Docker Desktop is the single engine|Docker Desktop es el único engine/);
+assert.match(readme, /no instalar un segundo Docker Engine/);
+
+const environment = read('docs/ENVIRONMENT.md');
+assert.match(environment, /same engine|mismo engine/);
+assert.match(environment, /second Ubuntu Docker Engine|segundo Docker Engine/);
+
+const verification = read('docs/testing/PHASE_3_VERIFICATION.md');
+assert.match(verification, /Destructive scope and clean bootstrap/);
+assert.match(verification, /Ubuntu WSL2 parity/);
+assert.match(verification, /Not observed/);
 console.log('Repository and environment contract pass.');

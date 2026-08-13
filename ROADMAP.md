@@ -237,63 +237,63 @@ Crear una base reproducible para frontend, backend, base de datos y administraci
 
 ### Repositorio
 
-- [ ] Inicializar el workspace de aplicaciones del monorepositorio existente.
-- [ ] Crear estructura para `web`, `api`, `infra` y `docs`.
-- [ ] Configurar `.editorconfig`.
-- [ ] Configurar política de variables de entorno.
-- [ ] Crear archivos de ejemplo sin secretos.
-- [ ] Documentar comandos principales.
+- [x] Inicializar el workspace de aplicaciones del monorepositorio existente.
+- [x] Crear estructura para `web`, `api`, `infra` y `docs`.
+- [x] Configurar `.editorconfig`.
+- [x] Configurar política de variables de entorno.
+- [x] Crear archivos de ejemplo sin secretos.
+- [x] Documentar comandos principales.
 
 ### Frontend
 
-- [ ] Inicializar Next.js con App Router.
-- [ ] Activar TypeScript estricto.
-- [ ] Configurar Tailwind CSS.
-- [ ] Configurar lint y formato.
-- [ ] Preparar rutas localizadas.
-- [ ] Preparar sistema de tema.
-- [ ] Preparar cliente de API tipado.
-- [ ] Definir estrategia de Server y Client Components.
+- [x] Inicializar Next.js con App Router.
+- [x] Activar TypeScript estricto.
+- [x] Configurar Tailwind CSS.
+- [x] Configurar lint y formato.
+- [x] Preparar rutas localizadas.
+- [x] Preparar sistema de tema.
+- [x] Preparar cliente de API tipado.
+- [x] Definir estrategia de Server y Client Components.
 
 ### Backend
 
-- [ ] Inicializar Laravel.
-- [ ] Servir Laravel mediante Apache + PHP 8.5 interno con `public/` como `DocumentRoot`, rewrite/front controller y permisos runtime explícitos.
-- [ ] Configurar MySQL.
-- [ ] Configurar API versionada.
-- [ ] Configurar recursos JSON.
-- [ ] Implementar y probar el envelope mínimo exacto de éxito/error de `/api/v1`.
+- [x] Inicializar Laravel.
+- [x] Servir Laravel mediante Apache + PHP 8.5 interno con `public/` como `DocumentRoot`, rewrite/front controller y permisos runtime explícitos.
+- [x] Configurar MySQL.
+- [x] Configurar API versionada.
+- [x] Configurar recursos JSON.
+- [x] Implementar y probar el envelope mínimo exacto de éxito/error de `/api/v1`.
 - [x] Configurar autenticación administrativa.
 - [x] Agregar `users.is_admin BOOLEAN NOT NULL DEFAULT false` como único marcador administrativo de Fase 3 y usarlo en `canAccessPanel()`.
 - [x] Instalar y configurar Filament.
-- [ ] Preparar almacenamiento de medios.
-- [ ] Configurar CORS.
-- [ ] Configurar rate limiting.
-- [ ] Configurar logs.
+- [x] Preparar almacenamiento de medios.
+- [x] Configurar CORS.
+- [x] Configurar rate limiting.
+- [x] Configurar logs.
 
 ### Docker
 
-- [ ] Crear entorno de desarrollo.
-- [ ] Crear servicio frontend.
-- [ ] Crear servicio backend.
-- [ ] Crear servicio MySQL 8.4 persistente para desarrollo.
-- [ ] Crear servicio/perfil MySQL 8.4 descartable y bajo demanda para pruebas automatizadas.
-- [ ] Crear `api-test` one-shot en el perfil de pruebas, reutilizando la imagen backend y esperando a `mysql-test` saludable.
-- [ ] Crear Caddy como gateway/reverse proxy del portfolio y enlazar únicamente `127.0.0.1:8000`.
-- [ ] Inventariar rutas y tráfico público reales de Laravel/Filament/Livewire/media antes de fijar los matchers backend de Caddy.
-- [ ] Verificar compatibilidad del stack con el `cloudflared` global del servidor; no crear `cloudflared` dentro del proyecto.
-- [ ] Definir redes Docker internas del portfolio (`front` y `data` o equivalente).
-- [ ] Confirmar que MySQL no publica puertos al host ni a Internet.
-- [ ] Agregar health checks.
-- [ ] Agregar volúmenes.
-- [ ] Configurar red interna.
-- [ ] Definir estrategia de migraciones.
-- [ ] Definir seed inicial.
+- [x] Crear entorno de desarrollo.
+- [x] Crear servicio frontend.
+- [x] Crear servicio backend.
+- [x] Crear servicio MySQL 8.4 persistente para desarrollo.
+- [x] Crear servicio/perfil MySQL 8.4 descartable y bajo demanda para pruebas automatizadas.
+- [x] Crear `api-test` one-shot en el perfil de pruebas, reutilizando la imagen backend y esperando a `mysql-test` saludable.
+- [x] Crear Caddy como gateway/reverse proxy del portfolio y enlazar únicamente `127.0.0.1:8000`.
+- [x] Inventariar rutas y tráfico público reales de Laravel/Filament/Livewire/media antes de fijar los matchers backend de Caddy.
+- [x] Verificar compatibilidad del stack con el `cloudflared` global del servidor; no crear `cloudflared` dentro del proyecto.
+- [x] Definir redes Docker internas del portfolio (`front` y `data` o equivalente).
+- [x] Confirmar que MySQL no publica puertos al host ni a Internet.
+- [x] Agregar health checks.
+- [x] Agregar volúmenes.
+- [x] Configurar red interna.
+- [x] Definir estrategia de migraciones.
+- [x] Definir seed inicial.
 - [x] Crear un comando interactivo y explícito de bootstrap del administrador con entrada secreta oculta; los seeds normales no deben crear credenciales.
-- [ ] Documentar arranque, parada y reinicio.
-- [ ] Documentar PowerShell + Docker Desktop con backend WSL2 como flujo canónico de Windows.
-- [ ] Comprobar operación equivalente desde Ubuntu WSL2 mediante la integración de Docker Desktop, sin instalar un segundo Docker Engine.
-- [ ] Documentar el contrato de handoff sin crear Compose final de producción ni infraestructura específica del host.
+- [x] Documentar arranque, parada y reinicio.
+- [x] Documentar PowerShell + Docker Desktop con backend WSL2 como flujo canónico de Windows.
+- [x] Comprobar operación equivalente desde Ubuntu WSL2 mediante la integración de Docker Desktop, sin instalar un segundo Docker Engine.
+- [x] Documentar el contrato de handoff sin crear Compose final de producción ni infraestructura específica del host.
 
 ## Entregables
 
