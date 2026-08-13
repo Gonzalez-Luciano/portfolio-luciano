@@ -1,7 +1,10 @@
 import type {ApiError, ApiResult, ApiSuccess} from './types';
 
-export type ApiRequestOptions = RequestInit & {
+export type ApiPayloadValidator<T> = (value: unknown) => value is T;
+
+export type ApiRequestOptions<T = unknown> = RequestInit & {
   fetchImpl?: typeof fetch;
+  validateData?: ApiPayloadValidator<T>;
 };
 
 type ApiClientErrorOptions = {
@@ -56,7 +59,11 @@ function isApiError(value: unknown): value is ApiError {
   );
 }
 
-function parseEnvelope<T>(value: unknown, status: number): ApiResult<T> {
+function parseEnvelope<T>(
+  value: unknown,
+  status: number,
+  validateData?: ApiPayloadValidator<T>,
+): ApiResult<T> {
   if (!isRecord(value)) {
     throw new ApiClientError('The API returned an unexpected response.', {
       status,
@@ -73,6 +80,12 @@ function parseEnvelope<T>(value: unknown, status: number): ApiResult<T> {
   }
 
   if (hasData) {
+    if (validateData && !validateData(value.data)) {
+      throw new ApiClientError('The API returned an unexpected response.', {
+        status,
+      });
+    }
+
     return {data: value.data as T};
   }
 
@@ -101,7 +114,12 @@ function apiBase(): string {
 
 export async function requestApi<T>(
   path: `/${string}`,
-  {fetchImpl = fetch, headers, ...init}: ApiRequestOptions = {},
+  {
+    fetchImpl = fetch,
+    headers,
+    validateData,
+    ...init
+  }: ApiRequestOptions<T> = {},
 ): Promise<ApiSuccess<T>> {
   let response: Response;
   const url = `${apiBase()}${path}`;
@@ -125,7 +143,7 @@ export async function requestApi<T>(
     });
   }
 
-  const envelope = parseEnvelope<T>(body, response.status);
+  const envelope = parseEnvelope<T>(body, response.status, validateData);
 
   if ('error' in envelope) {
     throw new ApiClientError(envelope.error.message, {

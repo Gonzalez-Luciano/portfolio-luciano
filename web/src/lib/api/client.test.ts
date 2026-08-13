@@ -6,6 +6,18 @@ type VersionData = {
   version: 'v1';
 };
 
+function isVersionData(value: unknown): value is VersionData {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    'status' in value &&
+    'version' in value &&
+    value.status === 'ok' &&
+    value.version === 'v1'
+  );
+}
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -29,6 +41,22 @@ describe('requestApi', () => {
     });
     expect(fetchImpl).toHaveBeenCalledWith('/api/v1', {
       headers: {accept: 'application/json'},
+    });
+  });
+
+  it('rejects a malformed version success payload when its caller supplies the version validator', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse({data: {status: 'ready', version: 'v1'}}),
+      );
+
+    await expect(
+      requestApi<VersionData>('/v1', {fetchImpl, validateData: isVersionData}),
+    ).rejects.toMatchObject({
+      name: 'ApiClientError',
+      status: 200,
+      message: 'The API returned an unexpected response.',
     });
   });
 

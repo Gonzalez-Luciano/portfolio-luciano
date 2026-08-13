@@ -516,9 +516,11 @@ Filament `5.7.6` y MySQL `8.4`. Los puertos internos son Caddy `80`, Next
 
 Las señales de health son `GET /__gateway/health` para Caddy, `GET /health`
 para Next, `GET /up` para Laravel y `mysqladmin ping` para MySQL. El bootstrap
-frío instala dependencias desde los lockfiles, espera servicios saludables,
-ejecuta migraciones y crea el link estándar `public/storage`. No crea seeds ni
-un administrador. El comando interactivo `portfolio:bootstrap-admin` crea una
+frío instala dependencias desde los lockfiles en volúmenes inicialmente vacíos,
+espera servicios saludables, ejecuta migraciones y crea explícitamente el link
+estándar `public/storage` tras comprobar que solo se retiraría un enlace no
+versionado. El entrypoint de API no crea ese link. No crea seeds ni un
+administrador. El comando interactivo `portfolio:bootstrap-admin` crea una
 sola cuenta administradora y nunca acepta ni muestra contraseñas por argumentos,
 variables o logs.
 

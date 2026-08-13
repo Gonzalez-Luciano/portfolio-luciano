@@ -9,6 +9,11 @@
     "currentThemeLabel": "Tema actual",
     "lightTheme": "Claro",
     "darkTheme": "Oscuro",
-    "apiStatusSlot": "Espacio reservado para el estado de la API"
+    "apiStatusSlot": "Espacio reservado para el estado de la API",
+    "apiStatusLabel": "Estado de la API",
+    "checkApi": "Comprobar API",
+    "checkingApi": "Comprobando la API...",
+    "apiAvailable": "API disponible: ok/{version}",
+    "apiUnavailable": "La API no estÃ¡ disponible."
   }
 }

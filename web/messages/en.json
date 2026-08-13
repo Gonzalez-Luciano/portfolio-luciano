@@ -9,6 +9,11 @@
     "currentThemeLabel": "Current theme",
     "lightTheme": "Light",
     "darkTheme": "Dark",
-    "apiStatusSlot": "API status placeholder"
+    "apiStatusSlot": "API status placeholder",
+    "apiStatusLabel": "API status",
+    "checkApi": "Check API",
+    "checkingApi": "Checking API...",
+    "apiAvailable": "API available: ok/{version}",
+    "apiUnavailable": "API unavailable."
   }
 }

@@ -19,7 +19,11 @@ services:
     build: {context: ./web, dockerfile: Dockerfile}
     volumes:
       - ./web:/app
-      - web_node_modules:/app/node_modules
+      - type: volume
+        source: web_node_modules
+        target: /app/node_modules
+        volume:
+          nocopy: true
     environment:
       INTERNAL_API_ORIGIN: http://api
     networks: [front]

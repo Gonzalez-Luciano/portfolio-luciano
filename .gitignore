@@ -14,6 +14,7 @@
 
 # Frontend dependencies and generated output.
 /web/node_modules
+/web/.pnpm-store
 /web/.next
 /web/coverage
 

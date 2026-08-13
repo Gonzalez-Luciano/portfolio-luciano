@@ -1,11 +1,12 @@
 FROM node:24.18.0-bookworm-slim
 
-RUN corepack enable && corepack prepare pnpm@11.20.0 --activate
+ENV PATH="/root/.local/share/pnpm/bin:${PATH}"
+
+RUN corepack enable \
+    && corepack prepare pnpm@11.20.0 --activate \
+    && pnpm config set store-dir /pnpm/store --global
 
 WORKDIR /app
-
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile
 
 COPY . .
 

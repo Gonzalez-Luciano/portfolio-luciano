@@ -52,7 +52,18 @@ $appKey = 'base64:' + [Convert]::ToBase64String([Security.Cryptography.RandomNum
 Remove-Variable appKey
 ```
 
-El comando guarda la clave directamente en el `.env` sin imprimir su valor. Tras completar los demás placeholders requeridos, un bootstrap ordinario es:
+El comando guarda la clave directamente en el `.env` sin imprimir su valor. Tras completar los demás placeholders requeridos, el bootstrap limpio exige primero revisar el alcance. Ejecutar `down --volumes` solamente si cada contenedor y volumen listado pertenece a este proyecto:
+
+```powershell
+docker compose ps -a
+docker compose config --volumes
+docker volume ls --filter label=com.docker.compose.project=portfolio
+
+# Tras confirmar el alcance anterior, elimina únicamente recursos de Compose de este proyecto.
+docker compose --profile test down --volumes --remove-orphans
+```
+
+El bootstrap ordinario desde esos volúmenes vacíos es:
 
 ```powershell
 docker compose build
@@ -60,11 +71,33 @@ docker compose run --rm --no-deps web pnpm install --frozen-lockfile
 docker compose run --rm --no-deps api composer install --no-interaction --prefer-dist
 docker compose up -d --wait
 docker compose exec -T api php artisan migrate
-docker compose exec -T api php artisan storage:link
 docker compose ps
 ```
 
-`up -d --wait` es intencional: `/up` confirma el boot de Laravel pero las migraciones necesitan que MySQL ya esté healthy. Compose no crea migraciones, seeds ni administradores por sí solo. El seed normal no crea cuentas. Crear el primer administrador solo en una terminal local interactiva; la contraseña queda fuera de argumentos, variables, historial, Git y documentación:
+El volumen `web_node_modules` comienza realmente vacío: Compose usa `nocopy` y la imagen web no contiene `node_modules`. La instalación anterior es el único paso que lo puebla; el store de pnpm vive solo en `/pnpm/store` dentro del contenedor y el arranque normal no instala dependencias.
+
+`up -d --wait` es intencional: `/up` confirma el boot de Laravel pero las migraciones necesitan que MySQL ya esté healthy. El entrypoint de la API crea directorios runtime y permisos, pero **nunca** crea `public/storage`. Antes de ejecutar `storage:link`, comprobar que el único path a retirar es el enlace no versionado de Laravel; `storage:unlink` elimina exclusivamente el enlace configurado por Laravel, no un directorio real.
+
+```powershell
+$storageLink = Join-Path (Resolve-Path -LiteralPath 'api\public') 'storage'
+git ls-files --error-unmatch -- api/public/storage 2>$null
+if ($LASTEXITCODE -eq 0) { throw 'Refusing to remove a tracked storage path.' }
+
+if (Test-Path -LiteralPath $storageLink) {
+  $item = Get-Item -Force -LiteralPath $storageLink
+  if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -eq 0) {
+    throw 'Refusing to remove a non-link storage path.'
+  }
+
+  docker compose exec -T api sh -lc 'test -L public/storage'
+  docker compose exec -T api php artisan storage:unlink
+}
+
+docker compose exec -T api php artisan storage:link
+docker compose exec -T api sh -lc 'test -L public/storage && test -d storage/app/public'
+```
+
+Compose no crea migraciones, seeds ni administradores por sí solo. La política de seeds de Fase 3 es no ejecutar `db:seed` ni `migrate --seed`: no existen seeds de credenciales y cualquier seed futuro debe ser seguro, revisado y solicitado explícitamente. Crear el primer administrador solo en una terminal local interactiva; la contraseña queda fuera de argumentos, variables, historial, Git y documentación:
 
 ```powershell
 docker compose exec api php artisan portfolio:bootstrap-admin
@@ -87,6 +120,26 @@ docker compose run --rm --no-deps web pnpm build
 
 El build de Next debe poder ejecutarse con `gateway`, `api` y `mysql` detenidos. `api-test` usa únicamente `mysql-test` descartable. Después de una sesión de test se puede retirar exclusivamente ese contenedor con `docker compose --profile test rm -sf mysql-test`.
 
+Los checks directos y el inventario de rutas no imprimen secretos:
+
+```powershell
+Invoke-WebRequest http://localhost:8000/__gateway/health | Select-Object -ExpandProperty StatusCode
+Invoke-WebRequest http://localhost:8000/health | Select-Object -ExpandProperty StatusCode
+Invoke-WebRequest http://localhost:8000/up | Select-Object -ExpandProperty StatusCode
+Invoke-RestMethod http://localhost:8000/api/v1
+docker compose exec -T api php artisan route:list --json
+```
+
+Verificar la publicación de puertos: solo el primer comando debe devolver un mapeo. Los siguientes deben fallar porque son puertos internos, lo que es el resultado esperado.
+
+```powershell
+docker compose port gateway 80
+foreach ($target in @(@('web', '3000'), @('api', '80'), @('mysql', '3306'), @('mysql-test', '3306'))) {
+  $mapping = docker compose --profile test port $target[0] $target[1] 2>$null
+  if ($LASTEXITCODE -eq 0) { throw "Unexpected published port: $mapping" }
+}
+```
+
 `docs/testing/PHASE_3_BROWSER_SMOKE.md` contiene las comprobaciones manuales, y `docs/testing/PHASE_3_VERIFICATION.md` conserva la evidencia del bootstrap de aceptación.
 
 ### Equivalencia Ubuntu WSL2
@@ -105,19 +158,74 @@ curl --fail http://localhost:8000/en
 curl --fail http://localhost:8000/api/v1
 ```
 
-En Bash, el equivalente seguro de la copia inicial también se niega a sobrescribir
-un `.env` existente:
+En Bash, el equivalente completo de la copia inicial y la generación de `APP_KEY`
+también se niega a sobrescribir un `.env` existente. `python3` genera la clave y
+la escribe directamente sin imprimirla:
 
 ```bash
 if [ -e .env ]; then
   printf '%s\n' 'Refusing to overwrite existing .env' >&2
 else
   cp .env.example .env
+  python3 - <<'PY'
+from base64 import b64encode
+from pathlib import Path
+from secrets import token_bytes
+
+path = Path('.env')
+contents = path.read_text(encoding='utf-8')
+replacement = 'APP_KEY=base64:' + b64encode(token_bytes(32)).decode('ascii')
+if 'APP_KEY=' not in contents:
+    raise SystemExit('APP_KEY placeholder is missing')
+path.write_text(contents.replace('APP_KEY=base64:replace-with-generated-laravel-key', replacement, 1), encoding='utf-8')
+PY
 fi
 ```
 
-La negativa no termina la shell interactiva de WSL. La misma regla de secretos
-aplica: no pasar una contraseña al comando, entorno ni historial.
+La negativa no termina la shell interactiva de WSL. El equivalente Bash del bootstrap, enlace, health, inventario y puertos es:
+
+```bash
+docker compose ps -a
+docker compose config --volumes
+docker volume ls --filter label=com.docker.compose.project=portfolio
+# Confirm the listed resources belong to this project before this destructive step.
+docker compose --profile test down --volumes --remove-orphans
+docker compose build
+docker compose run --rm --no-deps web pnpm install --frozen-lockfile
+docker compose run --rm --no-deps api composer install --no-interaction --prefer-dist
+docker compose up -d --wait
+docker compose exec -T api php artisan migrate
+
+(
+  storage_link='api/public/storage'
+  if git ls-files --error-unmatch -- "$storage_link" >/dev/null 2>&1; then
+    printf '%s\n' 'Refusing to remove a tracked storage path.' >&2
+    exit 1
+  fi
+  if [ -e "$storage_link" ] || [ -L "$storage_link" ]; then
+    docker compose exec -T api sh -lc 'test -L public/storage'
+    docker compose exec -T api php artisan storage:unlink
+  fi
+  docker compose exec -T api php artisan storage:link
+  docker compose exec -T api sh -lc 'test -L public/storage && test -d storage/app/public'
+)
+
+curl --fail http://localhost:8000/__gateway/health
+curl --fail http://localhost:8000/health
+curl --fail http://localhost:8000/up
+curl --fail http://localhost:8000/api/v1
+docker compose exec -T api php artisan route:list --json
+docker compose port gateway 80
+for target in 'web 3000' 'api 80' 'mysql 3306' 'mysql-test 3306'; do
+  set -- $target
+  if docker compose --profile test port "$1" "$2"; then
+    printf 'Unexpected published port: %s/%s\n' "$1" "$2" >&2
+    exit 1
+  fi
+done
+```
+
+La misma regla de secretos aplica: no pasar una contraseña al comando, entorno ni historial. La política de seeds no cambia entre PowerShell y Bash: no ejecutar `db:seed` ni `migrate --seed` durante Fase 3.
 
 ## Flujo Git
 

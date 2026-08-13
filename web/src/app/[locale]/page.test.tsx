@@ -1,4 +1,5 @@
 import {render, screen} from '@testing-library/react';
+import {NextIntlClientProvider} from 'next-intl';
 import {describe, expect, it, vi} from 'vitest';
 import englishMessages from '../../../messages/en.json';
 import spanishMessages from '../../../messages/es.json';
@@ -61,7 +62,11 @@ describe('localized foundation page', () => {
   });
 
   it('renders a minimal server-rendered foundation without CMS content', async () => {
-    render(await Page({params: Promise.resolve({locale: 'en'})}));
+    render(
+      <NextIntlClientProvider locale="en" messages={englishMessages}>
+        {await Page({params: Promise.resolve({locale: 'en'})})}
+      </NextIntlClientProvider>,
+    );
 
     expect(
       screen.getByRole('heading', {name: 'en technical foundation'}),

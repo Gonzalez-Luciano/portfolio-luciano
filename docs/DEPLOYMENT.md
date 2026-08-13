@@ -140,8 +140,10 @@ pnpm `11.20.0`, Next `16.2.12`, React `19.2.4`, PHP `8.5.8`, Laravel
 es Caddy `127.0.0.1:8000`. Las señales de aplicación entregadas son Caddy
 `/__gateway/health`, Next `/health`, Laravel `/up` y `mysqladmin ping`.
 
-El bootstrap local instala desde lockfiles, espera health, ejecuta migraciones
-y crea `public/storage`. El bootstrap administrativo es separado e interactivo.
+El bootstrap local instala desde lockfiles en los volúmenes vacíos, espera
+health, ejecuta migraciones y crea explícitamente `public/storage` solo después
+de comprobar que un enlace existente es no versionado. El entrypoint de API no
+crea ese enlace. El bootstrap administrativo es separado e interactivo.
 Operaciones adapta este contrato al servidor real después del preflight; el
 repositorio no ejecuta ni prescribe acciones de host.
 

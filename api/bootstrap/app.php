@@ -20,12 +20,14 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $isApiPath = static fn (Request $request): bool => $request->is('api') || $request->is('api/*');
+
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+            fn (Request $request) => $isApiPath($request) || $request->expectsJson(),
         );
 
-        $exceptions->render(function (NotFoundHttpException $exception, Request $request): ?ApiErrorResponse {
-            if (! $request->is('api/*')) {
+        $exceptions->render(function (NotFoundHttpException $exception, Request $request) use ($isApiPath): ?ApiErrorResponse {
+            if (! $isApiPath($request)) {
                 return null;
             }
 
@@ -37,8 +39,8 @@ return Application::configure(basePath: dirname(__DIR__))
             );
         });
 
-        $exceptions->render(function (MethodNotAllowedHttpException $exception, Request $request): ?ApiErrorResponse {
-            if (! $request->is('api/*')) {
+        $exceptions->render(function (MethodNotAllowedHttpException $exception, Request $request) use ($isApiPath): ?ApiErrorResponse {
+            if (! $isApiPath($request)) {
                 return null;
             }
 
@@ -50,8 +52,8 @@ return Application::configure(basePath: dirname(__DIR__))
             )->withHeaders($exception->getHeaders());
         });
 
-        $exceptions->render(function (HttpExceptionInterface $exception, Request $request): ?ApiErrorResponse {
-            if (! $request->is('api/*')) {
+        $exceptions->render(function (HttpExceptionInterface $exception, Request $request) use ($isApiPath): ?ApiErrorResponse {
+            if (! $isApiPath($request)) {
                 return null;
             }
 

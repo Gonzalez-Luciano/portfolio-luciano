@@ -78,6 +78,25 @@ assert.match(compose, /^ {2}api-test:\n[\s\S]*?^ {4}depends_on:\n {6}mysql-test:
 
 const apiService = service('api');
 const gatewayService = service('gateway');
+const webService = service('web');
+const webDockerfile = read('web/Dockerfile');
+
+assert.doesNotMatch(
+  webDockerfile,
+  /RUN pnpm install/,
+  'The web image must not populate /app/node_modules before the named volume mounts',
+);
+assert.match(
+  webDockerfile,
+  /pnpm config set store-dir \/pnpm\/store --global/,
+  'The web dependency store must stay outside the bind-mounted source tree',
+);
+assert.match(
+  webService,
+  /^ {6}- type: volume\n {8}source: web_node_modules\n {8}target: \/app\/node_modules\n {8}volume:\n {10}nocopy: true$/m,
+  'The web dependency volume must start empty without Docker copy-up',
+);
+
 assert.match(apiService, /^ {6}- api_public_media:\/var\/www\/html\/storage\/app\/public$/m);
 assert.equal(
   [...compose.matchAll(/^ {6}- api_public_media:\/var\/www\/html\/storage\/app\/public$/gm)].length,
@@ -123,6 +142,9 @@ assert.ok(routeInventory.some((route) => /^livewire-[^/]+\//.test(route.uri)));
 
 const readme = read('README.md');
 assert.match(readme, /docker compose up -d --wait/);
+assert.match(readme, /storage:unlink/);
+assert.match(readme, /python3/);
+assert.match(readme, /docker compose port gateway 80/);
 assert.match(readme, /Docker Desktop is the single engine|Docker Desktop es el único engine/);
 assert.match(readme, /no instalar un segundo Docker Engine/);
 
@@ -134,4 +156,5 @@ const verification = read('docs/testing/PHASE_3_VERIFICATION.md');
 assert.match(verification, /Destructive scope and clean bootstrap/);
 assert.match(verification, /Ubuntu WSL2 parity/);
 assert.match(verification, /Not observed/);
+assert.doesNotMatch(verification, /entrypoint creates it/);
 console.log('Repository and environment contract pass.');

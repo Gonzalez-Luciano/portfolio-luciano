@@ -30,6 +30,16 @@ final class ApiVersionTest extends TestCase
             ->assertContent('{"error":{"code":"not_found","message":"The requested API resource was not found.","details":{}}}');
     }
 
+    public function test_exact_api_path_with_json_accept_returns_the_safe_error_contract_without_a_debug_trace(): void
+    {
+        config(['app.debug' => true]);
+
+        $this->get('/api', ['Accept' => 'application/json'])
+            ->assertNotFound()
+            ->assertContent('{"error":{"code":"not_found","message":"The requested API resource was not found.","details":{}}}')
+            ->assertDontSee('trace');
+    }
+
     public function test_api_method_not_allowed_returns_the_safe_error_contract(): void
     {
         $this->postJson('/api/v1')
