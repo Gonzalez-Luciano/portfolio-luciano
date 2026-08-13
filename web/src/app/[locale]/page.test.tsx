@@ -21,7 +21,10 @@ vi.mock('next-intl/server', () => ({
         languageSwitcherLabel: 'Language',
         spanish: 'Spanish',
         english: 'English',
-        themeSlot: 'Theme control placeholder',
+        themeLabel: 'Theme',
+        currentThemeLabel: 'Current theme',
+        lightTheme: 'Light',
+        darkTheme: 'Dark',
         apiStatusSlot: 'API status placeholder',
       };
 
@@ -64,7 +67,7 @@ describe('localized foundation page', () => {
       screen.getByRole('heading', {name: 'en technical foundation'}),
     ).toBeInTheDocument();
     expect(screen.getByText('Current locale: en')).toBeInTheDocument();
-    expect(screen.getByText('Theme control placeholder')).toBeInTheDocument();
+    expect(screen.getByRole('region', {name: 'Theme'})).toBeInTheDocument();
     expect(screen.getByText('API status placeholder')).toBeInTheDocument();
   });
 });

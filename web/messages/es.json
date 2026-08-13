@@ -5,7 +5,10 @@
     "languageSwitcherLabel": "Seleccionar idioma",
     "spanish": "Español",
     "english": "English",
-    "themeSlot": "Espacio reservado para el control de tema",
+    "themeLabel": "Tema",
+    "currentThemeLabel": "Tema actual",
+    "lightTheme": "Claro",
+    "darkTheme": "Oscuro",
     "apiStatusSlot": "Espacio reservado para el estado de la API"
   }
 }

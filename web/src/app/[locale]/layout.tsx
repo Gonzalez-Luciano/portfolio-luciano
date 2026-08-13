@@ -3,6 +3,7 @@ import {hasLocale, NextIntlClientProvider} from 'next-intl';
 import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import '../globals.css';
+import {themeBootstrapSource} from '@/theme/bootstrap';
 import {locales, routing} from '@/i18n/routing';
 
 type LocaleLayoutProps = Readonly<{
@@ -28,7 +29,10 @@ export default async function LocaleLayout({
   const messages = (await import(`../../../messages/${locale}.json`)).default;
 
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{__html: themeBootstrapSource}} />
+      </head>
       <body className="flex min-h-screen flex-col">
         <NextIntlClientProvider messages={messages}>
           {children}

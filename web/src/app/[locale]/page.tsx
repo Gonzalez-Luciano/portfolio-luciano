@@ -2,6 +2,7 @@ import {hasLocale} from 'next-intl';
 import {getTranslations, setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {LanguageSwitcher} from '@/components/language-switcher';
+import {ThemeSwitcher} from '@/components/theme-switcher';
 import {locales, routing} from '@/i18n/routing';
 
 type LocalePageProps = {
@@ -34,7 +35,12 @@ export default async function LocalePage({params}: LocalePageProps) {
         spanishLabel={t('spanish')}
         englishLabel={t('english')}
       />
-      <p>{t('themeSlot')}</p>
+      <ThemeSwitcher
+        label={t('themeLabel')}
+        currentThemeLabel={t('currentThemeLabel')}
+        lightLabel={t('lightTheme')}
+        darkLabel={t('darkTheme')}
+      />
       <p>{t('apiStatusSlot')}</p>
     </main>
   );

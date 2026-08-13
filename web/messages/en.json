@@ -5,7 +5,10 @@
     "languageSwitcherLabel": "Select language",
     "spanish": "Español",
     "english": "English",
-    "themeSlot": "Theme control placeholder",
+    "themeLabel": "Theme",
+    "currentThemeLabel": "Current theme",
+    "lightTheme": "Light",
+    "darkTheme": "Dark",
     "apiStatusSlot": "API status placeholder"
   }
 }
