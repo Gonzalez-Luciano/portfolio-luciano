@@ -93,4 +93,25 @@ const volumeBlock = compose.match(/^volumes:\n([\s\S]*)$/m)?.[1];
 assert.ok(volumeBlock, 'compose.yaml must declare volumes');
 const volumeNames = [...volumeBlock.matchAll(/^ {2}([a-z][a-z_]*): \{\}$/gm)].map((match) => match[1]);
 assert.deepEqual(volumeNames, ['web_node_modules', 'api_vendor', 'mysql_data', 'api_public_media']);
+
+for (const path of ['infra/caddy/Caddyfile', 'infra/caddy/laravel-routes.json', 'infra/caddy/ROUTE_OWNERSHIP.md', 'docs/testing/PHASE_3_BROWSER_SMOKE.md']) {
+  assert.ok(existsSync(resolve(root, path)), `Missing ${path}`);
+}
+
+const caddy = read('infra/caddy/Caddyfile');
+assert.match(caddy, /@livewire path_regexp livewire \^\/livewire-\[\^\/\]\+\(\?:\/\.\*\)\?\$/);
+assert.doesNotMatch(caddy, /livewire-[0-9a-f]{8,}/i, 'Caddy must not copy a generated Livewire hash');
+assert.doesNotMatch(caddy, /cloudflare|trusted_proxies/i, 'Gateway must not own Cloudflare proxy configuration');
+assert.doesNotMatch(caddy, /(?:^|\n)\s*(?:root|file_server)\b/m, 'Gateway must not serve application files directly');
+
+const apiHandle = caddy.indexOf('handle @laravel');
+const livewireHandle = caddy.indexOf('handle @livewire');
+const fallbackHandle = caddy.lastIndexOf('\n\thandle {');
+assert.ok(apiHandle >= 0 && livewireHandle >= 0 && fallbackHandle >= 0, 'Caddy must declare backend and fallback handlers');
+assert.ok(apiHandle < fallbackHandle && livewireHandle < fallbackHandle, 'Backend handlers must precede the Next.js fallback');
+assert.match(caddy, /handle \{\n\t\treverse_proxy web:3000\n\t}\n}/, 'Caddy must end with the frontend fallback');
+
+const routeInventory = JSON.parse(read('infra/caddy/laravel-routes.json'));
+assert.ok(routeInventory.some((route) => route.uri === 'api/v1'));
+assert.ok(routeInventory.some((route) => /^livewire-[^/]+\//.test(route.uri)));
 console.log('Repository and environment contract pass.');
