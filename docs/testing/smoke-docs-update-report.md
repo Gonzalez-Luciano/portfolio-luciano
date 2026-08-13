@@ -28,12 +28,12 @@ HMR`), with a clean worktree before this documentation update.
 No credential, account identifier, email, password, or generated Livewire
 build hash is retained in the new evidence.
 
-## Explicitly unobserved
+## Final theme evidence
 
-System-theme initial selection without visible flash and invalid
-`portfolio_theme` browser-storage fallback remain unobserved. The available
-browser control did not support those non-sensitive setups; neither result is
-claimed as passed.
+- In fresh browser contexts on 2026-08-13, `/es` followed the system light and
+  dark preference respectively, with no visible wrong-theme flash.
+- An invalid `portfolio_theme` localStorage value safely fell back to the
+  system preference after reload and was cleared.
 
 ## Verification
 

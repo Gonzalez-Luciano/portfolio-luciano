@@ -209,13 +209,14 @@ Codex browser at `http://localhost:8000`, the following was observed:
 - After a full stack stop/start without volume removal, the public Spanish
   page, administration route, and API-status control recovered through Caddy
   with no captured browser warning/error.
+- Fresh light and dark browser contexts each applied their respective system
+  preference on `/es` with no visible wrong-theme flash.
+- Setting an invalid `portfolio_theme` localStorage value and reloading safely
+  fell back to the system preference, then cleared the invalid value.
 
-Not observed, and therefore not claimed as passed: initial system-theme choice
-without visible flash, and invalid `portfolio_theme` storage fallback. The
-available browser control did not support those non-sensitive setups. Direct
-JSON navigation to `/api/v1` was not the browser evidence path; the rendered
-API-status control and the separate HTTP checks supplied the recorded API
-observations.
+Not observed: direct JSON navigation to `/api/v1` was not the browser evidence
+path; the rendered API-status control and the separate HTTP checks supplied the
+recorded API observations.
 
 ## Ubuntu WSL2 parity
 
@@ -230,8 +231,6 @@ installed or required.
 
 ## Remaining non-blocking follow-up
 
-Complete the explicitly unobserved system-theme/no-flash and invalid-storage
-fallback browser checks only when a supported non-sensitive browser control is
-available. The production handoff still requires the independent operational
-preflight, deployment, backup/restore, trusted-proxy, and public-domain
-verification defined in `docs/DEPLOYMENT.md`.
+The production handoff still requires the independent operational preflight,
+deployment, backup/restore, trusted-proxy, and public-domain verification
+defined in `docs/DEPLOYMENT.md`.
