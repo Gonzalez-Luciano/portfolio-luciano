@@ -130,13 +130,42 @@ Invoke-RestMethod http://localhost:8000/api/v1
 docker compose exec -T api php artisan route:list --json
 ```
 
-Verificar la publicación de puertos: solo el primer comando debe devolver un mapeo. Los siguientes deben fallar porque son puertos internos, lo que es el resultado esperado.
+Verificar los bindings reales de los contenedores que Compose inició. Este
+procedimiento usa la configuración de runtime de Docker, no `docker compose
+port`: algunas versiones de Compose informan erróneamente éxito para un puerto
+interno no publicado. Debe listar exactamente un binding:
+`gateway 80/tcp 127.0.0.1 8000`.
 
 ```powershell
-docker compose port gateway 80
-foreach ($target in @(@('web', '3000'), @('api', '80'), @('mysql', '3306'), @('mysql-test', '3306'))) {
-  $mapping = docker compose --profile test port $target[0] $target[1] 2>$null
-  if ($LASTEXITCODE -eq 0) { throw "Unexpected published port: $mapping" }
+$containerIds = @(docker compose ps -q)
+if ($containerIds.Count -eq 0) { throw 'No running Compose containers to inspect.' }
+
+$published = @(
+  foreach ($containerId in $containerIds) {
+    $container = docker inspect $containerId | ConvertFrom-Json
+    $service = $container.Config.Labels.PSObject.Properties['com.docker.compose.service'].Value
+    foreach ($portBinding in $container.HostConfig.PortBindings.PSObject.Properties) {
+      foreach ($hostBinding in $portBinding.Value) {
+        [PSCustomObject]@{
+          Service = $service
+          ContainerPort = $portBinding.Name
+          HostIp = $hostBinding.HostIp
+          HostPort = $hostBinding.HostPort
+        }
+      }
+    }
+  }
+)
+
+$published | Format-Table -AutoSize
+if (
+  $published.Count -ne 1 -or
+  $published[0].Service -ne 'gateway' -or
+  $published[0].ContainerPort -ne '80/tcp' -or
+  $published[0].HostIp -ne '127.0.0.1' -or
+  $published[0].HostPort -ne '8000'
+) {
+  throw 'Expected only gateway 80/tcp to publish 127.0.0.1:8000.'
 }
 ```
 
@@ -215,14 +244,22 @@ curl --fail http://localhost:8000/health
 curl --fail http://localhost:8000/up
 curl --fail http://localhost:8000/api/v1
 docker compose exec -T api php artisan route:list --json
-docker compose port gateway 80
-for target in 'web 3000' 'api 80' 'mysql 3306' 'mysql-test 3306'; do
-  set -- $target
-  if docker compose --profile test port "$1" "$2"; then
-    printf 'Unexpected published port: %s/%s\n' "$1" "$2" >&2
-    exit 1
-  fi
-done
+container_ids="$(docker compose ps -q)"
+if [ -z "$container_ids" ]; then
+  printf '%s\n' 'No running Compose containers to inspect.' >&2
+  exit 1
+fi
+published_ports="$(
+  for container_id in $container_ids; do
+    docker inspect --format '{{ $service := index .Config.Labels "com.docker.compose.service" }}{{ range $port, $bindings := .HostConfig.PortBindings }}{{ range $binding := $bindings }}{{ printf "%s %s %s %s\n" $service $port $binding.HostIp $binding.HostPort }}{{ end }}{{ end }}' "$container_id"
+  done | sed '/^$/d'
+)"
+printf '%s\n' "$published_ports"
+expected_port='gateway 80/tcp 127.0.0.1 8000'
+if [ "$published_ports" != "$expected_port" ]; then
+  printf '%s\n' 'Expected only gateway 80/tcp to publish 127.0.0.1:8000.' >&2
+  exit 1
+fi
 ```
 
 La misma regla de secretos aplica: no pasar una contraseña al comando, entorno ni historial. La política de seeds no cambia entre PowerShell y Bash: no ejecutar `db:seed` ni `migrate --seed` durante Fase 3.

@@ -700,13 +700,14 @@ docker compose exec -T api curl --fail http://localhost/up
 docker compose exec -T web wget -qO- http://localhost:3000/health
 docker compose exec -T api getent hosts mysql
 docker network inspect portfolio_front
-docker compose port gateway 80
-docker compose port web 3000
-docker compose port api 80
-docker compose port mysql 3306
+# Use the canonical README Docker-inspect procedure to assert that exactly
+# gateway 80/tcp publishes 127.0.0.1:8000.
 ```
 
-Expected: all four development services become healthy; API can resolve `mysql`; inspection shows gateway/web/api on `portfolio_front` but no MySQL container; only gateway returns `127.0.0.1:8000`; the other three `port` commands produce no mapping.
+Expected: all four development services become healthy; API can resolve `mysql`;
+inspection shows gateway/web/api on `portfolio_front` but no MySQL container;
+the canonical Docker-inspect check reports only gateway
+`80/tcp 127.0.0.1 8000`.
 
 - [ ] **Step 7: Prove test health dependency and disposability**
 
@@ -1362,11 +1363,8 @@ Inspect:
 
 ```powershell
 docker compose ps --format json
-docker compose port gateway 80
-docker compose port web 3000
-docker compose port api 80
-docker compose port mysql 3306
-docker compose --profile test port mysql-test 3306
+# Use the canonical README Docker-inspect procedure to assert that exactly
+# gateway 80/tcp publishes 127.0.0.1:8000.
 docker volume ls --filter label=com.docker.compose.project=portfolio
 ```
 

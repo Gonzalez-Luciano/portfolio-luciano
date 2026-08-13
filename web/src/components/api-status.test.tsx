@@ -7,6 +7,7 @@ import {
 } from '@testing-library/react';
 import {NextIntlClientProvider} from 'next-intl';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import spanishMessages from '../../messages/es.json';
 import {ApiStatus} from './api-status';
 
 const englishMessages = {
@@ -16,16 +17,6 @@ const englishMessages = {
     checkingApi: 'Checking API...',
     apiAvailable: 'API available: ok/{version}',
     apiUnavailable: 'API unavailable.',
-  },
-};
-
-const spanishMessages = {
-  Foundation: {
-    apiStatusLabel: 'Estado de la API',
-    checkApi: 'Comprobar API',
-    checkingApi: 'Comprobando la API...',
-    apiAvailable: 'API disponible: ok/{version}',
-    apiUnavailable: 'La API no estÃ¡ disponible.',
   },
 };
 
@@ -106,7 +97,8 @@ describe('ApiStatus', () => {
     });
   });
 
-  it('uses the locale message set for visible API status strings', () => {
+  it('uses the UTF-8 Spanish locale messages for visible API status strings', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));
     renderApiStatus(spanishMessages);
 
     expect(
@@ -115,5 +107,9 @@ describe('ApiStatus', () => {
     expect(
       screen.getByRole('button', {name: 'Comprobar API'}),
     ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Comprobar API'}));
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'La API no está disponible.',
+    );
   });
 });

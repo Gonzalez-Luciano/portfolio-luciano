@@ -116,7 +116,7 @@ caddy validate --config /etc/caddy/Caddyfile                  PASS
 php artisan route:list --json                                 PASS
 GET /__gateway/health, /health, /up                           200
 GET /api/v1                                                    data.status=ok, data.version=v1
-docker compose port gateway 80                                127.0.0.1:8000
+docker inspect published-port check                            gateway 80/tcp 127.0.0.1 8000
 node docs/design/phase-2/tests/validate-artifacts.mjs         PASS
 node docs/design/phase-2/tests/validate-contrast.mjs          PASS
 python docs/design/phase-2/tests/validate-assets.py           PASS

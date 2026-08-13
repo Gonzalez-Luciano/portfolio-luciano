@@ -144,9 +144,19 @@ const readme = read('README.md');
 assert.match(readme, /docker compose up -d --wait/);
 assert.match(readme, /storage:unlink/);
 assert.match(readme, /python3/);
-assert.match(readme, /docker compose port gateway 80/);
+assert.match(readme, /docker inspect/);
+assert.match(readme, /HostConfig\.PortBindings/);
+assert.match(readme, /com\.docker\.compose\.service/);
+assert.doesNotMatch(readme, /docker compose(?: --profile test)? port/);
 assert.match(readme, /Docker Desktop is the single engine|Docker Desktop es el único engine/);
 assert.match(readme, /no instalar un segundo Docker Engine/);
+
+const spanishMessages = JSON.parse(read('web/messages/es.json'));
+assert.equal(
+  spanishMessages.Foundation.apiUnavailable,
+  'La API no está disponible.',
+  'Spanish API availability copy must remain UTF-8',
+);
 
 const environment = read('docs/ENVIRONMENT.md');
 assert.match(environment, /same engine|mismo engine/);
