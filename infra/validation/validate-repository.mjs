@@ -54,11 +54,35 @@ assert.ok(serviceBlock, 'compose.yaml must declare services before networks');
 const serviceNames = [...serviceBlock.matchAll(/^ {2}([a-z][a-z-]*):\s*$/gm)].map((match) => match[1]);
 assert.deepEqual(serviceNames, ['gateway', 'web', 'api', 'mysql', 'mysql-test', 'api-test']);
 
+const service = (name) => {
+  const start = serviceBlock.indexOf(`  ${name}:\n`);
+  assert.notEqual(start, -1, `Missing ${name} service`);
+
+  const remaining = serviceBlock.slice(start + name.length + 4);
+  const next = remaining.search(/^ {2}[a-z][a-z-]*:\s*$/m);
+
+  return next === -1 ? remaining : remaining.slice(0, next);
+};
+
 assert.match(compose, /^ {2}gateway:\n[\s\S]*?^ {4}ports:\n {6}- "\$\{GATEWAY_HOST:-127\.0\.0\.1\}:\$\{GATEWAY_PORT:-8000\}:80"$/m);
 assert.equal([...compose.matchAll(/^ {4}ports:$/gm)].length, 1, 'Only gateway may publish a host port');
 assert.match(compose, /^ {2}mysql-test:\n[\s\S]*?^ {4}profiles: \[test\]$/m);
 assert.match(compose, /^ {2}api-test:\n[\s\S]*?^ {4}profiles: \[test\]$/m);
 assert.match(compose, /^ {2}api-test:\n[\s\S]*?^ {4}depends_on:\n {6}mysql-test: \{condition: service_healthy\}$/m);
+
+const apiService = service('api');
+const gatewayService = service('gateway');
+assert.match(apiService, /^ {6}- api_public_media:\/var\/www\/html\/storage\/app\/public$/m);
+assert.equal(
+  [...compose.matchAll(/^ {6}- api_public_media:\/var\/www\/html\/storage\/app\/public$/gm)].length,
+  1,
+  'Only the development API service may mount api_public_media',
+);
+assert.doesNotMatch(
+  gatewayService,
+  /(?:^ {6}- \.\/api:|\/var\/www\/html|\/storage(?:\/|$))/m,
+  'Gateway must not mount a Laravel path',
+);
 
 const networkBlock = compose.match(/^networks:\n([\s\S]*?)(?=^volumes:)/m)?.[1];
 assert.ok(networkBlock, 'compose.yaml must declare networks before volumes');
