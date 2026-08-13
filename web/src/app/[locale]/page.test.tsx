@@ -68,6 +68,6 @@ describe('localized foundation page', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Current locale: en')).toBeInTheDocument();
     expect(screen.getByRole('region', {name: 'Theme'})).toBeInTheDocument();
-    expect(screen.getByText('API status placeholder')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Check API'})).toBeInTheDocument();
   });
 });
