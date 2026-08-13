@@ -1,64 +1,62 @@
-# DEPLOYMENT.md — Portfolio en servidor Linux propio
+# DEPLOYMENT.md — Contrato de handoff del portfolio
 
-## Objetivo
+## Propósito
 
-Desplegar el portfolio como una aplicación Docker independiente dentro del servidor Linux multiproyecto de Luciano.
+Este documento describe el contrato de aplicación que el repositorio entrega al workflow externo de operaciones del servidor. No es un checklist para que el agente de desarrollo del portfolio instale, configure u opere la computadora Linux.
 
-Arquitectura global:
+La secuencia de responsabilidad es:
 
-`docs/SERVER_ARCHITECTURE.md`
+1. El roadmap del portfolio completa funcionalidad, pruebas, seguridad, builds, CI y release readiness.
+2. Una versión aprobada se publica en GitHub junto con este contrato actualizado.
+3. El workflow externo `home_server_ops_claude` inspecciona el servidor real, clona la versión aprobada y diseña/ejecuta el deployment final.
+4. El lanzamiento del portfolio depende de la confirmación externa de deployment, smoke checks y backup inicial.
 
----
+No se copian aquí las instrucciones completas de `home_server_ops_claude`. La topología compartida de referencia permanece en `docs/SERVER_ARCHITECTURE.md`.
 
-## Asignación del portfolio
+## Límites de responsabilidad
 
-Directorio definitivo:
+### Responsabilidad del repositorio
 
-```text
-/srv/apps/portfolio
-```
+- Definir servicios y dependencias de la aplicación.
+- Proporcionar un entorno Docker completo de desarrollo y pruebas.
+- Mantener límites de servicio compatibles con el futuro entorno Linux.
+- Documentar variables, secretos requeridos, persistencia, migraciones, bootstrap y health checks.
+- Proporcionar comandos reproducibles de build, pruebas y smoke checks.
+- Identificar datos que requieren backup y consideraciones de aplicación para rollback.
+- Mantener el gateway como único entrypoint del proyecto.
+- No incluir secretos reales ni credenciales de Cloudflare.
 
-Puerto reservado:
+### Responsabilidad de operaciones externas
 
-```text
-127.0.0.1:8000
-```
+- Descubrir distribución Linux, CPU, RAM, discos, filesystem y ubicación real de datos persistentes.
+- Preparar `/srv/apps`, `/srv/backups` y el registro multiproyecto del servidor.
+- Instalar y configurar Docker, Compose y el arranque del host.
+- Clonar la versión aprobada y crear las variables reales de producción.
+- Crear o ajustar imágenes/targets y Compose final de producción según el servidor real.
+- Ejecutar migraciones y bootstrap administrativo en producción.
+- Operar `cloudflared`, DNS, Tunnel, firewall y controles de acceso del host.
+- Configurar y probar backups, restores, reinicios, monitoreo y rollback operativo.
+- Confirmar el deployment y entregar evidencia de smoke checks al proceso de lanzamiento.
 
-Hostname:
+## Contrato público futuro
 
 ```text
 lucianogonzalez.dev
+    -> Cloudflare Tunnel compartido del host
+    -> http://127.0.0.1:8000
+    -> gateway del portfolio
 ```
 
-Mapeo de Cloudflare Tunnel:
+- Hostname: `lucianogonzalez.dev`.
+- Entry point del proyecto: `127.0.0.1:8000`.
+- Solo el gateway publica ese puerto.
+- No se requieren puertos HTTP/HTTPS del router para el flujo normal mediante Tunnel.
+- `cloudflared` es infraestructura compartida del host y nunca integra el Compose del portfolio.
+- El token y las credenciales del Tunnel nunca ingresan en este repositorio.
 
-```text
-lucianogonzalez.dev
-    -> http://localhost:8000
-```
+## Servicios y rutas
 
-Backup root definitivo:
-
-```text
-/srv/backups/portfolio
-```
-
-Antes de configurar producción se realiza un preflight que registra, sin inferencias:
-
-- Distribución y versión de Linux.
-- CPU y cantidad de núcleos/hilos.
-- RAM.
-- Dispositivos y capacidades de almacenamiento.
-- Layout real del filesystem.
-- Ubicación física definitiva de datos persistentes Docker.
-
-Este relevamiento pertenece a deployment y no bloquea el diseño ni la implementación local.
-
----
-
-## Servicios de producción
-
-Stack conceptual:
+Stack conceptual entregado:
 
 ```text
 portfolio-gateway
@@ -67,283 +65,142 @@ portfolio-api
 portfolio-mysql
 ```
 
-`cloudflared` no pertenece al Compose del portfolio.
-
-Se ejecuta una única vez como servicio del servidor Linux.
-
----
-
-## Red
-
-Único puerto publicado por el proyecto:
+Rutas del mismo origen:
 
 ```text
-127.0.0.1:8000
+/            -> Next.js; redirección localizada
+/es          -> Next.js; portfolio en español
+/en          -> Next.js; portfolio en inglés
+/api/*       -> Laravel
+/admin/*     -> Laravel / Filament
 ```
 
-No publicar:
+El handoff de Fase 3 debe registrar también cualquier ruta técnica de Laravel/Filament necesaria para assets, Livewire o media. Web, API y MySQL usan DNS/redes internas de Docker; sus puertos internos no forman parte del contrato público.
 
-- MySQL.
-- Puerto interno de Laravel.
-- Puerto interno de Next.js.
-- Redis si se agrega.
-- Scheduler/queue.
+## Redes y exposición
 
-El gateway recibe el tráfico del host y lo distribuye internamente.
+- Gateway, web y API comparten una red frontal específica del portfolio.
+- API y MySQL comparten una red de datos específica del portfolio.
+- MySQL no pertenece a la red frontal y no publica `3306` al host.
+- Ningún servicio usa `network_mode: host` salvo una futura decisión operacional documentada.
+- Redes, volúmenes y credenciales no se comparten con otros proyectos.
 
----
+## Persistencia relevante
 
-## Rutas
+Datos no regenerables que operaciones debe persistir y respaldar:
 
-Conceptualmente:
+- base MySQL del portfolio;
+- media administrada por Laravel/Filament;
+- CV administrados cuando el CMS los gestione localmente;
+- cualquier otro archivo de aplicación declarado persistente en una fase posterior.
 
-```text
-/           -> Next.js
-/api/*      -> Laravel
-/admin/*    -> Laravel / Filament
-```
+Los contenedores son reemplazables; eliminar o recrear un contenedor no debe borrar esos datos. La ubicación física final y la política de backup se deciden externamente después de inspeccionar el servidor.
 
-Esto permite usar un mismo origen público para frontend y API.
+## Variables y secretos
 
----
+El repositorio proporciona archivos de ejemplo con placeholders y documentación de ownership. Los valores reales permanecen fuera de Git.
 
-## Cloudflare
+Categorías mínimas esperadas para producción:
 
-La configuración de Cloudflare es responsabilidad de la infraestructura del servidor, no del repositorio del portfolio.
+- configuración del runtime Next.js que no sea secreta;
+- URL/origen público de la aplicación cuando corresponda;
+- Laravel `APP_KEY` y configuración de entorno;
+- credenciales MySQL específicas del portfolio;
+- configuración de sesión, logs y filesystem;
+- credenciales del administrador inicial usadas por el comando explícito de bootstrap.
 
-El portfolio solo necesita cumplir su contrato:
+No pertenecen al repositorio ni al entorno de aplicación:
 
-> estar saludable y disponible en `http://127.0.0.1:8000`.
+- token o credenciales de Cloudflare Tunnel;
+- credenciales de otros proyectos;
+- configuración global del host;
+- claves SSH, runners o secretos de automatización operativa.
 
-No guardar token de Cloudflare dentro del proyecto.
+## Build y runtime
 
----
+La documentación de handoff debe permitir a operaciones identificar:
 
-## Variables de producción
+- versiones canónicas de Node.js, pnpm, PHP, Laravel, Filament y MySQL;
+- comandos de instalación con lockfiles;
+- comandos de build de `web` y validación de `api`;
+- procesos y puertos internos esperados;
+- archivos o volúmenes requeridos por cada servicio;
+- señales de readiness/health y dependencias de arranque.
 
-Secretos mínimos esperados:
+Fase 3 no crea targets de producción especulativos ni un Compose final del servidor. Las definiciones de desarrollo deben evitar supuestos exclusivos de Windows y mantener límites claros que operaciones pueda adaptar después del preflight real.
 
-- Laravel `APP_KEY`.
-- Credenciales MySQL.
-- Credenciales administrativas iniciales.
-- Otros secretos de aplicación.
+## Migraciones y bootstrap
 
-No incluir:
+- Las migraciones de Laravel son la fuente reproducible del esquema.
+- Desarrollo y pruebas deben construir una base limpia mediante migraciones.
+- Producción usa migraciones no destructivas ejecutadas conscientemente por operaciones.
+- Nunca se programa `migrate:fresh`, resets o seeds destructivos contra datos persistentes de producción.
+- Los seeds normales contienen solo datos seguros y no crean credenciales.
+- El primer administrador de Filament se crea mediante un comando explícito e idempotente que lee valores de un entorno no versionado.
+- Operaciones debe ejecutar y registrar ese comando sin exponer la contraseña en logs o historial innecesario.
 
-- Token del tunnel.
-- Credenciales de otros proyectos.
-- Variables globales del host.
+## Health checks y smoke checks
 
-Usar un archivo/environment de producción no versionado.
+El contrato debe definir checks que no revelen secretos para:
 
----
+- MySQL readiness;
+- proceso Laravel;
+- endpoint de salud de la API;
+- proceso Next.js;
+- gateway y rutas principales.
 
-## Datos persistentes
+Smoke checks mínimos después de un deployment externo:
 
-Persistir:
-
-- MySQL.
-- Media subida desde Filament.
-- CV administrado si se almacena localmente.
-- Otros archivos no regenerables.
-
-Reemplazar contenedores no debe borrar contenido.
-
----
-
-## Primera instalación
-
-Flujo de alto nivel:
-
-1. Preparar directorio `/srv/apps/portfolio`.
-2. Clonar el repositorio.
-3. Crear variables de producción.
-4. Construir imágenes.
-5. Iniciar base de datos.
-6. Ejecutar migraciones.
-7. Crear usuario administrador de forma segura.
-8. Iniciar el stack.
-9. Verificar `http://127.0.0.1:8000`.
-10. Agregar/activar la ruta pública en Cloudflare Tunnel.
-11. Verificar HTTPS desde Internet.
-12. Probar `/api`.
-13. Probar `/admin`.
-14. Ejecutar backup inicial.
-
-No automatizar pasos sensibles antes de comprobar manualmente el flujo completo.
-
----
-
-## Actualización manual inicial
-
-Antes de automatizar CI/CD, usar un procedimiento explícito y reproducible.
-
-Conceptualmente:
-
-1. Confirmar que CI está verde.
-2. Conectarse al servidor de forma segura.
-3. Entrar a `/srv/apps/portfolio`.
-4. Obtener la versión aprobada.
-5. Construir/actualizar los servicios.
-6. Ejecutar migraciones.
-7. Ejecutar smoke tests.
-8. Verificar el dominio.
-9. Conservar una ruta de rollback.
-
-No ejecutar `docker compose down` sin necesidad.
-
-Preferir actualización de servicios con la menor interrupción posible.
-
----
-
-## CI
-
-GitHub Actions valida el proyecto:
-
-- Frontend lint.
-- Type checking.
-- Frontend tests.
-- Frontend build.
-- Laravel tests.
-- Docker build/config validation.
-- Security/dependency checks acordados.
-
-CI no debe afirmar que desplegó la aplicación simplemente porque compiló React.
-
-Para que un artefacto compilado en GitHub llegue a producción debe existir un mecanismo de transferencia/deploy definido explícitamente.
-
----
-
-## Automatización de deploy futura
-
-No exponer SSH directamente a Internet solo para permitir deployments.
-
-Antes de automatizar, elegir deliberadamente una estrategia.
-
-Opciones compatibles con la arquitectura:
-
-### Opción A — Deploy controlado desde servidor
-
-Un proceso seguro del servidor actualiza una versión aprobada.
-
-### Opción B — Runner self-hosted restringido
-
-Usar un runner únicamente desde un repositorio privado/controlado de infraestructura.
-
-No adjuntar un runner con acceso al host a workflows arbitrarios de repositorios públicos.
-
-### Opción C — Administración mediante Cloudflare Access
-
-Usar una ruta administrativa protegida/tunnel para acceso remoto sin abrir SSH públicamente.
-
-La decisión definitiva se registra cuando se implemente CI/CD.
-
----
-
-## Backups
-
-Backups del portfolio:
-
-```text
-/srv/backups/portfolio/
-├── mysql/
-└── media/
-```
-
-Requisitos:
-
-- Backup periódico de MySQL.
-- Backup de media.
-- Retención.
-- Copia en otro disco/equipo.
-- Restore probado.
-- Scripts versionados cuando no contengan secretos.
-
----
-
-## Reinicio del host
-
-Prueba obligatoria:
-
-1. Reiniciar Linux.
-2. Docker inicia.
-3. `cloudflared` inicia.
-4. Stack portfolio inicia.
-5. MySQL queda healthy.
-6. API queda healthy.
-7. Web queda healthy.
-8. Gateway queda healthy.
-9. `http://127.0.0.1:8000` responde.
-10. `https://lucianogonzalez.dev` responde.
-
-No considerar producción estable hasta probar este escenario.
-
----
-
-## Scheduler
-
-Si Laravel necesita scheduler, agregar un mecanismo específico del portfolio.
-
-Nunca programar:
-
-```text
-migrate:fresh
-```
-
-en producción del portfolio.
-
-El CMS contiene información persistente.
-
----
+- `/` redirige según el contrato de locale;
+- `/es` y `/en` responden;
+- `/api/v1` responde con el contrato base esperado;
+- `/admin` responde y requiere autenticación;
+- MySQL no es alcanzable desde el host ni Internet;
+- el gateway es el único puerto publicado por el proyecto.
 
 ## Logs
 
-Definir:
+- Laravel, Next.js y gateway escriben a stdout/stderr o a destinos documentados compatibles con contenedores.
+- Los logs no contienen secretos, credenciales, datos financieros reales ni información confidencial.
+- Rotación, retención, recolección y acceso en producción pertenecen a operaciones externas.
 
-- Logs de Laravel.
-- Logs de gateway.
-- Logs/errores de Next.js.
-- Rotación.
-- Límites de tamaño.
+## Backup y rollback: información entregada
 
-Los logs no deben contener secretos ni datos bancarios reales.
+El repositorio identifica qué datos necesitan backup y qué migraciones pueden afectar compatibilidad. Operaciones define rutas físicas, agenda, retención, copia externa y restore.
 
----
+Antes del lanzamiento, el handoff externo debe confirmar:
 
-## Health checks
+- backup inicial de MySQL y media;
+- restore probado según el workflow operacional;
+- versión/commit desplegado;
+- ruta para volver a una versión anterior;
+- tratamiento de migraciones incompatibles;
+- smoke checks posteriores al rollback.
 
-Definir health checks para:
+## Supuestos que deben descubrirse
 
-- MySQL.
-- Laravel.
-- Next.js.
-- Gateway.
+El repositorio no adivina:
 
-El health check público no debe revelar información sensible.
+- distribución o versión de Linux;
+- CPU, RAM o capacidad efectiva;
+- discos, filesystem o layout físico;
+- ubicación de Docker data root;
+- rutas físicas finales de volúmenes;
+- política real de firewall, monitoreo o backups;
+- estado del Tunnel compartido;
+- otros proyectos, puertos o restricciones presentes en el host.
 
----
+El workflow externo obtiene esos datos antes de producir configuración final.
 
-## Rollback
+## Definition of done del handoff
 
-Antes de automatizar producción documentar:
-
-- Cómo volver al commit/tag anterior.
-- Qué ocurre con migraciones incompatibles.
-- Cómo restaurar backup si una migración no puede revertirse.
-- Cómo comprobar el sistema luego del rollback.
-
----
-
-## Definition of done para deployment
-
-- [ ] El stack se levanta desde cero siguiendo documentación.
-- [ ] Solo el gateway publica `127.0.0.1:8000`.
-- [ ] MySQL no es accesible públicamente.
-- [ ] Cloudflare Tunnel publica el dominio correctamente.
-- [ ] No se abren 80/443 en el router para la app.
-- [ ] Admin requiere autenticación.
-- [ ] CI pasa.
-- [ ] Backup funciona.
-- [ ] Restore fue probado.
-- [ ] Reinicio completo del servidor fue probado.
-- [ ] Rollback está documentado.
+- [ ] Servicios, redes, puertos internos y entrypoint están documentados.
+- [ ] Variables y secretos requeridos tienen owner y ejemplo sin valores reales.
+- [ ] Persistencia, migraciones y bootstrap están documentados.
+- [ ] Build, tests, health checks y smoke checks son reproducibles.
+- [ ] MySQL y servicios internos no se exponen públicamente.
+- [ ] La frontera de `cloudflared` está explícita.
+- [ ] Los datos relevantes para backup y rollback están identificados.
+- [ ] Los supuestos de servidor pendientes de descubrimiento están enumerados.
+- [ ] La versión aprobada puede entregarse a `home_server_ops_claude` sin duplicar su checklist operacional.
+- [ ] El documento no afirma que el servidor ya fue desplegado.

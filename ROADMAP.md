@@ -231,7 +231,7 @@ Diseñar la experiencia completa antes de implementar animaciones complejas.
 
 ## Objetivo
 
-Crear una base reproducible para frontend, backend, base de datos y administración.
+Crear una base reproducible para frontend, backend, base de datos y administración, con un entorno completo de desarrollo/pruebas y límites de servicio compatibles con el futuro handoff de deployment.
 
 ## Tareas
 
@@ -273,7 +273,8 @@ Crear una base reproducible para frontend, backend, base de datos y administraci
 - [ ] Crear entorno de desarrollo.
 - [ ] Crear servicio frontend.
 - [ ] Crear servicio backend.
-- [ ] Crear servicio MySQL.
+- [ ] Crear servicio MySQL 8.4 persistente para desarrollo.
+- [ ] Crear servicio/perfil MySQL 8.4 descartable y bajo demanda para pruebas automatizadas.
 - [ ] Crear gateway/reverse proxy del portfolio y enlazar únicamente `127.0.0.1:8000`.
 - [ ] Verificar compatibilidad del stack con el `cloudflared` global del servidor; no crear `cloudflared` dentro del proyecto.
 - [ ] Definir redes Docker internas del portfolio (`front` y `data` o equivalente).
@@ -283,8 +284,11 @@ Crear una base reproducible para frontend, backend, base de datos y administraci
 - [ ] Configurar red interna.
 - [ ] Definir estrategia de migraciones.
 - [ ] Definir seed inicial.
+- [ ] Crear un comando explícito de bootstrap del administrador que lea valores no versionados; los seeds normales no deben crear credenciales.
 - [ ] Documentar arranque, parada y reinicio.
-- [ ] Comprobar funcionamiento en Windows con WSL2.
+- [ ] Documentar PowerShell + Docker Desktop con backend WSL2 como flujo canónico de Windows.
+- [ ] Comprobar operación equivalente desde Ubuntu WSL2 mediante la integración de Docker Desktop, sin instalar un segundo Docker Engine.
+- [ ] Documentar el contrato de handoff sin crear Compose final de producción ni infraestructura específica del host.
 
 ## Entregables
 
@@ -300,10 +304,12 @@ Crear una base reproducible para frontend, backend, base de datos y administraci
 - El entorno completo se levanta mediante un procedimiento único documentado.
 - Frontend y backend se comunican.
 - La base de datos persiste.
+- Las pruebas usan una base MySQL 8.4 descartable y no pueden reutilizar datos de desarrollo.
 - No hay secretos en Git.
 - Los builds básicos terminan correctamente.
 - La administración requiere autenticación.
 - Frontend, backend, gateway y MySQL pueden ejecutarse de forma reproducible mediante Docker; `cloudflared` permanece como servicio compartido del host.
+- El repositorio describe límites, persistencia, variables, migraciones, bootstrap y health checks suficientes para el futuro agente externo de operaciones.
 
 ---
 
@@ -787,109 +793,66 @@ Comprobar el funcionamiento completo antes del lanzamiento.
 
 ---
 
-# Fase 11 — CI/CD y despliegues
+# Fase 11 — CI y preparación de entrega
 
 ## Objetivo
 
-Automatizar validaciones y publicar la primera versión.
+Convertir el repositorio aprobado en un artefacto verificable y listo para entregar al flujo externo de operaciones del servidor, sin acceder ni desplegar directamente en el servidor doméstico.
 
 ## Tareas
 
-### GitHub Actions
+### GitHub Actions y controles del repositorio
 
-- [ ] Workflow frontend.
-- [ ] Workflow backend.
-- [ ] Workflow Docker.
-- [ ] Caché de dependencias.
-- [ ] Lint.
-- [ ] Type check.
-- [ ] Pruebas.
-- [ ] Build.
-- [ ] Auditoría.
-- [ ] Protección de rama principal.
-- [ ] Revisión obligatoria antes de producción.
+- [ ] Crear workflow frontend.
+- [ ] Crear workflow backend.
+- [ ] Crear workflow Docker.
+- [ ] Configurar caché de dependencias donde sea segura y útil.
+- [ ] Ejecutar lint y formato verificable.
+- [ ] Ejecutar TypeScript checks.
+- [ ] Ejecutar pruebas frontend y backend.
+- [ ] Ejecutar builds de aplicación.
+- [ ] Validar configuración y builds Docker definidos por el repositorio.
+- [ ] Ejecutar auditorías de dependencias y seguridad acordadas.
+- [ ] Documentar requisitos de protección de `main` y revisión previa a release.
+- [ ] Confirmar que CI no necesita acceso al servidor doméstico, sus secretos ni su red privada.
 
-### Servidor Linux multiproyecto
+### Preparación de release
 
-- [ ] Ejecutar preflight y registrar Linux, CPU, RAM, almacenamiento, filesystem y ubicación física de datos persistentes.
-- [ ] Preparar `/srv/apps` como raíz definitiva de proyectos.
-- [ ] Preparar `/srv/backups`.
-- [ ] Crear un registro central de puertos asignados.
-- [ ] Reservar `8000` para el portfolio.
-- [ ] Instalar/validar Docker y Compose.
-- [ ] Configurar Docker para iniciar con Linux.
-- [ ] Instalar/configurar `cloudflared` como servicio global de Linux.
-- [ ] Confirmar que el tunnel está healthy.
-- [ ] Confirmar que no se necesitan puertos HTTP/HTTPS abiertos en el router.
-- [ ] Configurar firewall del host.
-- [ ] Documentar reinicio y recuperación del servidor.
+- [ ] Definir el checklist de release readiness.
+- [ ] Confirmar que la versión candidata proviene de una rama y commit aprobados.
+- [ ] Registrar comandos reproducibles de build, pruebas y smoke checks de aplicación.
+- [ ] Documentar versionado, release notes y creación de tags anotados.
+- [ ] Confirmar que los artefactos y logs de CI no exponen secretos ni contenido confidencial.
 
-### Portfolio en producción
+### Handoff de deployment
 
-- [ ] Clonar el portfolio en `/srv/apps/portfolio`.
-- [ ] Crear variables de producción.
-- [ ] Levantar MySQL persistente.
-- [ ] Levantar Laravel.
-- [ ] Levantar Next.js.
-- [ ] Levantar gateway.
-- [ ] Exponer solo `127.0.0.1:8000`.
-- [ ] Ejecutar migraciones.
-- [ ] Crear administrador.
-- [ ] Verificar health checks.
-- [ ] Verificar `http://127.0.0.1:8000`.
-
-### Cloudflare Tunnel compartido
-
-- [ ] Agregar/configurar el dominio en Cloudflare.
-- [ ] Crear o confirmar el tunnel compartido del servidor.
-- [ ] Publicar `lucianogonzalez.dev` hacia `http://localhost:8000`.
-- [ ] Guardar token/credenciales únicamente a nivel del servidor.
-- [ ] Verificar HTTPS público.
-- [ ] Verificar `/api` bajo el mismo dominio.
-- [ ] Verificar `/admin`.
-- [ ] Evaluar Cloudflare Access para `/admin` como segunda capa.
-- [ ] Verificar que MySQL no sea alcanzable públicamente.
-
-### Preparación para futuros proyectos
-
-- [ ] Documentar cómo reservar un nuevo puerto local.
-- [ ] Documentar cómo crear un nuevo subdominio.
-- [ ] Documentar cómo agregar un nuevo hostname al tunnel.
-- [ ] Confirmar que reiniciar una demo no afecta portfolio ni `cloudflared`.
-- [ ] Confirmar aislamiento de redes, volúmenes y credenciales entre proyectos.
-
-### CI y deploy
-
-- [ ] Usar GitHub Actions para lint, tests y build validation.
-- [ ] Mantener deploy manual reproducible durante la primera versión.
-- [ ] No usar SSH público desde GitHub Actions hacia la IP doméstica.
-- [ ] Elegir posteriormente una estrategia segura de automatización.
-- [ ] Si se usa self-hosted runner, limitarlo a repositorios privados/controlados de infraestructura.
-- [ ] Documentar rollback.
+- [ ] Documentar servicios, gateway y puertos internos del proyecto.
+- [ ] Documentar el futuro entrypoint `127.0.0.1:8000` y las rutas `/`, `/es`, `/en`, `/api/*` y `/admin/*`.
+- [ ] Documentar datos persistentes, variables requeridas y secretos necesarios sin incluir valores.
+- [ ] Documentar procedimientos de build, migración, bootstrap administrativo y health checks de aplicación.
+- [ ] Identificar los datos/rutas lógicas relevantes para backup y la información de aplicación necesaria para rollback.
+- [ ] Documentar qué servicios y puertos nunca deben exponerse públicamente.
+- [ ] Preservar la frontera de Cloudflare: `cloudflared` y sus credenciales permanecen fuera del repositorio.
+- [ ] Enumerar las condiciones del servidor que el flujo externo debe descubrir en el preflight, sin inferirlas.
+- [ ] Referenciar el flujo externo `home_server_ops_claude` como propietario del deployment y las operaciones físicas.
 
 ## Entregables
 
-- Portfolio ejecutándose en la raíz de aplicaciones del servidor.
-- Stack Docker aislado del portfolio.
-- Gateway disponible solo en `127.0.0.1:8000`.
-- `cloudflared` compartido a nivel del host.
-- Dominio público servido mediante Cloudflare Tunnel.
-- Base de datos privada y persistente.
-- Pipeline de CI.
-- Deploy inicial reproducible y documentado.
-- Procedimiento documentado de rollback.
-- Manual de backup y restauración.
+- Pipeline de CI del repositorio.
+- Candidato de release validado.
+- Checklist de release readiness.
+- Contrato de runtime y deployment actualizado.
+- Handoff autocontenido para el agente externo de operaciones del servidor.
+- Procedimientos de build, migración, bootstrap y smoke checks de aplicación.
 
 ## Criterios de aceptación
 
-- Cada cambio relevante pasa validaciones automáticas.
-- Producción solo sale desde una versión/rama aprobada.
-- El dominio público responde por HTTPS a través de Cloudflare Tunnel.
-- No hay puertos públicos de MySQL.
-- La administración funciona en producción.
-- Los contenedores se recuperan correctamente después de reiniciar el host.
-- Existe procedimiento de rollback.
-- Existe un backup restaurable.
+- Cada cambio relevante pasa las validaciones automáticas acordadas.
+- La versión candidata se puede reconstruir y verificar desde un commit aprobado.
+- CI no accede al servidor doméstico ni requiere secretos de host o Cloudflare.
+- El handoff describe con precisión servicios, entrypoint, persistencia, secretos, migraciones, bootstrap, health checks y límites de exposición.
+- El repositorio queda listo para ser clonado y operado por el flujo externo sin duplicar su checklist de host.
+- Ninguna tarea de esta fase afirma que el portfolio ya fue desplegado.
 
 ---
 
@@ -900,6 +863,15 @@ Automatizar validaciones y publicar la primera versión.
 Publicar el portfolio y comenzar a utilizarlo en postulaciones.
 
 ## Tareas
+
+### Prerrequisitos externos de lanzamiento
+
+- [ ] Confirmar que el flujo externo de operaciones desplegó la versión aprobada.
+- [ ] Confirmar que el dominio público y las rutas `/api` y `/admin` responden según el contrato.
+- [ ] Confirmar que los smoke checks de producción pasaron.
+- [ ] Confirmar que existe un backup inicial gestionado y verificado por operaciones.
+
+### Revisión y comunicación
 
 - [ ] Revisión final de contenido.
 - [ ] Revisión final en inglés.
@@ -912,9 +884,8 @@ Publicar el portfolio y comenzar a utilizarlo en postulaciones.
 - [ ] Core Web Vitals.
 - [ ] Prueba desde otra red.
 - [ ] Prueba sin sesión de administrador.
-- [ ] Backup inicial.
 - [ ] Etiqueta de versión.
-- [ ] Publicación.
+- [ ] Aprobar publicación después de recibir el handoff operativo exitoso.
 - [ ] Actualizar LinkedIn.
 - [ ] Actualizar GitHub.
 - [ ] Agregar enlace al CV.
@@ -924,7 +895,7 @@ Publicar el portfolio y comenzar a utilizarlo en postulaciones.
 
 - Versión 1.0 pública.
 - Release notes.
-- Backup inicial.
+- Confirmación del handoff operativo, smoke checks y backup inicial externo.
 - Enlaces profesionales actualizados.
 
 ## Criterios de aceptación
@@ -934,6 +905,7 @@ Publicar el portfolio y comenzar a utilizarlo en postulaciones.
 - Los cuatro contactos funcionan.
 - El contenido real tiene prioridad sobre los efectos.
 - La experiencia es estable en móvil y escritorio.
+- El deployment y el backup fueron confirmados por el flujo externo de operaciones, no ejecutados por el roadmap de desarrollo.
 
 ---
 
@@ -946,7 +918,7 @@ Mejorar el portfolio mediante evidencia y no por impulso.
 ## Primera semana
 
 - [ ] Revisar errores.
-- [ ] Revisar logs.
+- [ ] Revisar los logs de aplicación disponibles mediante el handoff operativo, sin asumir administración del host.
 - [ ] Revisar analítica.
 - [ ] Verificar indexación.
 - [ ] Verificar descargas del CV.
@@ -961,7 +933,7 @@ Mejorar el portfolio mediante evidencia y no por impulso.
 - [ ] Mejorar textos con feedback.
 - [ ] Ajustar rendimiento.
 - [ ] Revisar dependencias.
-- [ ] Revisar backups.
+- [ ] Confirmar con operaciones el estado de backups y restores del portfolio.
 
 ## Mejoras futuras posibles
 
@@ -1030,7 +1002,7 @@ Resultado:
 - SEO.
 - Analítica.
 
-## Hito E — Producción
+## Hito E — Entrega, deployment externo y lanzamiento
 
 Incluye fases 9 a 12.
 
@@ -1038,10 +1010,10 @@ Resultado:
 
 - Seguridad.
 - Pruebas.
-- CI/CD.
-- Servidor propio + Docker.
-- Cloudflare Tunnel.
-- Frontend, backend y MySQL desplegados localmente.
+- CI y candidato de release reproducible.
+- Repositorio y contrato de deployment entregados al flujo externo de operaciones.
+- Deployment en el servidor propio y Cloudflare Tunnel confirmados externamente.
+- Frontend, backend, gateway y MySQL verificados contra el contrato de runtime.
 - Lanzamiento.
 
 ---
@@ -1157,14 +1129,10 @@ Riesgo:
 
 Mitigación:
 
-- Reinicio automático de Docker.
-- `cloudflared` como servicio systemd.
-- Health checks.
-- Backups externos al disco principal.
-- Restore probado.
-- Monitoreo básico.
-- Procedimiento de recuperación.
-- UPS y redundancia futura si el proyecto lo justifica.
+- Entregar health checks y requisitos de persistencia claros desde el repositorio.
+- Delegar reinicio automático, `cloudflared`, backups, restores, monitoreo, recuperación y seguridad del host al flujo externo `home_server_ops_claude`.
+- Confirmar esas capacidades como prerrequisitos externos de lanzamiento.
+- Evaluar UPS y redundancia desde operaciones si el proyecto lo justifica.
 
 ## Colisión entre proyectos
 
@@ -1174,7 +1142,8 @@ Riesgo:
 
 Mitigación:
 
-- Registro central de puertos.
+- Publicar con claridad el entrypoint reservado `127.0.0.1:8000`, las redes y los volúmenes propios del portfolio.
+- Delegar el registro central de puertos y la coordinación multiproyecto al flujo externo de operaciones.
 - Nombres/prefijos por proyecto.
 - Redes independientes.
 - Volúmenes independientes.
@@ -1189,9 +1158,9 @@ Riesgo:
 Mitigación:
 
 - CI separado de deploy.
-- No exponer SSH públicamente solo para GitHub Actions.
-- Mantener deploy manual al principio.
-- Si se usa self-hosted runner, asociarlo a infraestructura privada/controlada.
+- CI del repositorio sin acceso al servidor doméstico ni secretos del host.
+- Entregar el candidato aprobado y su contrato al flujo externo de operaciones.
+- Delegar SSH, runners, automatización y controles de acceso del host a `home_server_ops_claude`.
 
 ---
 
@@ -1218,6 +1187,7 @@ Mitigación:
 19. Crear proyectos nuevos.
 20. Implementar SEO.
 21. Implementar pruebas.
-22. Configurar CI/CD.
-23. Desplegar.
-24. Lanzar.
+22. Configurar CI y preparar el handoff de deployment.
+23. Entregar la versión aprobada al flujo externo `home_server_ops_claude`.
+24. Confirmar externamente deployment, smoke checks y backup inicial.
+25. Lanzar.

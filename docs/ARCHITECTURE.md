@@ -502,6 +502,22 @@ No se despliega a una plataforma de hosting de aplicaciones.
 
 Cloudflare proporciona DNS/edge/tunnel, pero los procesos y datos de la aplicación permanecen en el servidor propio.
 
+### Límite de responsabilidad del repositorio
+
+El repositorio es responsable de entregar una aplicación verificable y un contrato de runtime consumible:
+
+- servicios y límites de red del proyecto;
+- gateway y rutas públicas esperadas;
+- entrypoint futuro `127.0.0.1:8000`;
+- variables y secretos requeridos sin sus valores;
+- persistencia, migraciones, bootstrap y health checks de aplicación;
+- procedimientos reproducibles de build, pruebas y smoke checks;
+- información de aplicación relevante para backup y rollback.
+
+El workflow externo `home_server_ops_claude` es responsable de inspeccionar y operar el servidor real: preflight de Linux/hardware/storage, instalación y configuración del host, clonación, variables reales de producción, Compose final de producción, `cloudflared`, firewall, backups, restores, reinicios, registro multiproyecto y deployment. Este repositorio referencia ese límite, pero no duplica su checklist operacional.
+
+La Fase 3 crea el entorno Compose completo de desarrollo/pruebas y límites compatibles con producción. No crea el Compose final del servidor, targets de imagen especulativos, configuración de Cloudflare, unidades `systemd`, firewall, cron de backup ni scripts específicos del host.
+
 ---
 
 ## Seguridad
@@ -571,3 +587,5 @@ Actualizar `SERVER_ARCHITECTURE.md` si cambia:
 - Convención de puertos.
 - Política de backups compartida.
 - Estrategia general de deploy.
+
+Actualizar `DEPLOYMENT.md` cuando cambie el contrato de handoff que consume el workflow externo de operaciones.

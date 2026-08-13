@@ -15,6 +15,15 @@ El servidor alojará:
 
 Cloudflare Tunnel será la capa de acceso público.
 
+## Propiedad operativa
+
+Este documento registra la topología compartida y el contrato que el portfolio debe respetar; no convierte al roadmap del portfolio en propietario de las operaciones físicas del servidor.
+
+- El repositorio del portfolio define su stack, su gateway, su entrypoint futuro `127.0.0.1:8000`, persistencia, variables, migraciones, bootstrap y health checks.
+- El workflow externo `home_server_ops_claude` inspecciona el servidor real y ejecuta el preflight, la preparación del host, el Compose final de producción, el deployment, `cloudflared`, firewall, backups, restores, reinicios y coordinación multiproyecto.
+- Las características reales de Linux, hardware, almacenamiento y layout se descubren durante ese workflow externo; nunca se inventan desde este repositorio.
+- La documentación del portfolio entrega el contrato necesario y referencia el workflow externo sin copiar su checklist completo.
+
 ---
 
 ## Modelo general
@@ -437,6 +446,8 @@ Un build exitoso en GitHub no significa que los archivos compilados hayan sido d
 ---
 
 ## Despliegue
+
+La ejecución de esta sección pertenece al workflow externo `home_server_ops_claude`. El repositorio del portfolio debe llegar a ese workflow como candidato aprobado, verificable y acompañado por su contrato de deployment; no instala ni opera el host desde su roadmap de desarrollo.
 
 ### Primera etapa
 

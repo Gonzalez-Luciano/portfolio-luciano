@@ -310,9 +310,17 @@ Rules:
 - Cloudflare Access may be added as defense in depth for `/admin`.
 - Backups for the portfolio must be isolated from backups for other projects.
 
+### Deployment responsibility boundary
+
+This repository owns application and release readiness: services, runtime boundaries, environment contracts, persistence requirements, migrations, bootstrap, health checks, build/test commands, and deployment handoff documentation.
+
+Actual Linux host inspection and operation belong to the external `home_server_ops_claude` workflow. Portfolio development agents must not duplicate or execute its host preflight, Docker installation, final production Compose, `cloudflared`, firewall, backup/restore, reboot recovery, multiproject registry, cloning, production secrets, or deployment procedures unless the user explicitly changes that responsibility boundary.
+
+The target is a deployment-ready repository, not a prematurely deployed repository. Preserve `docs/SERVER_ARCHITECTURE.md` as the shared topology contract and `docs/DEPLOYMENT.md` as the application handoff consumed by external operations.
+
 ## Docker rules
 
-Docker must provide a reproducible development and production environment for the portfolio.
+Docker must provide a reproducible development/test environment and clear production-compatible application boundaries. Final production images, Compose and host-specific configuration are created or adjusted by the external operations workflow after inspecting the real server.
 
 Expected portfolio services:
 
@@ -428,7 +436,7 @@ For broad features or multi-file changes:
 
 ### Branch and worktree continuity
 
-A planned phase or cohesive feature should normally use one branch and one worktree from brainstorming and specification through implementation, reviews, fixes, and final integration. Reuse that branch and worktree when execution begins; do not split documentation/planning and implementation into separate worktrees or create per-task worktrees unless the user explicitly requests it.
+A cohesive roadmap phase or feature should normally use one branch and one worktree from brainstorming and specification through implementation, reviews, fixes, and final integration. Reuse that branch and worktree when execution begins. Documentation/planning and implementation must not be split into separate worktrees, and per-task worktrees must not be created, unless the user explicitly requests it.
 
 This continuity rule does not weaken the requirement that `main` remain stable, does not authorize destructive commands, force pushes, history rewriting, unauthorized merges, or branch deletion, and does not replace any required explicit user approval.
 

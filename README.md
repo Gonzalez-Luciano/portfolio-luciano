@@ -57,6 +57,10 @@ Portfolio Docker
 
 Otros proyectos se publicarán usando subdominios y puertos locales diferentes.
 
+El roadmap de este repositorio termina su responsabilidad operativa al entregar una versión aprobada, validada y acompañada por su contrato de deployment. El workflow externo `home_server_ops_claude` inspecciona la computadora Linux real y ejecuta el Compose final de producción, Cloudflare Tunnel, backups, seguridad del host y deployment. El portfolio no duplica ese checklist ni presupone características físicas del servidor.
+
+`docs/DEPLOYMENT.md` describe el handoff de aplicación que consume ese workflow externo.
+
 La arquitectura multiproyecto se documenta en:
 
 `docs/SERVER_ARCHITECTURE.md`
