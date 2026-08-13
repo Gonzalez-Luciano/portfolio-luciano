@@ -426,6 +426,12 @@ For broad features or multi-file changes:
 - Do not implement future roadmap phases unless explicitly requested.
 - If a task reveals an architectural decision, document it before continuing.
 
+### Branch and worktree continuity
+
+A planned phase or cohesive feature should normally use one branch and one worktree from brainstorming and specification through implementation, reviews, fixes, and final integration. Reuse that branch and worktree when execution begins; do not split documentation/planning and implementation into separate worktrees or create per-task worktrees unless the user explicitly requests it.
+
+This continuity rule does not weaken the requirement that `main` remain stable, does not authorize destructive commands, force pushes, history rewriting, unauthorized merges, or branch deletion, and does not replace any required explicit user approval.
+
 If Codex subagents or a workflow plugin are available, non-trivial work may be split into implementation, testing, and review responsibilities. The final result must still be checked against this repository's documentation and roadmap.
 
 ---
