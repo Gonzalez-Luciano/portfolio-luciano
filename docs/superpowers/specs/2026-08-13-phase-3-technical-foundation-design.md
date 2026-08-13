@@ -111,7 +111,7 @@ Locale handling is centralized and used consistently by routing middleware/proxy
 
 The Next.js 16 convention is implemented through `web/src/proxy.ts`. `/` always redirects to an explicit localized route. Only an explicit language-control action persists the locale cookie; passive detection does not. Invalid stored values are ignored safely.
 
-Phase 3 must keep `/es` and `/en` statically renderable/prerenderable and verify that the generated foundation preserves that capability. This is the preferred baseline, not a permanent ban on justified dynamic rendering in later phases.
+Phase 3 must keep `/es` and `/en` statically renderable/prerenderable and verify that the generated foundation preserves that capability. `next build` must succeed when Laravel and Caddy are not running. The localized foundation pages therefore perform no mandatory live API request during prerender/build. This is the preferred baseline, not a permanent ban on justified dynamic rendering in later phases.
 
 Technical interface strings belong in `next-intl` message files. Approved CMS content is not copied into React source or translation messages.
 
@@ -144,6 +144,8 @@ The API client distinguishes two origins:
 
 The internal origin must never use a `NEXT_PUBLIC_` name or enter browser bundles. The frontend never receives MySQL credentials. The client validates/normalizes the Phase 3 response contract and exposes typed success and failure results. HTTP failures, malformed responses, and unavailable upstreams must not be confused with successful empty data.
 
+The typed server-side boundary is implemented and tested without coupling the localized page build to a live backend. Any Phase 3 UI demonstration of real API connectivity runs after startup from the browser through same-origin `/api/v1`, or is performed by the gateway smoke checklist; it is not a build-time data dependency.
+
 ### 5.5 Frontend quality commands
 
 `web/package.json` owns independent commands for formatting checks, linting, type checking, automated tests, development, and production build. Frozen lockfile installation must work in Windows/PowerShell, Ubuntu WSL2, containers, and future CI through the pinned pnpm version.
@@ -166,7 +168,40 @@ The API container does not publish its port to the host. Caddy communicates with
 
 ### 6.2 Versioned API
 
-`GET /api/v1` is the minimal public versioned entrypoint. It proves routing and the serialization contract without creating Phase 4 content models. Responses use a documented JSON Resource/envelope convention, and API errors retain a consistent JSON contract instead of falling through to Next.js or Filament HTML.
+`GET /api/v1` is the minimal public versioned entrypoint. It proves routing and serialization without creating Phase 4 content models.
+
+Every Phase 3 public API success has exactly one top-level `data` member. For the version entrypoint, the exact response is:
+
+```json
+{
+  "data": {
+    "status": "ok",
+    "version": "v1"
+  }
+}
+```
+
+Phase 3 defines no other payload, pagination, link, or content-resource shape. Later API design may extend the value carried by `data` without changing the one-member envelope, but that work belongs to its owning phase.
+
+Every handled API failure has exactly one top-level `error` member with all three fields below:
+
+```json
+{
+  "error": {
+    "code": "rate_limited",
+    "message": "Too many requests.",
+    "details": {}
+  }
+}
+```
+
+- `code` is a stable machine-readable lowercase snake-case string.
+- `message` is a safe human-readable string and contains no trace or internal path.
+- `details` is always an object. It is empty when no structured detail exists; validation errors may map field names to arrays of safe messages.
+- HTTP status codes remain authoritative; they are not duplicated in the body.
+- A response never contains both `data` and `error`.
+
+The Laravel foundation normalizes API route failures—including rate limiting and API 404s—to this error shape instead of returning a Next.js page, Filament HTML, or a framework trace. The typed frontend client implements this exact discriminated success/error contract and rejects responses that contain neither shape, both shapes, or invalid field types.
 
 Phase 3 establishes:
 
@@ -183,9 +218,10 @@ Filament 5 provides one panel at `/admin`, with Livewire 4 as required by the re
 - There is no public registration.
 - Session authentication is Laravel-owned.
 - The minimal user/admin persistence required for authentication is in scope.
-- Panel access is enforced through explicit `canAccessPanel()` authorization.
+- The foundational `users` table has exactly one Phase 3 authorization marker: `is_admin BOOLEAN NOT NULL DEFAULT false`.
+- Panel access is enforced through explicit `canAccessPanel()` authorization and requires `is_admin === true`.
 - An unauthenticated visitor is sent through the normal Filament authentication flow.
-- An authenticated but unauthorized user is denied.
+- An authenticated user with the default `is_admin = false` is denied.
 - Roles, permissions, CMS resources, content entities, and broader editorial workflows remain Phase 4.
 
 ### 6.4 Interactive initial-administrator command
@@ -203,6 +239,7 @@ For the canonical human development/bootstrap flow, the command:
 - confirms the password;
 - validates all values;
 - hashes the password through Laravel's hashing facilities;
+- creates the user with `is_admin = true`;
 - creates only when the state is unambiguous and no duplicate account exists;
 - refuses duplicate or ambiguous conditions;
 - never silently updates an existing user;
@@ -376,10 +413,11 @@ PowerShell syntax is primary. Equivalent Bash variants are documented wherever s
 
 - Frozen dependency installation succeeds.
 - Formatting, lint, strict type checking, and production build pass.
+- `next build` succeeds with no Laravel, Caddy, or MySQL service running; the static localized foundation has no live build-time API dependency.
 - `/es` and `/en` remain statically renderable/prerenderable in the Phase 3 foundation.
 - Locale resolution covers valid explicit preference, `Accept-Language`, Spanish fallback, invalid values, and persistence only after explicit selection.
 - Theme logic covers light/dark system preference, explicit overrides, persistence, invalid stored values, and intentional root hydration handling where testable.
-- Typed API behavior covers successful data, HTTP failure, malformed response, and unavailable upstream behavior.
+- Typed API behavior covers the exact `data`/`error` shapes, successful data, HTTP failure, malformed/ambiguous envelopes, and unavailable upstream behavior.
 - Client/server environment separation is verified so the internal API origin cannot enter the browser bundle.
 
 ### 11.3 Automated backend checks
@@ -390,10 +428,10 @@ Coverage includes:
 
 - Laravel boot and `/up` behavior without coupling it to a database query;
 - MySQL connectivity as a separate integration assertion;
-- `/api/v1`, response envelope, JSON errors, and named rate limiter;
+- `/api/v1` exact success envelope, normalized error envelope, API 404, and named rate limiter;
 - unauthenticated admin flow;
-- authorized Filament access;
-- authenticated unauthorized-user denial;
+- authorized Filament access with `is_admin = true`;
+- authenticated unauthorized-user denial with the default `is_admin = false`;
 - Filament/Livewire behavior suitable for application-level automated testing;
 - standard storage link/public-media behavior;
 - interactive bootstrap command success, validation, duplicate/ambiguous refusal, hashing, and secret-output/log safety;
@@ -490,9 +528,9 @@ Phase 3 implementation is acceptable only when:
 
 1. the documented monorepo structure and environment examples exist without secrets;
 2. exact dependency resolution is committed and fresh dependency volumes bootstrap deterministically;
-3. frontend lint, type checks, tests, and build pass, with `/es` and `/en` still statically renderable;
+3. frontend lint, type checks, tests, and build pass with Laravel/Caddy/MySQL stopped, while `/es` and `/en` remain statically renderable and have no mandatory build-time API request;
 4. Laravel boots under explicit Apache configuration and backend automated tests pass against disposable MySQL 8.4;
-5. `/api/v1`, `/admin`, authorization, Livewire foundations, interactive administrator creation, logging, CORS, rate limiting, and standard public media behavior meet this specification;
+5. `/api/v1` implements the exact `data`/`error` contract, while `/admin`, the `is_admin` authorization marker, Livewire foundations, interactive administrator creation, logging, CORS, rate limiting, and standard public media behavior meet this specification;
 6. Compose validates, builds, reaches healthy states without sleeps, and keeps test/development data isolated;
 7. only Caddy publishes `127.0.0.1:8000`, while no MySQL host port exists;
 8. installed/observed backend route ownership is recorded and Caddy routes it without filesystem coupling;
@@ -517,6 +555,9 @@ Before written approval, review this document and synchronized authority files f
 - accidental MySQL publication;
 - accidental project-level `cloudflared`;
 - theme-induced request-time rendering;
+- build-time dependence on a running Laravel/Caddy/MySQL service;
+- an ambiguous API envelope or responses containing both `data` and `error`;
+- roles, permissions, or RBAC beyond the single `is_admin` marker;
 - automatic migrations, seeds, or administrator creation;
 - hidden dependency-volume bootstrap assumptions;
 - arbitrary readiness sleeps;

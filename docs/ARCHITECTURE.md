@@ -221,7 +221,7 @@ Usar Client Components únicamente donde la interacción lo requiera:
 
 Evitar hidratar contenido estático innecesariamente.
 
-La base de Fase 3 mantiene `/es` y `/en` prerenderizables. El tema no se resuelve con `cookies()` del servidor: un bootstrap mínimo, estable y previo al paint aplica `data-theme` desde una preferencia explícita `light`/`dark` en `localStorage` o, si no existe, desde `prefers-color-scheme`. Cualquier supresión de warning de hidratación queda limitada al elemento raíz cuya mutación previa es intencional.
+La base de Fase 3 mantiene `/es` y `/en` prerenderizables. `next build` debe completar sin Laravel, Caddy ni MySQL en ejecución: la UI base no hace requests API obligatorios durante el build. Una demostración de conectividad ocurre en runtime por `/api/v1` o mediante smoke checks. El tema no se resuelve con `cookies()` del servidor: un bootstrap mínimo, estable y previo al paint aplica `data-theme` desde una preferencia explícita `light`/`dark` en `localStorage` o, si no existe, desde `prefers-color-scheme`. Cualquier supresión de warning de hidratación queda limitada al elemento raíz cuya mutación previa es intencional.
 
 ---
 
@@ -243,7 +243,7 @@ El frontend no duplica el CMS.
 
 El servicio API usa Apache interno en puerto 80 con `DocumentRoot` explícito en `public/`, rewrite/front controller verificado y permisos de escritura para `storage/` y `bootstrap/cache`. Laravel conserva `/up` como señal ligera de boot, independiente de MySQL.
 
-Filament expone un panel autenticado sin registro público. `canAccessPanel()` separa usuario autenticado de administrador autorizado. El primer administrador se crea mediante `php artisan portfolio:bootstrap-admin`: flujo interactivo create-only, contraseña oculta y confirmada, sin actualización silenciosa, salida ni logs de secretos. Los tests simulan prompts con las herramientas de consola de Laravel.
+Filament expone un panel autenticado sin registro público. El único marcador de autorización de Fase 3 es `users.is_admin BOOLEAN NOT NULL DEFAULT false`; `canAccessPanel()` exige `is_admin = true`. No se introducen roles, permisos ni RBAC. El primer administrador se crea con ese marcador mediante `php artisan portfolio:bootstrap-admin`: flujo interactivo create-only, contraseña oculta y confirmada, sin actualización silenciosa, salida ni logs de secretos. Los tests simulan prompts con las herramientas de consola de Laravel.
 
 ---
 
@@ -278,6 +278,20 @@ Principios:
 - Errores controlados.
 - Sin campos sensibles.
 - Caché cuando tenga sentido.
+
+Contrato mínimo de Fase 3:
+
+```json
+{"data":{"status":"ok","version":"v1"}}
+```
+
+Los errores manejados usan exclusivamente:
+
+```json
+{"error":{"code":"rate_limited","message":"Too many requests.","details":{}}}
+```
+
+`code` es `snake_case` estable, `message` es seguro, `details` siempre es un objeto y el status HTTP no se duplica en el body. Una respuesta nunca contiene simultáneamente `data` y `error`. El cliente tipado valida estas formas y rechaza envelopes ambiguos o inválidos.
 
 El contenido en borrador nunca debe filtrarse a endpoints públicos.
 

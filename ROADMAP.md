@@ -262,7 +262,9 @@ Crear una base reproducible para frontend, backend, base de datos y administraci
 - [ ] Configurar MySQL.
 - [ ] Configurar API versionada.
 - [ ] Configurar recursos JSON.
+- [ ] Implementar y probar el envelope mínimo exacto de éxito/error de `/api/v1`.
 - [ ] Configurar autenticación administrativa.
+- [ ] Agregar `users.is_admin BOOLEAN NOT NULL DEFAULT false` como único marcador administrativo de Fase 3 y usarlo en `canAccessPanel()`.
 - [ ] Instalar y configurar Filament.
 - [ ] Preparar almacenamiento de medios.
 - [ ] Configurar CORS.
