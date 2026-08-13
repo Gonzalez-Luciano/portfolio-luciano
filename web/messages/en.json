@@ -1,0 +1,11 @@
+{
+  "Foundation": {
+    "title": "Localized technical foundation",
+    "currentLocale": "Current locale: {locale}",
+    "languageSwitcherLabel": "Select language",
+    "spanish": "Español",
+    "english": "English",
+    "themeSlot": "Theme control placeholder",
+    "apiStatusSlot": "API status placeholder"
+  }
+}

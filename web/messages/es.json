@@ -1,0 +1,11 @@
+{
+  "Foundation": {
+    "title": "Base técnica localizada",
+    "currentLocale": "Idioma actual: {locale}",
+    "languageSwitcherLabel": "Seleccionar idioma",
+    "spanish": "Español",
+    "english": "English",
+    "themeSlot": "Espacio reservado para el control de tema",
+    "apiStatusSlot": "Espacio reservado para el estado de la API"
+  }
+}
