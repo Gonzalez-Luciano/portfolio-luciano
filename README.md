@@ -30,6 +30,10 @@ Leer:
 
 La inicialización de `web/`, `api/` e `infra/` pertenece a la Fase 3. El repositorio Git y la documentación base ya existen.
 
+La arquitectura aprobada para esa base usa Caddy como único gateway público local, Next.js interno, Apache + Laravel interno, MySQL 8.4 persistente para desarrollo y un perfil de pruebas con MySQL 8.4 descartable. El contrato local será `http://localhost:8000`; los servicios internos no publicarán puertos al host.
+
+PowerShell/Windows Terminal con Docker Desktop y backend WSL2 es el flujo Windows canónico. Ubuntu WSL2 usa el mismo Docker Desktop mediante su integración, sin una segunda instalación de Docker Engine. Los comandos concretos de bootstrap y operación se agregarán con la implementación de Fase 3.
+
 ## Flujo Git
 
 `main` es la única rama estable de larga duración. El trabajo usa ramas cortas con prefijos como `feat/`, `fix/`, `docs/`, `refactor/`, `test/`, `chore/` e `infra/`, y llega a `main` mediante pull request después de las validaciones relevantes. No existe una rama permanente `develop`, no se reescribe historial compartido y ningún trabajo se integra en `main` sin aprobación explícita.

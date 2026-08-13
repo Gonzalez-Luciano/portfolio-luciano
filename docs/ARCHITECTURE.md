@@ -99,7 +99,8 @@ Responsabilidades:
 - Compose del proyecto.
 - Gateway/reverse proxy del proyecto.
 - Configuración de servicios internos.
-- Scripts de deploy/backup específicos del portfolio.
+- Configuración de desarrollo/pruebas y validaciones de infraestructura propias del portfolio.
+- Contrato de handoff para que operaciones externas adapte el runtime al servidor real.
 
 No debe incluir la configuración global de otros proyectos del servidor.
 
@@ -136,11 +137,11 @@ El stack del portfolio no necesita un contenedor `cloudflared`.
 127.0.0.1:8000
        |
        v
-portfolio-gateway
+portfolio-gateway (Caddy)
     |             |
     v             v
 portfolio-web   portfolio-api
- Next.js         Laravel
+ Next.js         Apache + Laravel
                     |
                     v
               portfolio-mysql
@@ -152,14 +153,15 @@ Servicios adicionales se agregan solo con una necesidad real.
 
 ## Gateway
 
-El gateway es el único contenedor del proyecto que publica un puerto al host.
+El gateway es Caddy 2 y es el único contenedor del proyecto que publica un puerto al host. Caddy opera como reverse proxy HTTP y no monta ni interpreta el filesystem de Laravel.
 
-Rutas conceptuales:
+Ownership conceptual de rutas:
 
 ```text
 /          -> web
 /api/*     -> api
 /admin/*   -> api / Filament
+Livewire, assets backend y media pública verificados -> api
 ```
 
 Beneficios:
@@ -171,7 +173,9 @@ Beneficios:
 - `cloudflared` no necesita conocer la red Docker interna.
 - Los contenedores web/api/mysql no se exponen directamente.
 
-La implementación exacta del gateway se decidirá al crear la infraestructura. Debe soportar correctamente el tráfico WebSocket/HMR de Next.js durante desarrollo.
+Caddy debe soportar el tráfico WebSocket/HMR de Next.js durante desarrollo. Los matchers backend definitivos se derivan después de instalar Laravel, Filament y Livewire: `route:list --json` aporta las rutas registradas y el tráfico real de admin, autenticación, Livewire, assets y media completa el inventario. No se adivinan prefijos ni se fija un hash generado de Livewire. Una ruta backend conserva su ownership incluso cuando Laravel responde 404.
+
+Caddy conserva el `Host` entrante y usa su comportamiento normal de forwarded headers. La integración futura con el `cloudflared` externo debe validar trusted proxies y protocolo reenviado en el servidor real, sin configuración Cloudflare especulativa en Fase 3.
 
 URLs canónicas de desarrollo:
 
@@ -194,9 +198,14 @@ Dirección:
 - React.
 - Next.js App Router.
 - TypeScript estricto.
-- Tailwind CSS 4+.
-- `pnpm`.
-- `next-intl`.
+- Tailwind CSS 4.x.
+- Node.js 24 LTS.
+- última release estable parcheada de Next.js 16.2.x disponible al implementar; no preview/canary.
+- React 19.2.x.
+- `pnpm` 11.20.0 fijado en `web/package.json`.
+- `next-intl` 4.x.
+
+`pnpm`, `package.json` y `pnpm-lock.yaml` pertenecen exclusivamente a `web/`; no existe workspace pnpm en la raíz.
 
 ### Renderizado
 
@@ -211,6 +220,8 @@ Usar Client Components únicamente donde la interacción lo requiera:
 - Campo de nodos.
 
 Evitar hidratar contenido estático innecesariamente.
+
+La base de Fase 3 mantiene `/es` y `/en` prerenderizables. El tema no se resuelve con `cookies()` del servidor: un bootstrap mínimo, estable y previo al paint aplica `data-theme` desde una preferencia explícita `light`/`dark` en `localStorage` o, si no existe, desde `prefers-color-scheme`. Cualquier supresión de warning de hidratación queda limitada al elemento raíz cuya mutación previa es intencional.
 
 ---
 
@@ -230,6 +241,10 @@ Laravel es la fuente de verdad del contenido administrable.
 
 El frontend no duplica el CMS.
 
+El servicio API usa Apache interno en puerto 80 con `DocumentRoot` explícito en `public/`, rewrite/front controller verificado y permisos de escritura para `storage/` y `bootstrap/cache`. Laravel conserva `/up` como señal ligera de boot, independiente de MySQL.
+
+Filament expone un panel autenticado sin registro público. `canAccessPanel()` separa usuario autenticado de administrador autorizado. El primer administrador se crea mediante `php artisan portfolio:bootstrap-admin`: flujo interactivo create-only, contraseña oculta y confirmada, sin actualización silenciosa, salida ni logs de secretos. Los tests simulan prompts con las herramientas de consola de Laravel.
+
 ---
 
 ## Base de datos
@@ -245,6 +260,8 @@ Reglas:
 - Backup independiente.
 - No compartir instancia lógica con demos por comodidad.
 - No ejecutar resets automáticos destructivos.
+
+Las pruebas automatizadas nunca usan esa base persistente. El perfil Compose `test` crea `mysql-test` sobre MySQL 8.4 con storage descartable y un `api-test` one-shot que reutiliza la imagen backend, espera health real y ejecuta Laravel con `APP_ENV=testing`. No se publica `3306` ni se usa SQLite como sustituto de integración MySQL.
 
 ---
 
@@ -426,6 +443,8 @@ gateway
 web
 api
 mysql
+mysql-test (perfil test, bajo demanda)
+api-test (perfil test, one-shot)
 ```
 
 Posibles servicios posteriores:
@@ -451,6 +470,10 @@ portfolio_front:
 portfolio_data:
   api
   mysql
+
+portfolio_test:
+  api-test
+  mysql-test
 ```
 
 MySQL no necesita pertenecer a la red frontal.
@@ -464,6 +487,10 @@ gateway -> 127.0.0.1:8000
 ```
 
 Los demás servicios se comunican mediante DNS interno de Docker.
+
+El código de desarrollo usa bind mounts. Volúmenes Linux administrados por Docker aíslan `web/node_modules` y `api/vendor`; un bootstrap frío explícito los puebla desde lockfiles y el arranque normal no reinstala dependencias. MySQL de desarrollo y `storage/app/public` son persistentes. La raíz `.env` alimenta interpolación de Compose, pero cada servicio recibe explícitamente solo sus variables propias; web nunca recibe credenciales MySQL y `http://api` es server-only.
+
+PowerShell con Docker Desktop/WSL2 es el flujo Windows canónico. Ubuntu WSL2 opera el mismo engine mediante integración de Docker Desktop, sin instalar un segundo Docker Engine.
 
 ---
 

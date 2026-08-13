@@ -75,7 +75,11 @@ Rutas del mismo origen:
 /admin/*     -> Laravel / Filament
 ```
 
-El handoff de Fase 3 debe registrar también cualquier ruta técnica de Laravel/Filament necesaria para assets, Livewire o media. Web, API y MySQL usan DNS/redes internas de Docker; sus puertos internos no forman parte del contrato público.
+El gateway del portfolio es Caddy. `portfolio-api` sirve Laravel mediante Apache interno con `public/` como `DocumentRoot`; Caddy no monta ni interpreta archivos de Laravel.
+
+El handoff de Fase 3 registra las rutas Laravel estructuradas y también las rutas públicas observadas que Filament, Livewire y media requieren. Los matchers se derivan de `route:list --json` más smoke checks reales; no se adivina ni se hardcodea el hash variable de Livewire. Web, API y MySQL usan DNS/redes internas de Docker; sus puertos internos no forman parte del contrato público.
+
+Caddy usa su comportamiento normal de `Host` y forwarded headers. Operaciones debe verificar trusted proxies y protocolo reenviado al conectar el `cloudflared` compartido en la topología real.
 
 ## Redes y exposición
 
@@ -107,7 +111,7 @@ Categorías mínimas esperadas para producción:
 - Laravel `APP_KEY` y configuración de entorno;
 - credenciales MySQL específicas del portfolio;
 - configuración de sesión, logs y filesystem;
-- credenciales del administrador inicial usadas por el comando explícito de bootstrap.
+- contrato del bootstrap administrativo interactivo, sin contener la contraseña.
 
 No pertenecen al repositorio ni al entorno de aplicación:
 
@@ -136,8 +140,9 @@ Fase 3 no crea targets de producción especulativos ni un Compose final del serv
 - Producción usa migraciones no destructivas ejecutadas conscientemente por operaciones.
 - Nunca se programa `migrate:fresh`, resets o seeds destructivos contra datos persistentes de producción.
 - Los seeds normales contienen solo datos seguros y no crean credenciales.
-- El primer administrador de Filament se crea mediante un comando explícito e idempotente que lee valores de un entorno no versionado.
-- Operaciones debe ejecutar y registrar ese comando sin exponer la contraseña en logs o historial innecesario.
+- En desarrollo, el primer administrador de Filament se crea mediante `php artisan portfolio:bootstrap-admin`, un comando interactivo create-only con password oculto y confirmación.
+- El comando rechaza duplicados/estados ambiguos, no actualiza usuarios y no imprime ni registra secretos.
+- Si producción necesita un mecanismo no interactivo, operaciones lo decide después del preflight real; Fase 3 no especula cómo inyectar ese secreto.
 
 ## Health checks y smoke checks
 

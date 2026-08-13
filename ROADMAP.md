@@ -258,6 +258,7 @@ Crear una base reproducible para frontend, backend, base de datos y administraci
 ### Backend
 
 - [ ] Inicializar Laravel.
+- [ ] Servir Laravel mediante Apache + PHP 8.5 interno con `public/` como `DocumentRoot`, rewrite/front controller y permisos runtime explícitos.
 - [ ] Configurar MySQL.
 - [ ] Configurar API versionada.
 - [ ] Configurar recursos JSON.
@@ -275,7 +276,9 @@ Crear una base reproducible para frontend, backend, base de datos y administraci
 - [ ] Crear servicio backend.
 - [ ] Crear servicio MySQL 8.4 persistente para desarrollo.
 - [ ] Crear servicio/perfil MySQL 8.4 descartable y bajo demanda para pruebas automatizadas.
-- [ ] Crear gateway/reverse proxy del portfolio y enlazar únicamente `127.0.0.1:8000`.
+- [ ] Crear `api-test` one-shot en el perfil de pruebas, reutilizando la imagen backend y esperando a `mysql-test` saludable.
+- [ ] Crear Caddy como gateway/reverse proxy del portfolio y enlazar únicamente `127.0.0.1:8000`.
+- [ ] Inventariar rutas y tráfico público reales de Laravel/Filament/Livewire/media antes de fijar los matchers backend de Caddy.
 - [ ] Verificar compatibilidad del stack con el `cloudflared` global del servidor; no crear `cloudflared` dentro del proyecto.
 - [ ] Definir redes Docker internas del portfolio (`front` y `data` o equivalente).
 - [ ] Confirmar que MySQL no publica puertos al host ni a Internet.
@@ -284,7 +287,7 @@ Crear una base reproducible para frontend, backend, base de datos y administraci
 - [ ] Configurar red interna.
 - [ ] Definir estrategia de migraciones.
 - [ ] Definir seed inicial.
-- [ ] Crear un comando explícito de bootstrap del administrador que lea valores no versionados; los seeds normales no deben crear credenciales.
+- [ ] Crear un comando interactivo y explícito de bootstrap del administrador con entrada secreta oculta; los seeds normales no deben crear credenciales.
 - [ ] Documentar arranque, parada y reinicio.
 - [ ] Documentar PowerShell + Docker Desktop con backend WSL2 como flujo canónico de Windows.
 - [ ] Comprobar operación equivalente desde Ubuntu WSL2 mediante la integración de Docker Desktop, sin instalar un segundo Docker Engine.

@@ -202,7 +202,7 @@ React          Laravel
                 MySQL
 ```
 
-El gateway puede ser Nginx, Caddy u otra solución elegida durante la implementación.
+El gateway del portfolio es Caddy. Hace reverse proxy HTTP hacia Next.js y hacia el contenedor interno Apache + Laravel, sin montar ni interpretar el source tree de Laravel. Solo Caddy publica `127.0.0.1:8000`; el servidor externo debe preservar este contrato al preparar el Compose final.
 
 Ejemplo de rutas internas:
 
