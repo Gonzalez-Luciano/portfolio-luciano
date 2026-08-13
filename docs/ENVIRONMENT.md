@@ -31,6 +31,11 @@ same engine; do not install or start a second Ubuntu Docker Engine. The checked
 out Windows path is supported. Moving it under the WSL filesystem is optional
 only after measuring a material bind-mount performance problem.
 
+For reliable development watching on the Windows/9p bind mount, the web
+Compose service runs `next dev --webpack` and `web/next.config.ts` sets
+`watchOptions.pollIntervalMs: 1000`. Keep both settings together. They are
+development-only and do not alter Caddy routing or the production build.
+
 The equivalent Ubuntu command surface is Bash plus the same `docker compose`
 commands. It does not require a distinct `.env`, project name, image, network,
 or volume. See the tested command set in the repository root `README.md`.

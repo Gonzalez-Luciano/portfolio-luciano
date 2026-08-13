@@ -17,6 +17,7 @@ services:
 
   web:
     build: {context: ./web, dockerfile: Dockerfile}
+    command: pnpm dev --webpack --hostname 0.0.0.0
     volumes:
       - ./web:/app
       - type: volume

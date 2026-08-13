@@ -12,6 +12,7 @@ for (const path of [
   '.dockerignore',
   'docs/ENVIRONMENT.md',
   'docs/testing/PHASE_3_VERIFICATION.md',
+  'infra/validation/verify-hmr.ps1',
 ]) {
   assert.ok(existsSync(resolve(root, path)), `Missing ${path}`);
 }
@@ -80,6 +81,7 @@ const apiService = service('api');
 const gatewayService = service('gateway');
 const webService = service('web');
 const webDockerfile = read('web/Dockerfile');
+const nextConfig = read('web/next.config.ts');
 
 assert.doesNotMatch(
   webDockerfile,
@@ -95,6 +97,16 @@ assert.match(
   webService,
   /^ {6}- type: volume\n {8}source: web_node_modules\n {8}target: \/app\/node_modules\n {8}volume:\n {10}nocopy: true$/m,
   'The web dependency volume must start empty without Docker copy-up',
+);
+assert.match(
+  nextConfig,
+  /watchOptions:\s*\{\s*pollIntervalMs:\s*1000,?\s*\}/,
+  'Next development watching must poll the Windows bind mount every second',
+);
+assert.match(
+  webService,
+  /^ {4}command: pnpm dev --webpack --hostname 0\.0\.0\.0$/m,
+  'The Windows bind mount must use Next webpack development watching',
 );
 
 assert.match(apiService, /^ {6}- api_public_media:\/var\/www\/html\/storage\/app\/public$/m);

@@ -506,6 +506,11 @@ El código de desarrollo usa bind mounts. Volúmenes Linux administrados por Doc
 
 PowerShell con Docker Desktop/WSL2 es el flujo Windows canónico. Ubuntu WSL2 opera el mismo engine mediante integración de Docker Desktop, sin instalar un segundo Docker Engine.
 
+En el bind mount Windows/9p, el desarrollo web fija webpack y
+`watchOptions.pollIntervalMs: 1000` para que Next detecte ediciones. Esta
+elección es solo del watcher de desarrollo: no cambia Caddy, sus rutas ni el
+build de producción.
+
 ### Runtime verificado de Fase 3
 
 La aceptación local verificó Caddy `2.11.4-alpine`, Node `24.18.0`, pnpm

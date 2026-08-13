@@ -34,6 +34,8 @@ La arquitectura de Fase 3 usa Caddy como único gateway local, Next.js interno, 
 
 PowerShell/Windows Terminal con Docker Desktop y backend WSL2 es el flujo Windows canónico. Docker Desktop es el único engine: habilitar la integración de Ubuntu WSL2 y no instalar un segundo Docker Engine/dockerd dentro de Ubuntu. El checkout actual de Windows funciona; trasladarlo al filesystem WSL solo es una optimización futura que debe justificarse con una medición.
 
+El servicio web de desarrollo usa explícitamente Next con webpack y `watchOptions.pollIntervalMs: 1000`. Es necesario para detectar de forma fiable ediciones del bind mount Windows/9p desde el contenedor; Caddy conserva su función de gateway y no interviene en ese watcher. Si se modifica esta configuración, comprobar una edición y su reversión en `/es` a través de `http://localhost:8000` sin reiniciar servicios ni hacer una recarga manual.
+
 Prerequisitos: Docker Desktop iniciado, backend WSL2 e integración Ubuntu habilitados, Node no es necesario en el host y una copia local de `.env` basada en el ejemplo. No imprimir ni compartir los valores de `.env`.
 
 ### Bootstrap limpio (PowerShell)
@@ -116,6 +118,7 @@ docker compose run --rm --no-deps web pnpm typecheck
 docker compose run --rm --no-deps web pnpm test:run
 docker compose --profile test run --rm api-test
 docker compose run --rm --no-deps web pnpm build
+.\infra\validation\verify-hmr.ps1
 ```
 
 El build de Next debe poder ejecutarse con `gateway`, `api` y `mysql` detenidos. `api-test` usa únicamente `mysql-test` descartable. Después de una sesión de test se puede retirar exclusivamente ese contenedor con `docker compose --profile test rm -sf mysql-test`.

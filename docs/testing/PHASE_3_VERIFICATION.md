@@ -137,6 +137,24 @@ then `storage:link` recreated it and the expected public media directory was
 reachable. No administrator, password, browser authentication, or
 credential-gated browser smoke was attempted or recorded.
 
+## Development watcher repair verification (2026-08-13)
+
+A live smoke diagnosis found that the Windows-hosted `web` bind mount was
+visible inside the container as a 9p mount and the edited page file had the
+fresh host mtime, but the default Next 16.2.12 Turbopack watcher did not
+rebuild it. Both direct `web:3000` and `http://localhost:8000` omitted the
+temporary probe after twelve one-second checks; Turbopack emitted watcher
+errors for paths below `/app`.
+
+`watchOptions.pollIntervalMs: 1000` alone did not change that result.
+Running development with `next dev --webpack` plus the configured polling
+detected a new temporary page probe through direct Next and Caddy on the
+first check. Removing that probe was likewise observed through both paths on
+the first check. The source page was restored after the proof. Caddy was not
+changed; it remained the gateway to `web:3000`. No interactive browser or
+WebSocket-console observation was performed, so that narrower observation is
+not claimed.
+
 ## Runtime, publication, and persistence observations
 
 - `docker compose ps --format json` reported healthy gateway, web, API, MySQL,
