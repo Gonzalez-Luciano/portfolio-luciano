@@ -39,8 +39,34 @@ for (const variable of ['APP_KEY', 'MYSQL_PASSWORD', 'MYSQL_ROOT_PASSWORD', 'MYS
   assert.match(example, new RegExp(`^${variable}=.*replace-with-`, 'm'), `${variable} must be a placeholder`);
 }
 
-if (existsSync(resolve(root, 'compose.yaml'))) {
-  const compose = read('compose.yaml');
-  assert.doesNotMatch(compose, /CLOUDFLARE|TUNNEL/i);
-}
+const composePath = resolve(root, 'compose.yaml');
+assert.ok(existsSync(composePath), 'Missing compose.yaml');
+
+const compose = read('compose.yaml');
+assert.doesNotMatch(compose, /CLOUDFLARE|TUNNEL/i);
+assert.doesNotMatch(compose, /network_mode:\s*host/i);
+assert.doesNotMatch(compose, /^\s+env_file:/m, 'Root environment input must not be blanket-injected');
+assert.doesNotMatch(compose, /(^|\n)\s*-\s*[^\n]*3306[^\n]*$/m, 'MySQL must not publish port 3306');
+assert.doesNotMatch(compose, /\bsleep\b/i, 'Compose must use health checks instead of sleeps');
+
+const serviceBlock = compose.match(/^services:\n([\s\S]*?)(?=^networks:)/m)?.[1];
+assert.ok(serviceBlock, 'compose.yaml must declare services before networks');
+const serviceNames = [...serviceBlock.matchAll(/^ {2}([a-z][a-z-]*):\s*$/gm)].map((match) => match[1]);
+assert.deepEqual(serviceNames, ['gateway', 'web', 'api', 'mysql', 'mysql-test', 'api-test']);
+
+assert.match(compose, /^ {2}gateway:\n[\s\S]*?^ {4}ports:\n {6}- "\$\{GATEWAY_HOST:-127\.0\.0\.1\}:\$\{GATEWAY_PORT:-8000\}:80"$/m);
+assert.equal([...compose.matchAll(/^ {4}ports:$/gm)].length, 1, 'Only gateway may publish a host port');
+assert.match(compose, /^ {2}mysql-test:\n[\s\S]*?^ {4}profiles: \[test\]$/m);
+assert.match(compose, /^ {2}api-test:\n[\s\S]*?^ {4}profiles: \[test\]$/m);
+assert.match(compose, /^ {2}api-test:\n[\s\S]*?^ {4}depends_on:\n {6}mysql-test: \{condition: service_healthy\}$/m);
+
+const networkBlock = compose.match(/^networks:\n([\s\S]*?)(?=^volumes:)/m)?.[1];
+assert.ok(networkBlock, 'compose.yaml must declare networks before volumes');
+const networkNames = [...networkBlock.matchAll(/^ {2}([a-z][a-z-]*): \{\}$/gm)].map((match) => match[1]);
+assert.deepEqual(networkNames, ['front', 'data', 'test']);
+
+const volumeBlock = compose.match(/^volumes:\n([\s\S]*)$/m)?.[1];
+assert.ok(volumeBlock, 'compose.yaml must declare volumes');
+const volumeNames = [...volumeBlock.matchAll(/^ {2}([a-z][a-z_]*): \{\}$/gm)].map((match) => match[1]);
+assert.deepEqual(volumeNames, ['web_node_modules', 'api_vendor', 'mysql_data', 'api_public_media']);
 console.log('Repository and environment contract pass.');

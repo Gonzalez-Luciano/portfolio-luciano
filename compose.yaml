@@ -1,0 +1,131 @@
+services:
+  gateway:
+    image: caddy:2.11.4-alpine
+    ports:
+      - "${GATEWAY_HOST:-127.0.0.1}:${GATEWAY_PORT:-8000}:80"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    networks: [front]
+    depends_on:
+      web: {condition: service_healthy}
+      api: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://localhost/__gateway/health]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build: {context: ./web, dockerfile: Dockerfile}
+    volumes:
+      - ./web:/app
+      - web_node_modules:/app/node_modules
+    environment:
+      INTERNAL_API_ORIGIN: http://api
+    networks: [front]
+    healthcheck:
+      test: [CMD-SHELL, 'node -e ''fetch("http://localhost:3000/health").then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))''']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    image: portfolio-api-dev
+    build: {context: ., dockerfile: infra/docker/api/Dockerfile}
+    volumes:
+      - ./api:/var/www/html
+      - api_vendor:/var/www/html/vendor
+      - api_public_media:/var/www/html/storage/app/public
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: ${APP_URL}
+      APP_KEY: ${APP_KEY}
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_DATABASE: ${MYSQL_DATABASE}
+      DB_USERNAME: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      SESSION_DRIVER: file
+      CACHE_STORE: file
+      QUEUE_CONNECTION: sync
+    networks: [front, data]
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://localhost/up]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks: [data]
+    healthcheck:
+      test: [CMD-SHELL, 'mysqladmin ping -h localhost -u"$${MYSQL_USER}" -p"$${MYSQL_PASSWORD}" --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  mysql-test:
+    image: mysql:8.4
+    profiles: [test]
+    environment:
+      MYSQL_DATABASE: ${MYSQL_TEST_DATABASE}
+      MYSQL_USER: ${MYSQL_TEST_USER}
+      MYSQL_PASSWORD: ${MYSQL_TEST_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_TEST_ROOT_PASSWORD}
+    tmpfs:
+      - /var/lib/mysql
+    networks: [test]
+    healthcheck:
+      test: [CMD-SHELL, 'mysqladmin ping -h localhost -u"$${MYSQL_USER}" -p"$${MYSQL_PASSWORD}" --silent']
+      interval: 3s
+      timeout: 5s
+      retries: 40
+
+  api-test:
+    image: portfolio-api-dev
+    build: {context: ., dockerfile: infra/docker/api/Dockerfile}
+    profiles: [test]
+    volumes:
+      - ./api:/var/www/html
+      - api_vendor:/var/www/html/vendor
+    environment:
+      APP_ENV: testing
+      APP_DEBUG: "false"
+      APP_URL: http://localhost:8000
+      APP_KEY: ${APP_KEY}
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: mysql
+      DB_HOST: mysql-test
+      DB_PORT: "3306"
+      DB_DATABASE: ${MYSQL_TEST_DATABASE}
+      DB_USERNAME: ${MYSQL_TEST_USER}
+      DB_PASSWORD: ${MYSQL_TEST_PASSWORD}
+      SESSION_DRIVER: array
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+    command: php artisan test
+    restart: "no"
+    depends_on:
+      mysql-test: {condition: service_healthy}
+    networks: [test]
+
+networks:
+  front: {}
+  data: {}
+  test: {}
+
+volumes:
+  web_node_modules: {}
+  api_vendor: {}
+  mysql_data: {}
+  api_public_media: {}

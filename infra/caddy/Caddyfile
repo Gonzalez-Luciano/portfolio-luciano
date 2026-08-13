@@ -1,0 +1,19 @@
+{
+	auto_https off
+}
+
+:80 {
+	# Provisional ownership until Task 11 inventories installed routes and traffic.
+	handle /__gateway/health {
+		respond "ok" 200
+	}
+
+	@laravel path /api /api/* /admin /admin/* /up /storage/*
+	handle @laravel {
+		reverse_proxy api:80
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}
