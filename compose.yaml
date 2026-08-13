@@ -103,6 +103,11 @@ services:
     volumes:
       - ./api:/var/www/html
       - api_vendor:/var/www/html/vendor
+      # Laravel probes its testing environment file during bootstrap. This
+      # tracked, secret-free example prevents PHPUnit warnings on a fresh clone;
+      # Compose environment values below remain the authoritative test runtime
+      # configuration.
+      - ./api/.env.example:/var/www/html/.env.testing:ro
     environment:
       APP_ENV: testing
       APP_DEBUG: "false"

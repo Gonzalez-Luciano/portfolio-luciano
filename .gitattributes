@@ -1,2 +1,19 @@
 # Asset-manifest hashes are defined over the approved LF license text bytes.
 docs/prototypes/phase-2/assets/fonts/*.txt text eol=lf
+
+# Linux container entrypoints must retain a POSIX shebang after Windows checkout.
+infra/docker/**/*.sh text eol=lf
+
+# Docker-mounted application and infrastructure sources must retain LF on Windows.
+*.css text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.mjs text eol=lf
+*.md text eol=lf
+*.php text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+Dockerfile text eol=lf
+Caddyfile text eol=lf
