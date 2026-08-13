@@ -1,6 +1,6 @@
 # Gateway integration evidence
 
-Captured locally on 2026-08-13 against the running Compose stack after the final Caddy reload. This is an auditable record of executed integration checks, not a substitute for the manual browser smoke checklist.
+Captured locally on 2026-08-13 against the running Compose stack after the final Caddy reload and the subsequent authenticated local-browser smoke. This is an auditable record of executed integration checks, not a substitute for the manual browser smoke checklist.
 
 ## Installed route evidence
 
@@ -65,4 +65,10 @@ Using the local in-app browser, navigation to `http://localhost:8000/admin` reac
 - `http://localhost:8000/js/filament/actions/actions.js?v=5.7.6.0`
 - `http://localhost:8000/livewire-9621a96e/livewire.js?id=26bbdf42`
 
-The captured browser warning/error console result for that unauthenticated login reload was an empty list. This evidence does not cover authenticated Filament, a stateful Livewire action, HMR, media persistence, theme flash, or clean bootstrap; those remain `Not observed` in the manual checklist.
+The captured browser warning/error console result for that unauthenticated login reload was an empty list.
+
+## Authenticated administration evidence
+
+A disposable local development administrator was created interactively and authenticated through the same Caddy origin. Apache recorded the login update structurally as `POST /livewire-<build-hash>/update` with status `200`; no generated Livewire hash, credential, account identifier, email, or password is retained here. The authenticated dashboard rendered, and opening and closing its user menu was a non-destructive interaction with no captured browser warning/error.
+
+The browser smoke also observed a harmless HMR edit appear and disappear on `/es` through Caddy without a service restart or captured warning/error. A disposable public-media marker survived an API recreate and was removed afterward. After a full stack stop/start without volume removal, the public Spanish page, administration route, and API-status control recovered through Caddy with no captured browser warning/error. System-theme/no-flash behavior and invalid browser-storage fallback remain `Not observed` because the available browser control did not support those non-sensitive setups.

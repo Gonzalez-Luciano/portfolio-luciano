@@ -3,7 +3,11 @@
 ## Scope and platform
 
 Acceptance verification ran on 2026-08-13 from the Phase 3 worktree, starting
-from `aa3d531` plus the Task 12 formatting/documentation changes. It used
+from `aa3d531` plus the Task 12 formatting/documentation changes. The fresh
+authenticated-browser and restart observations recorded below ran against
+`8579e805ec2659e747247c7df6d9832455f18b53` (`fix: restore Windows bind mount
+HMR`); `git status --short` was empty immediately before this evidence update.
+It used
 Windows PowerShell, Docker Desktop `29.4.3` (Compose `v5.1.3`) with the WSL2
 backend, then Ubuntu WSL2 through Docker Desktop integration. The observed
 application versions were Caddy `2.11.4-alpine`, Node `24.18.0`, pnpm
@@ -164,20 +168,15 @@ not claimed.
 - `/api/v1` returned `{"data":{"status":"ok","version":"v1"}}`; `/es`
   and `/en` responded successfully. With only `api` stopped, `/api/v1` was
   `502` while `/en` remained `200`; starting API restored the endpoint.
-- A non-secret `phase-3-verification-media` marker placed in
-  `api_public_media` was returned through `/storage/` before and after an API
-  `--force-recreate`. The marker was removed afterward; it was test evidence,
-  not content.
-- A non-admin factory user with the non-secret email
-  `phase3-task12-persistence@example.test` was created through Laravel. Its
-  observed record was `id=1`, `is_admin=0`. After a label-verified
-  `--force-recreate` of only `mysql` and `api` (without volume removal), the
-  same record was queried successfully with the same ID and admin flag. The
-  marker user was then deleted and a follow-up count was `0`; no administrator
-  credential or persistent test account was created.
-- The administrator-row persistence proof was intentionally not performed:
-  creating it requires a password entered in a local interactive terminal and
-  no credential was supplied or recorded here.
+- A disposable non-secret media marker placed in `api_public_media` was
+  returned through `/storage/` before and after an API `--force-recreate`. The
+  marker was removed afterward; it was test evidence, not content.
+- A disposable administrator marker was created only through the interactive
+  local bootstrap flow. It persisted across an API `--force-recreate` and a
+  full Compose stack stop/start without volume removal. A count assertion
+  confirmed the marker without recording or inspecting its email; the marker
+  was removed after the proof. No credential, account identifier, email, or
+  password was retained in commands, history, screenshots, or this record.
 
 Route ownership is independently evidenced in
 `infra/caddy/laravel-routes.json` and
@@ -199,14 +198,24 @@ Codex browser at `http://localhost:8000`, the following was observed:
   and had no captured warning/error console entry.
 - `/es`, `/en`, and `/admin/login` had no captured warning/error console entry
   after their rendered state was inspected.
+- A disposable local administrator authenticated through the same Caddy origin
+  and reached the Filament dashboard. Apache recorded the login update
+  structurally as `POST /livewire-<build-hash>/update` with `200`; opening and
+  closing the authenticated dashboard user menu was non-destructive and had no
+  captured browser warning/error.
+- A harmless HMR source edit appeared on `/es` through Caddy and disappeared
+  after its revert without restarting services; neither browser state had a
+  captured warning/error.
+- After a full stack stop/start without volume removal, the public Spanish
+  page, administration route, and API-status control recovered through Caddy
+  with no captured browser warning/error.
 
-Not observed, and therefore not claimed as passed: authenticated Filament and
-Livewire interaction, a real admin-row persistence check, system-theme flash,
-invalid-storage fallback, HMR, and a browser-level recovery render after the
-API restart. The browser surface blocked direct JSON navigation to `/api/v1`
-and later left the API-status region empty after the restart, even though the
-separate HTTP checks above passed; this is retained as a manual follow-up rather
-than relabelled as automated coverage.
+Not observed, and therefore not claimed as passed: initial system-theme choice
+without visible flash, and invalid `portfolio_theme` storage fallback. The
+available browser control did not support those non-sensitive setups. Direct
+JSON navigation to `/api/v1` was not the browser evidence path; the rendered
+API-status control and the separate HTTP checks supplied the recorded API
+observations.
 
 ## Ubuntu WSL2 parity
 
@@ -221,9 +230,8 @@ installed or required.
 
 ## Remaining non-blocking follow-up
 
-Complete the explicitly unobserved manual browser checks with a disposable,
-locally created development administrator. Keep its password outside command
-arguments, environment, history, repository, screenshots, and reports. The
-production handoff still requires the independent operational preflight,
-deployment, backup/restore, trusted-proxy, and public-domain verification
-defined in `docs/DEPLOYMENT.md`.
+Complete the explicitly unobserved system-theme/no-flash and invalid-storage
+fallback browser checks only when a supported non-sensitive browser control is
+available. The production handoff still requires the independent operational
+preflight, deployment, backup/restore, trusted-proxy, and public-domain
+verification defined in `docs/DEPLOYMENT.md`.
