@@ -69,7 +69,7 @@ services:
       - mysql_data:/var/lib/mysql
     networks: [data]
     healthcheck:
-      test: [CMD-SHELL, 'mysqladmin ping -h localhost -u"$${MYSQL_USER}" -p"$${MYSQL_PASSWORD}" --silent']
+      test: [CMD-SHELL, 'mysqladmin ping --protocol=tcp -h 127.0.0.1 -P 3306 -u"$${MYSQL_USER}" -p"$${MYSQL_PASSWORD}" --silent']
       interval: 5s
       timeout: 5s
       retries: 30
@@ -86,7 +86,7 @@ services:
       - /var/lib/mysql
     networks: [test]
     healthcheck:
-      test: [CMD-SHELL, 'mysqladmin ping -h localhost -u"$${MYSQL_USER}" -p"$${MYSQL_PASSWORD}" --silent']
+      test: [CMD-SHELL, 'mysqladmin ping --protocol=tcp -h 127.0.0.1 -P 3306 -u"$${MYSQL_USER}" -p"$${MYSQL_PASSWORD}" --silent']
       interval: 3s
       timeout: 5s
       retries: 40
