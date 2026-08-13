@@ -1,0 +1,30 @@
+# The API image currently uses a focused context. Re-include an environment
+# example only if a future build has a documented need for one.
+.git
+.worktrees
+.env
+.env.*
+**/.env
+**/.env.*
+
+docs
+web
+api
+
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+**/node_modules
+**/.next
+**/coverage
+**/vendor
+**/storage/framework
+**/storage/logs
+
+# Keep infra/docker/api available to its future Docker build context.
+!infra/
+!infra/docker/
+!infra/docker/api/

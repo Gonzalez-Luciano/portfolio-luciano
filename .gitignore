@@ -1,3 +1,32 @@
 .worktrees/
 .superpowers/
 .source-materials/
+
+# Root Compose interpolation input; only tracked examples are allowed.
+/.env*
+!/.env.example
+
+# Application-specific environment files; only tracked examples are allowed.
+/web/.env*
+!/web/.env.example
+/api/.env*
+!/api/.env.example
+
+# Frontend dependencies and generated output.
+/web/node_modules
+/web/.next
+/web/coverage
+
+# Backend dependencies and generated Laravel runtime output.
+/api/vendor
+/api/bootstrap/cache/*
+!/api/bootstrap/cache/.gitignore
+/api/storage/framework/cache/*
+!/api/storage/framework/cache/.gitignore
+/api/storage/framework/sessions/*
+!/api/storage/framework/sessions/.gitignore
+/api/storage/framework/views/*
+!/api/storage/framework/views/.gitignore
+/api/storage/logs/*
+!/api/storage/logs/.gitignore
+/api/public/storage
