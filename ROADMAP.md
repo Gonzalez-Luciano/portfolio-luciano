@@ -263,9 +263,9 @@ Crear una base reproducible para frontend, backend, base de datos y administraci
 - [ ] Configurar API versionada.
 - [ ] Configurar recursos JSON.
 - [ ] Implementar y probar el envelope mínimo exacto de éxito/error de `/api/v1`.
-- [ ] Configurar autenticación administrativa.
-- [ ] Agregar `users.is_admin BOOLEAN NOT NULL DEFAULT false` como único marcador administrativo de Fase 3 y usarlo en `canAccessPanel()`.
-- [ ] Instalar y configurar Filament.
+- [x] Configurar autenticación administrativa.
+- [x] Agregar `users.is_admin BOOLEAN NOT NULL DEFAULT false` como único marcador administrativo de Fase 3 y usarlo en `canAccessPanel()`.
+- [x] Instalar y configurar Filament.
 - [ ] Preparar almacenamiento de medios.
 - [ ] Configurar CORS.
 - [ ] Configurar rate limiting.
@@ -289,7 +289,7 @@ Crear una base reproducible para frontend, backend, base de datos y administraci
 - [ ] Configurar red interna.
 - [ ] Definir estrategia de migraciones.
 - [ ] Definir seed inicial.
-- [ ] Crear un comando interactivo y explícito de bootstrap del administrador con entrada secreta oculta; los seeds normales no deben crear credenciales.
+- [x] Crear un comando interactivo y explícito de bootstrap del administrador con entrada secreta oculta; los seeds normales no deben crear credenciales.
 - [ ] Documentar arranque, parada y reinicio.
 - [ ] Documentar PowerShell + Docker Desktop con backend WSL2 como flujo canónico de Windows.
 - [ ] Comprobar operación equivalente desde Ubuntu WSL2 mediante la integración de Docker Desktop, sin instalar un segundo Docker Engine.
