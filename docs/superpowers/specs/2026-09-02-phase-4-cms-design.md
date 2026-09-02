@@ -269,15 +269,19 @@ completeness remain action/publication-validator responsibilities.
 | Column group | Columns |
 |---|---|
 | Singleton | `singleton_key='default'` |
-| Identity | `name` |
+| Required nontranslated content for publication | `name` |
 | Required bilingual content for publication | `headline_es/en`, `short_summary_es/en`, `introduction_es/en`, `availability_es/en`, `cta_es/en` |
 | Optional owned photo | `photo_private_path`, `photo_public_path`, `photo_mime`, `photo_size` |
 | Photo accessibility | `photo_alt_es`, `photo_alt_en` |
 | Editorial | common publication columns |
 
-The photo is optional. If present on a published record, the private original,
-validated technical metadata, and both alt texts are required. `location` and CV
-do not belong to Profile.
+`name` is nullable in MySQL only so the migration can create the empty structural
+draft singleton. It is nontranslated and must be nonblank to publish or save a
+published Profile. The Profile publication validator therefore requires `name`
+plus both locale values for headline, short summary, introduction, availability,
+and CTA. The photo is optional; if present on a published record, the private
+original, validated technical metadata, and both alt texts are also required.
+`location` and CV do not belong to Profile.
 
 ### 8.2 `site_configurations`
 
@@ -309,19 +313,33 @@ Query Builder/DB facade only. Migrations never invoke Eloquent models, observers
 Filament, or domain actions. Production deployment therefore needs migrations,
 not the development content seeder, to obtain the structural singleton slots.
 
-As defense against exceptional manual deletion, singleton access uses a small
-idempotent `insertOrIgnore`/ensure operation before resolving `default`. This is
-not a second creation strategy and cannot create a different logical key.
-Filament offers edit only: no create, duplicate, or delete.
+The migration is the normal structural guarantee. As defense against exceptional
+manual deletion, the Filament singleton edit entrypoint may run a small
+idempotent `insertOrIgnore`/ensure operation before resolving `default`; an
+explicit internal repair/bootstrap command may expose the same operation if it
+proves useful. This is not a second content-bootstrap strategy and cannot create
+a different logical key. Filament offers edit only: no create, duplicate, or
+delete.
+
+Public controllers are strictly read-only and never call ensure. If a singleton
+is abnormally absent during `GET /api/v1/{locale}/profile` or
+`GET /api/v1/{locale}/site`, the endpoint returns its controlled `not_found` 404
+and may emit a sanitized operational log. A public GET never repairs or inserts
+content.
 
 ### 8.4 `experiences`
 
 | Column group | Columns |
 |---|---|
 | Identity/order | `key`, `key_locked`, `position` |
-| Required bilingual content for publication | `organization_label_es/en`, `role_es/en`, `summary_es/en` |
+| Required bilingual content for publication | `role_es/en`, `summary_es/en` |
+| Optional bilingual pair | `organization_label_es/en` |
 | Monthly dates | `start_year`, `start_month`, `end_year`, `end_month` |
 | Editorial | common publication columns |
+
+Organization label may be empty in both languages so an experience can remain
+fully anonymized without an invented public label. While published, both values
+must be filled or both must be empty; a one-sided label is invalid.
 
 `start_year` and `start_month` are always required. Start/end years use the
 four-digit `1000..9999` range needed by the `YYYY-MM` contract; months use
@@ -916,7 +934,7 @@ Photo is null when no verified public copy exists. There is no `location`.
   "data": [
     {
       "key": "backend-development",
-      "organization": "Contexto profesional anonimizado",
+      "organization": null,
       "role": "Backend Developer",
       "start": "2024-03",
       "end": null,
@@ -935,9 +953,11 @@ Photo is null when no verified public copy exists. There is no `location`.
 }
 ```
 
-`organization`, `role`, and `summary` map to their locale columns. Start/end are
-normalized from monthly columns as `YYYY-MM`; end is null for a current
-experience. There is no redundant `is_current`.
+`organization` maps to `organization_label_{locale}` and is always present as
+`string | null`; it is null when the approved optional pair is empty. `role` and
+`summary` map to their required locale columns. Start/end are normalized from
+monthly columns as `YYYY-MM`; end is null for a current experience. There is no
+redundant `is_current`.
 
 ### 16.3 Work cases
 
@@ -1155,7 +1175,7 @@ Tests cover:
 - key syntax/uniqueness, first-publication locking, warned key change, and no
   title-driven regeneration;
 - singleton migration rows, uniqueness, nondeletable application behavior, and
-  exceptional ensure behavior;
+  exceptional admin/command ensure behavior;
 - CV 0..1 locale slots and locale immutability;
 - highlight aggregate integrity;
 - pivot duplication, order, cascade, and Technology restrict behavior;
@@ -1168,6 +1188,8 @@ Tests cover:
 Feature/contract tests cover:
 
 - every exact ES and EN shape in section 16;
+- public singleton GETs remain read-only, create no missing row, and return the
+  controlled 404 when the structural row is abnormally absent;
 - identical structural keys across locales;
 - controlled unsupported locale before content queries and without fallback;
 - singleton 404 and empty collection 200;
