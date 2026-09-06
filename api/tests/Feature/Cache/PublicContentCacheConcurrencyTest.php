@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Cache;
 
+use App\Enums\PublicationStatus;
 use App\Enums\PublicEndpoint;
 use App\Enums\SupportedLocale;
 use App\Exceptions\PublicContentUnavailable;
+use App\Models\Profile;
 use App\Support\PublicContentCache;
 use Illuminate\Cache\Repository;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -14,6 +16,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Process\Process;
+use Tests\Support\RecordingLockStore;
 use Tests\TestCase;
 
 final class PublicContentCacheConcurrencyTest extends TestCase
@@ -120,10 +123,9 @@ final class PublicContentCacheConcurrencyTest extends TestCase
     #[DataProvider('lockCapableStores')]
     public function test_the_approved_lock_capable_store_rebuilds_once_and_double_checks_inside_the_lock(string $store): void
     {
-        $this->useLockStore($store);
+        $cache = $this->useLockStore($store);
         $this->assertInstanceOf(LockProvider::class, Cache::store()->getStore(), "The approved [{$store}] store must implement Laravel LockProvider.");
 
-        $cache = app(PublicContentCache::class);
         $key = $cache->key(SupportedLocale::Spanish, PublicEndpoint::Profile);
         $lock = Cache::lock($cache->lockKey(SupportedLocale::Spanish, PublicEndpoint::Profile), 60);
         $this->assertTrue($lock->get());
@@ -141,25 +143,36 @@ final class PublicContentCacheConcurrencyTest extends TestCase
         }
     }
 
-    #[DataProvider('lockCapableStores')]
-    public function test_mutation_locks_acquire_every_locale_endpoint_key_in_sorted_order_and_release_them_afterward(string $store): void
+    public function test_mutation_locks_acquire_all_keys_in_lexical_order_and_release_them_in_reverse_order(): void
     {
-        $this->useLockStore($store);
+        $store = new RecordingLockStore($this->app['files'], storage_path('framework/cache/data'));
+        $this->app['cache']->extend('recording-locks', static fn (): Repository => new Repository($store));
+        config([
+            'cache.default' => 'recording-locks',
+            'cache.stores.recording-locks' => ['driver' => 'recording-locks'],
+        ]);
+        Cache::forgetDriver('recording-locks');
         $cache = app(PublicContentCache::class);
+        $expectedKeys = [
+            $cache->lockKey(SupportedLocale::English, PublicEndpoint::Experiences),
+            $cache->lockKey(SupportedLocale::English, PublicEndpoint::WorkCases),
+            $cache->lockKey(SupportedLocale::Spanish, PublicEndpoint::Experiences),
+            $cache->lockKey(SupportedLocale::Spanish, PublicEndpoint::WorkCases),
+        ];
+        sort($expectedKeys, SORT_STRING);
 
         $result = $cache->withMutationLocks([
             PublicEndpoint::WorkCases,
             PublicEndpoint::Experiences,
-        ], function () use ($cache): string {
-            $this->assertTrue(Cache::lock($cache->lockKey(SupportedLocale::Spanish, PublicEndpoint::Experiences), 60)->get() === false);
-
+        ], static function (): string {
             return 'mutated';
         });
 
         $this->assertSame('mutated', $result);
-        $releasedLock = Cache::lock($cache->lockKey(SupportedLocale::Spanish, PublicEndpoint::Experiences), 60);
-        $this->assertTrue($releasedLock->get());
-        $releasedLock->release();
+        $this->assertSame([
+            ...array_map(static fn (string $key): string => "acquire:{$key}", $expectedKeys),
+            ...array_map(static fn (string $key): string => "release:{$key}", array_reverse($expectedKeys)),
+        ], $store->events);
     }
 
     public function test_it_converts_a_public_lock_timeout_to_the_controlled_api_error_envelope(): void
@@ -174,8 +187,14 @@ final class PublicContentCacheConcurrencyTest extends TestCase
     #[DataProvider('lockCapableStores')]
     public function test_a_visibility_reducing_mutation_cannot_leave_a_paused_old_state_rebuild_cached_after_commit(string $store): void
     {
-        $this->useLockStore($store);
-        $cache = app(PublicContentCache::class);
+        $cache = $this->useLockStore($store);
+        $profile = Profile::query()->sole();
+        $profile->forceFill([
+            'name' => 'Old publicly visible profile',
+            'status' => PublicationStatus::Published,
+            'is_visible' => true,
+            'published_at' => now(),
+        ])->save();
         $directory = storage_path('framework/testing/cache-race-'.bin2hex(random_bytes(8)));
         mkdir($directory, 0700, true);
 
@@ -210,6 +229,8 @@ final class PublicContentCacheConcurrencyTest extends TestCase
 
             $this->assertTrue($oldRebuild->isSuccessful(), $oldRebuild->getErrorOutput());
             $this->assertTrue($mutation->isSuccessful(), $mutation->getErrorOutput());
+            $this->assertSame(['name' => 'Old publicly visible profile'], json_decode((string) file_get_contents($directory.'/old-representation.json'), true, 512, JSON_THROW_ON_ERROR));
+            $this->assertFalse(Profile::query()->publiclyAvailable()->exists());
             $this->assertNull(Cache::get($cache->key(SupportedLocale::Spanish, PublicEndpoint::Profile)));
             $this->assertNull(Cache::get($cache->key(SupportedLocale::English, PublicEndpoint::Profile)));
             $this->assertFileExists($directory.'/mutation-committed');
@@ -231,11 +252,19 @@ final class PublicContentCacheConcurrencyTest extends TestCase
         ];
     }
 
-    private function useLockStore(string $store): void
+    private function useLockStore(string $store): PublicContentCache
     {
         config(['cache.default' => $store]);
         Cache::forgetDriver($store);
-        Cache::flush();
+        $cache = app(PublicContentCache::class);
+
+        foreach (PublicEndpoint::cases() as $endpoint) {
+            foreach (SupportedLocale::cases() as $locale) {
+                Cache::forget($cache->key($locale, $endpoint));
+            }
+        }
+
+        return $cache;
     }
 
     private function waitForFile(string $path): void

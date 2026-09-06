@@ -45,7 +45,7 @@ final class PublicContentCache
                     return $this->dataArray($cached, $key);
                 }
 
-                $data = $resolver();
+                $data = $this->dataArray($resolver(), $key);
                 Cache::forever($key, $data);
 
                 return $data;

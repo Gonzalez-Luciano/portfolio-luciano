@@ -87,3 +87,54 @@ Final results:
 
 - The controlled exception renderer is verified through a temporary test route. Laravel reports that deliberately thrown test exception to the test log, but the HTTP response is the required sanitized 503 envelope; no public stack trace is exposed.
 - Task 4+ actions must keep mutation locks across withdrawal, database commit, and the first/second explicit invalidation, as specified. This task supplies that primitive but intentionally does not add future mutation actions.
+
+---
+
+## Review-fix addendum
+
+### Fixes applied
+
+1. `PublicContentCache::remember()` now passes every resolver result through `dataArray()` before `Cache::forever()`. A model, `JsonResponse`, API envelope, or any other non-array value therefore raises `UnexpectedValueException` while the public key is still absent.
+2. The process race now uses the migrated singleton `Profile` as persisted public state. The old rebuild queries `Profile::publiclyAvailable()` and writes the observed old data to its test marker before pausing. The mutation worker acquires both locale profile locks, runs the first invalidation, performs `is_visible = false` inside `DB::transaction()`, marks the commit, and runs the second invalidation before release. The test proves the Profile is no longer publicly available and neither locale cache key contains the old representation.
+3. Concurrency setup now removes only the known public-content data keys; it no longer calls `Cache::flush()`. A file-store recording lock decorator asserts all four locale/endpoint keys are acquired in sorted lexical order and released in the exact reverse order.
+
+### TDD review-fix evidence
+
+#### RED
+
+After adding the non-array parameterized test and complete ordering assertions, ran:
+
+```powershell
+docker compose --profile test run --rm api-test php artisan test --filter='PublicContentCacheTest|PublicContentCacheConcurrencyTest'
+```
+
+Result: **4 failures, 11 passed**. The three resolver variants failed with `TypeError` after the prior implementation had already executed `Cache::forever()`, proving the defect. The ordering test recorded releases using lock owners rather than lock names, exposing an incomplete test decorator; it was corrected before the production GREEN change.
+
+#### GREEN
+
+After validating the resolver output before storing and correcting the recording file-lock decorator:
+
+```powershell
+docker compose --profile test run --rm api-test php artisan test --filter='PublicContentCacheTest|PublicContentCacheConcurrencyTest'
+```
+
+Result: **15 passed, 58 assertions**. The process race passed once for `file` and once for `database`; no process concurrency scenario uses the array store.
+
+### Final review-fix verification
+
+```powershell
+docker compose --profile test run --rm api-test php artisan test
+docker compose --profile test run --rm api-test vendor/bin/pint
+docker compose --profile test run --rm api-test vendor/bin/pint --test
+git diff --check
+```
+
+Results:
+
+- Full backend: **61 passed, 355 assertions**.
+- Pint verification: **PASS (82 files)**.
+- `git diff --check`: exit 0.
+
+### Remaining concern
+
+The API-envelope test intentionally throws the controlled exception and Laravel reports it to the test log; its HTTP response remains the required sanitized 503 envelope. No public error detail is exposed.

@@ -4,6 +4,7 @@ namespace Tests\Feature\Cache;
 
 use App\Enums\PublicEndpoint;
 use App\Enums\SupportedLocale;
+use App\Http\Responses\ApiErrorResponse;
 use App\Models\CvDocument;
 use App\Models\Experience;
 use App\Models\ExperienceHighlight;
@@ -17,7 +18,9 @@ use App\Models\WorkCase;
 use App\Models\WorkPrinciple;
 use App\Support\PublicContentCache;
 use App\Support\PublicContentDependencies;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 final class PublicContentCacheTest extends TestCase
@@ -57,6 +60,30 @@ final class PublicContentCacheTest extends TestCase
 
         $this->assertSame(['name' => 'Luciano'], $result);
         $this->assertSame(['name' => 'Luciano'], Cache::get('public-content:v1:en:profile'));
+    }
+
+    #[DataProvider('nonArrayResolverValues')]
+    public function test_it_rejects_non_array_resolver_values_before_they_can_occupy_a_public_cache_key(mixed $value): void
+    {
+        $cache = app(PublicContentCache::class);
+        $key = $cache->key(SupportedLocale::English, PublicEndpoint::Profile);
+        Cache::forget($key);
+
+        try {
+            $cache->remember(SupportedLocale::English, PublicEndpoint::Profile, static fn (): mixed => $value);
+            $this->fail('A non-array resolver value must be rejected.');
+        } catch (\UnexpectedValueException) {
+            $this->assertNull(Cache::get($key));
+        }
+    }
+
+    public static function nonArrayResolverValues(): array
+    {
+        return [
+            'eloquent model' => [new Profile],
+            'JSON response' => [new JsonResponse(['data' => ['name' => 'Luciano']])],
+            'API error envelope' => [ApiErrorResponse::make('not_found', 'Not found.', [], 404)],
+        ];
     }
 
     public function test_it_expands_every_model_dependency_to_the_approved_endpoints(): void

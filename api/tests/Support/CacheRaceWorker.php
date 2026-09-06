@@ -2,10 +2,12 @@
 
 use App\Enums\PublicEndpoint;
 use App\Enums\SupportedLocale;
+use App\Models\Profile;
 use App\Support\PublicContentCache;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 require dirname(__DIR__, 2).'/vendor/autoload.php';
 
@@ -27,14 +29,17 @@ $committed = $directory.'/mutation-committed';
 
 if ($mode === 'old-rebuild') {
     Cache::forget($cache->key($locale, $endpoint));
-    $cache->remember($locale, $endpoint, static function () use ($ready, $release): array {
+    $cache->remember($locale, $endpoint, static function () use ($directory, $ready, $release): array {
+        $profile = Profile::query()->publiclyAvailable()->sole();
+        $representation = ['name' => $profile->name];
+        file_put_contents($directory.'/old-representation.json', json_encode($representation, JSON_THROW_ON_ERROR));
         touch($ready);
 
         while (! file_exists($release)) {
             usleep(10_000);
         }
 
-        return ['state' => 'old'];
+        return $representation;
     });
 
     exit(0);
@@ -43,7 +48,11 @@ if ($mode === 'old-rebuild') {
 if ($mode === 'visibility-reducing-mutation') {
     $cache->withMutationLocks([$endpoint], static function () use ($cache, $endpoint, $committed): void {
         $cache->invalidate([$endpoint]);
+        DB::transaction(static function (): void {
+            Profile::query()->publiclyAvailable()->sole()->update(['is_visible' => false]);
+        });
         touch($committed);
+        $cache->invalidate([$endpoint]);
     });
 
     exit(0);
