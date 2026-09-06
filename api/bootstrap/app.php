@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\PublicContentUnavailable;
 use App\Http\Responses\ApiErrorResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -25,6 +26,19 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $isApiPath($request) || $request->expectsJson(),
         );
+
+        $exceptions->render(function (PublicContentUnavailable $exception, Request $request) use ($isApiPath): ?ApiErrorResponse {
+            if (! $isApiPath($request)) {
+                return null;
+            }
+
+            return ApiErrorResponse::make(
+                code: 'content_temporarily_unavailable',
+                message: 'Public content is temporarily unavailable. Please try again later.',
+                details: [],
+                status: 503,
+            );
+        });
 
         $exceptions->render(function (NotFoundHttpException $exception, Request $request) use ($isApiPath): ?ApiErrorResponse {
             if (! $isApiPath($request)) {
