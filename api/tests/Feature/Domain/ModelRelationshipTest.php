@@ -14,6 +14,7 @@ use App\Models\Technology;
 use App\Models\WorkCase;
 use App\Models\WorkPrinciple;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 final class ModelRelationshipTest extends TestCase
@@ -69,7 +70,7 @@ final class ModelRelationshipTest extends TestCase
 
         ProfessionalLink::factory()->draft()->create(['type' => 'linkedin']);
         ProfessionalLink::factory()->publishedHidden()->create(['type' => 'github']);
-        $visible = ProfessionalLink::factory()->publishedVisible()->create(['type' => 'email']);
+        $visible = ProfessionalLink::factory()->publishedVisible()->create(['type' => 'email', 'destination' => 'synthetic@example.test']);
         $this->assertSame([$visible->id], ProfessionalLink::publiclyAvailable()->pluck('id')->all());
     }
 
@@ -81,8 +82,16 @@ final class ModelRelationshipTest extends TestCase
         $this->assertCount(0, Profile::publiclyAvailable()->get());
         $this->assertCount(0, SiteConfiguration::publiclyAvailable()->get());
 
-        $profile->forceFill(Profile::factory()->publishedVisible()->make()->getAttributes())->save();
-        $site->forceFill(SiteConfiguration::factory()->publishedVisible()->make()->getAttributes())->save();
+        // Scope tests deliberately construct a database-valid visible state; the
+        // separate transition action remains the only application mutation path.
+        DB::table('profiles')->where('id', $profile->id)->update([
+            ...Profile::factory()->publishedVisible()->make()->getAttributes(),
+            'updated_at' => now(),
+        ]);
+        DB::table('site_configurations')->where('id', $site->id)->update([
+            ...SiteConfiguration::factory()->publishedVisible()->make()->getAttributes(),
+            'updated_at' => now(),
+        ]);
 
         $this->assertSame([$profile->id], Profile::publiclyAvailable()->pluck('id')->all());
         $this->assertSame([$site->id], SiteConfiguration::publiclyAvailable()->pluck('id')->all());
@@ -95,7 +104,7 @@ final class ModelRelationshipTest extends TestCase
 
         $this->assertCount(0, CvDocument::publiclyAvailable()->get());
 
-        $english->update(['is_visible' => true]);
+        DB::table('cv_documents')->where('id', $english->id)->update(['is_visible' => true]);
 
         $this->assertSame([$english->id], CvDocument::publiclyAvailable()->pluck('id')->all());
     }
@@ -119,7 +128,7 @@ final class ModelRelationshipTest extends TestCase
             $this->assertSame([$earlier->id, $alpha->id, $zeta->id], $model::publiclyAvailable()->pluck('id')->all(), $model);
         }
 
-        $email = ProfessionalLink::factory()->publishedVisible()->create(['type' => 'email', 'position' => 5]);
+        $email = ProfessionalLink::factory()->publishedVisible()->create(['type' => 'email', 'destination' => 'synthetic@example.test', 'position' => 5]);
         $github = ProfessionalLink::factory()->publishedVisible()->create(['type' => 'github', 'position' => 5]);
         $linkedin = ProfessionalLink::factory()->publishedVisible()->create(['type' => 'linkedin', 'position' => 4]);
 

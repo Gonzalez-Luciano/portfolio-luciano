@@ -49,7 +49,7 @@ if ($mode === 'visibility-reducing-mutation') {
     $cache->withMutationLocks([$endpoint], static function () use ($cache, $endpoint, $committed): void {
         $cache->invalidate([$endpoint]);
         DB::transaction(static function (): void {
-            Profile::query()->publiclyAvailable()->sole()->update(['is_visible' => false]);
+            DB::table('profiles')->where('status', 'published')->where('is_visible', true)->update(['is_visible' => false]);
         });
         touch($committed);
         $cache->invalidate([$endpoint]);

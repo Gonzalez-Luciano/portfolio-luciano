@@ -1,0 +1,356 @@
+<?php
+
+namespace App\Domain\Publishing;
+
+use App\Enums\ProfessionalLinkType;
+use App\Models\CvDocument;
+use App\Models\Experience;
+use App\Models\ExperienceHighlight;
+use App\Models\ExpertiseArea;
+use App\Models\ProfessionalLink;
+use App\Models\Profile;
+use App\Models\Project;
+use App\Models\SiteConfiguration;
+use App\Models\Technology;
+use App\Models\WorkCase;
+use App\Models\WorkPrinciple;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
+
+final class PublicationValidator
+{
+    /** @return list<PublicationIssue> */
+    public function issues(Model $content): array
+    {
+        $class = $content::class;
+
+        return match ($content::class) {
+            Profile::class => $this->profileIssues($content),
+            SiteConfiguration::class => $this->siteConfigurationIssues($content),
+            Experience::class => $this->experienceIssues($content),
+            WorkCase::class => $this->workCaseIssues($content),
+            Project::class => $this->projectIssues($content),
+            Technology::class => $this->technologyIssues($content),
+            ExpertiseArea::class => $this->expertiseAreaIssues($content),
+            WorkPrinciple::class => $this->workPrincipleIssues($content),
+            ProfessionalLink::class => $this->professionalLinkIssues($content),
+            CvDocument::class => $this->cvDocumentIssues($content),
+            default => throw new \InvalidArgumentException("No publication validator is defined for [{$class}]."),
+        };
+    }
+
+    public function assertPublishable(Model $content): void
+    {
+        $this->assertIssues($this->issues($content));
+    }
+
+    public function assertKey(Model $content): void
+    {
+        $this->assertIssues($this->keyIssues($content));
+    }
+
+    /** @param list<PublicationIssue> $issues */
+    public function assertIssues(array $issues): void
+    {
+        if ($issues !== []) {
+            throw new PublicationValidationException($issues);
+        }
+    }
+
+    /** @return list<PublicationIssue> */
+    private function profileIssues(Profile $profile): array
+    {
+        return [
+            ...$this->required($profile, ['name']),
+            ...$this->requiredPairs($profile, ['headline', 'short_summary', 'introduction', 'availability', 'cta']),
+            ...$this->imageAssetIssues($profile, 'photo', 5 * 1024 * 1024),
+        ];
+    }
+
+    /** @return list<PublicationIssue> */
+    private function siteConfigurationIssues(SiteConfiguration $configuration): array
+    {
+        return $this->requiredPairs($configuration, [
+            'projects_empty_message', 'contact_intro', 'technology_backend_label', 'technology_data_label',
+            'technology_integration_label', 'technology_collaboration_label',
+        ]);
+    }
+
+    /** @return list<PublicationIssue> */
+    private function experienceIssues(Experience $experience): array
+    {
+        $issues = [
+            ...$this->keyIssues($experience),
+            ...$this->requiredPairs($experience, ['role', 'summary']),
+            ...$this->optionalPairs($experience, ['organization_label']),
+            ...$this->experienceDateIssues($experience),
+        ];
+
+        $highlights = $experience->relationLoaded('highlights')
+            ? $experience->getRelation('highlights')
+            : $experience->highlights()->get();
+
+        foreach ($highlights->values() as $index => $highlight) {
+            $issues = [...$issues, ...$this->highlightIssues($highlight, "highlights.{$index}")];
+        }
+
+        return $issues;
+    }
+
+    /** @return list<PublicationIssue> */
+    private function workCaseIssues(WorkCase $workCase): array
+    {
+        return [
+            ...$this->keyIssues($workCase),
+            ...$this->requiredPairs($workCase, ['title', 'context', 'problem', 'contribution', 'technical_approach', 'outcome']),
+        ];
+    }
+
+    /** @return list<PublicationIssue> */
+    private function projectIssues(Project $project): array
+    {
+        $issues = [
+            ...$this->keyIssues($project),
+            ...$this->requiredPairs($project, ['title', 'summary', 'problem', 'solution']),
+            ...$this->httpsUrlIssues($project, ['demo_url', 'repository_url']),
+            ...$this->imageAssetIssues($project, 'image', 8 * 1024 * 1024),
+        ];
+
+        return $issues;
+    }
+
+    /** @return list<PublicationIssue> */
+    private function technologyIssues(Technology $technology): array
+    {
+        return [
+            ...$this->keyIssues($technology),
+            ...$this->required($technology, ['name']),
+            ...$this->iconAssetIssues($technology),
+        ];
+    }
+
+    /** @return list<PublicationIssue> */
+    private function expertiseAreaIssues(ExpertiseArea $area): array
+    {
+        return [...$this->keyIssues($area), ...$this->requiredPairs($area, ['title']), ...$this->optionalPairs($area, ['description'])];
+    }
+
+    /** @return list<PublicationIssue> */
+    private function workPrincipleIssues(WorkPrinciple $principle): array
+    {
+        return [...$this->keyIssues($principle), ...$this->requiredPairs($principle, ['statement'])];
+    }
+
+    /** @return list<PublicationIssue> */
+    private function professionalLinkIssues(ProfessionalLink $link): array
+    {
+        $issues = $this->requiredPairs($link, ['label']);
+        $type = $link->type instanceof ProfessionalLinkType ? $link->type : ProfessionalLinkType::tryFrom((string) $link->type);
+        $destination = (string) $link->destination;
+
+        if ($type === ProfessionalLinkType::Email && (! filter_var($destination, FILTER_VALIDATE_EMAIL) || str_starts_with($destination, 'mailto:'))) {
+            $issues[] = $this->issue('invalid_email_destination', 'destination', 'The email destination must be a valid email address without a mailto prefix.');
+        }
+
+        if (in_array($type, [ProfessionalLinkType::LinkedIn, ProfessionalLinkType::GitHub], true) && ! $this->isHttpsUrl($destination)) {
+            $issues[] = $this->issue('invalid_https_url', 'destination', 'The destination must be a valid HTTPS URL.');
+        }
+
+        return $issues;
+    }
+
+    /** @return list<PublicationIssue> */
+    private function cvDocumentIssues(CvDocument $document): array
+    {
+        $issues = $this->required($document, ['label']);
+        $hasAny = $this->hasValue($document->private_path) || $this->hasValue($document->mime) || $document->size !== null;
+
+        if (! $hasAny) {
+            return [...$issues, $this->issue('asset_required', 'private_path', 'A published CV requires a private PDF.')];
+        }
+
+        if (! $this->hasValue($document->private_path) || ! $this->hasValue($document->mime) || $document->size === null) {
+            return [...$issues, $this->issue('asset_metadata_incomplete', 'private_path', 'The private PDF metadata is incomplete.')];
+        }
+
+        if ($document->mime !== 'application/pdf' || ! Str::endsWith((string) $document->private_path, '.pdf')) {
+            $issues[] = $this->issue('invalid_asset_mime', 'mime', 'The CV must be a PDF.');
+        }
+
+        if ((int) $document->size > 5 * 1024 * 1024 || (int) $document->size < 1) {
+            $issues[] = $this->issue('asset_size_exceeded', 'size', 'The CV exceeds the allowed size.');
+        }
+
+        return $issues;
+    }
+
+    /** @return list<PublicationIssue> */
+    private function keyIssues(Model $content): array
+    {
+        if (! array_key_exists('key', $content->getAttributes())) {
+            return [];
+        }
+
+        $key = (string) $content->getAttribute('key');
+        if (preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $key) !== 1) {
+            return [$this->issue('invalid_key', 'key', 'The public key must be a lowercase ASCII slug.')];
+        }
+
+        if ($content->exists && $content::query()->where('key', $key)->whereKeyNot($content->getKey())->exists()) {
+            return [$this->issue('key_not_unique', 'key', 'The public key is already in use.')];
+        }
+
+        return [];
+    }
+
+    /** @return list<PublicationIssue> */
+    private function experienceDateIssues(Experience $experience): array
+    {
+        $issues = [];
+        $startYear = (int) $experience->start_year;
+        $startMonth = (int) $experience->start_month;
+        $endYear = $experience->end_year === null ? null : (int) $experience->end_year;
+        $endMonth = $experience->end_month === null ? null : (int) $experience->end_month;
+
+        if ($startYear < 1000 || $startYear > 9999 || $startMonth < 1 || $startMonth > 12) {
+            $issues[] = $this->issue('invalid_start_date', 'start_year', 'The start month and year are invalid.');
+        }
+
+        if (($endYear === null) !== ($endMonth === null)) {
+            $issues[] = $this->issue('date_pair', 'end_year', 'The end month and year must be present together.');
+        } elseif ($endYear !== null && ($endYear < 1000 || $endYear > 9999 || $endMonth < 1 || $endMonth > 12 || ($endYear === $startYear && $endMonth < $startMonth) || $endYear < $startYear)) {
+            $issues[] = $this->issue('invalid_date_range', 'end_year', 'The end date must not precede the start date.');
+        }
+
+        return $issues;
+    }
+
+    /** @return list<PublicationIssue> */
+    private function highlightIssues(ExperienceHighlight $highlight, string $prefix): array
+    {
+        return $this->requiredPairs($highlight, ['content'], "{$prefix}.");
+    }
+
+    /** @param list<string> $fields @return list<PublicationIssue> */
+    private function required(Model $content, array $fields): array
+    {
+        $issues = [];
+        foreach ($fields as $field) {
+            if (! $this->hasValue($content->getAttribute($field))) {
+                $issues[] = $this->issue('required', $field, 'This field is required for publication.');
+            }
+        }
+
+        return $issues;
+    }
+
+    /** @param list<string> $pairs @return list<PublicationIssue> */
+    private function requiredPairs(Model $content, array $pairs, string $prefix = ''): array
+    {
+        $issues = [];
+        foreach ($pairs as $pair) {
+            foreach (['es', 'en'] as $locale) {
+                $field = "{$pair}_{$locale}";
+                if (! $this->hasValue($content->getAttribute($field))) {
+                    $issues[] = $this->issue('required_translation', "{$prefix}{$field}", 'Both Spanish and English values are required for publication.');
+                }
+            }
+        }
+
+        return $issues;
+    }
+
+    /** @param list<string> $pairs @return list<PublicationIssue> */
+    private function optionalPairs(Model $content, array $pairs): array
+    {
+        $issues = [];
+        foreach ($pairs as $pair) {
+            if ($this->hasValue($content->getAttribute("{$pair}_es")) !== $this->hasValue($content->getAttribute("{$pair}_en"))) {
+                $issues[] = $this->issue('translation_pair', $pair, 'Spanish and English values must be present together.');
+            }
+        }
+
+        return $issues;
+    }
+
+    /** @param list<string> $fields @return list<PublicationIssue> */
+    private function httpsUrlIssues(Model $content, array $fields): array
+    {
+        $issues = [];
+        foreach ($fields as $field) {
+            $value = $content->getAttribute($field);
+            if ($this->hasValue($value) && ! $this->isHttpsUrl((string) $value)) {
+                $issues[] = $this->issue('invalid_https_url', $field, 'The destination must be a valid HTTPS URL.');
+            }
+        }
+
+        return $issues;
+    }
+
+    /** @return list<PublicationIssue> */
+    private function imageAssetIssues(Model $content, string $prefix, int $maximumBytes): array
+    {
+        $issues = $this->assetMetadataIssues($content, $prefix, ['image/jpeg', 'image/png', 'image/webp'], $maximumBytes);
+        if (! $this->hasValue($content->getAttribute("{$prefix}_private_path"))) {
+            return $issues;
+        }
+
+        $es = $this->hasValue($content->getAttribute("{$prefix}_alt_es"));
+        $en = $this->hasValue($content->getAttribute("{$prefix}_alt_en"));
+        if ($es !== $en) {
+            $issues[] = $this->issue('translation_pair', "{$prefix}_alt", 'Image alt text must be present in both locales.');
+        } elseif (! $es) {
+            $issues[] = $this->issue('required_translation', "{$prefix}_alt_es", 'Image alt text is required in both locales.');
+            $issues[] = $this->issue('required_translation', "{$prefix}_alt_en", 'Image alt text is required in both locales.');
+        }
+
+        return $issues;
+    }
+
+    /** @return list<PublicationIssue> */
+    private function iconAssetIssues(Technology $technology): array
+    {
+        return $this->assetMetadataIssues($technology, 'icon', ['image/png', 'image/webp'], 1024 * 1024);
+    }
+
+    /** @param list<string> $allowedMimes @return list<PublicationIssue> */
+    private function assetMetadataIssues(Model $content, string $prefix, array $allowedMimes, int $maximumBytes): array
+    {
+        $path = $content->getAttribute("{$prefix}_private_path");
+        $mime = $content->getAttribute("{$prefix}_mime");
+        $size = $content->getAttribute("{$prefix}_size");
+        $hasAny = $this->hasValue($path) || $this->hasValue($mime) || $size !== null;
+        if (! $hasAny) {
+            return [];
+        }
+
+        if (! $this->hasValue($path) || ! $this->hasValue($mime) || $size === null) {
+            return [$this->issue('asset_metadata_incomplete', "{$prefix}_private_path", 'Owned asset metadata is incomplete.')];
+        }
+
+        $issues = [];
+        if (! in_array($mime, $allowedMimes, true)) {
+            $issues[] = $this->issue('invalid_asset_mime', "{$prefix}_mime", 'The owned asset MIME type is not allowed.');
+        }
+        if ((int) $size < 1 || (int) $size > $maximumBytes) {
+            $issues[] = $this->issue('asset_size_exceeded', "{$prefix}_size", 'The owned asset exceeds the allowed size.');
+        }
+
+        return $issues;
+    }
+
+    private function hasValue(mixed $value): bool
+    {
+        return ! is_string($value) ? $value !== null : trim($value) !== '';
+    }
+
+    private function isHttpsUrl(string $value): bool
+    {
+        return filter_var($value, FILTER_VALIDATE_URL) !== false && parse_url($value, PHP_URL_SCHEME) === 'https';
+    }
+
+    private function issue(string $code, string $path, string $message): PublicationIssue
+    {
+        return new PublicationIssue($code, $path, $message);
+    }
+}

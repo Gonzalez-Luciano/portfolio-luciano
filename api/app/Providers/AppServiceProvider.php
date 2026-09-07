@@ -2,7 +2,20 @@
 
 namespace App\Providers;
 
+use App\Domain\Publishing\EditorialMutationContext;
+use App\Domain\Publishing\EditorialMutationGuard;
 use App\Http\Responses\ApiErrorResponse;
+use App\Models\CvDocument;
+use App\Models\Experience;
+use App\Models\ExperienceHighlight;
+use App\Models\ExpertiseArea;
+use App\Models\ProfessionalLink;
+use App\Models\Profile;
+use App\Models\Project;
+use App\Models\SiteConfiguration;
+use App\Models\Technology;
+use App\Models\WorkCase;
+use App\Models\WorkPrinciple;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -15,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(EditorialMutationContext::class);
     }
 
     /**
@@ -23,6 +36,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        foreach ([
+            Profile::class, SiteConfiguration::class, Experience::class, ExperienceHighlight::class,
+            WorkCase::class, Project::class, Technology::class, ExpertiseArea::class,
+            WorkPrinciple::class, ProfessionalLink::class, CvDocument::class,
+        ] as $model) {
+            $model::observe(EditorialMutationGuard::class);
+        }
+
         RateLimiter::for('public-api', static fn (Request $request): Limit => Limit::perMinute(60)
             ->by($request->ip())
             ->response(static fn (Request $request, array $headers): ApiErrorResponse => ApiErrorResponse::make(

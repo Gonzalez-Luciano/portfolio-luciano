@@ -13,6 +13,7 @@ use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Store;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Process\Process;
@@ -189,12 +190,13 @@ final class PublicContentCacheConcurrencyTest extends TestCase
     {
         $cache = $this->useLockStore($store);
         $profile = Profile::query()->sole();
-        $profile->forceFill([
+        DB::table('profiles')->where('id', $profile->id)->update([
             'name' => 'Old publicly visible profile',
-            'status' => PublicationStatus::Published,
+            'status' => PublicationStatus::Published->value,
             'is_visible' => true,
             'published_at' => now(),
-        ])->save();
+            'updated_at' => now(),
+        ]);
         $directory = storage_path('framework/testing/cache-race-'.bin2hex(random_bytes(8)));
         mkdir($directory, 0700, true);
 
