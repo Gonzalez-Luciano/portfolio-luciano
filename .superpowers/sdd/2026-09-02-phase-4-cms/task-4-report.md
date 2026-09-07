@@ -138,3 +138,57 @@ Results:
 - Full backend suite: **108 passed, 441 assertions**.
 - Pint apply corrected two style issues; final `pint --test` verification passed.
 - `git diff --check` passed.
+
+---
+
+## Review-fix round 2: aggregate highlight replacement
+
+### Fix applied
+
+`UpdateExperienceAggregate` no longer uses the relation bulk-delete method to
+replace highlights. While inside its existing aggregate mutation context and
+database transaction, it deletes each loaded `ExperienceHighlight` model
+individually, then creates the replacement models individually. This ensures
+the `EditorialMutationGuard` sees every delete and retains the aggregate-only
+mutation contract without changing the proposed-state validation or transaction
+boundary.
+
+### TDD evidence
+
+`test_aggregate_replacement_deletes_existing_highlights_through_guarded_model_events`
+was added before the production change. It failed RED because the previous
+relation bulk delete emitted no Eloquent `deleted` event (expected the original
+highlight id; received an empty list). After the minimal change, it passed GREEN
+and confirms the replacement succeeds through guarded model events. Existing
+coverage continues to prove that direct individual highlight update and delete
+outside the aggregate action are rejected.
+
+### Bulk-query boundary
+
+Laravel model observers guard instance operations such as `save()` and
+`delete()`; they cannot intercept raw or Eloquent query-builder bulk
+`update()`/`delete()` calls, because those paths do not instantiate models or
+fire model events. A targeted search of `api/app` found no supported CMS/admin
+production path that bulk-writes `ExperienceHighlight` after this fix. No
+database trigger or generic interception layer was added: neither is required
+by the approved Task 4 scope, and the concrete aggregate production path now
+uses guarded individual operations. Any future bulk-write path must be designed
+explicitly with equivalent aggregate validation and authorization rather than
+relying on these model observers.
+
+### Final verification
+
+```powershell
+docker compose --profile test run --rm api-test php artisan test --filter='PublicationValidatorTest|EditorialMutationGuardTest|ExperienceAggregateActionTest|ModelRelationshipTest'
+docker compose --profile test run --rm api-test php artisan test
+docker compose --profile test run --rm api-test vendor/bin/pint --test
+git diff --check
+```
+
+Results:
+
+- Targeted aggregate/guard suite: **3 passed, 8 assertions**; broader focused
+  Task 4 suite: **56 passed, 112 assertions**.
+- Full backend suite: **109 passed, 443 assertions**.
+- `pint --test`: **PASS (95 files)**.
+- `git diff --check`: exit 0.

@@ -12,6 +12,7 @@ use App\Models\ExperienceHighlight;
 use App\Models\Technology;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use LogicException;
 use Tests\TestCase;
 
@@ -166,6 +167,32 @@ final class ExperienceAggregateActionTest extends TestCase
         $this->expectExceptionMessage('aggregate mutation context');
 
         $highlight->delete();
+    }
+
+    public function test_aggregate_replacement_deletes_existing_highlights_through_guarded_model_events(): void
+    {
+        $experience = Experience::factory()->draft()->create();
+        $initial = app(UpdateExperienceAggregate::class)(
+            $experience,
+            [],
+            [['content_es' => 'Hito original', 'content_en' => 'Original highlight', 'position' => 0]],
+            [],
+        );
+        $originalId = $initial->highlights()->sole()->id;
+        $deletedIds = [];
+        Event::listen('eloquent.deleted: '.ExperienceHighlight::class, static function (ExperienceHighlight $highlight) use (&$deletedIds): void {
+            $deletedIds[] = $highlight->id;
+        });
+
+        $updated = app(UpdateExperienceAggregate::class)(
+            $experience,
+            [],
+            [['content_es' => 'Hito reemplazado', 'content_en' => 'Replacement highlight', 'position' => 0]],
+            [],
+        );
+
+        $this->assertSame([$originalId], $deletedIds);
+        $this->assertSame('Hito reemplazado', $updated->highlights()->sole()->content_es);
     }
 
     private function publishedExperience(): Experience

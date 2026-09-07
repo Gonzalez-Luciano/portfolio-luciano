@@ -55,7 +55,7 @@ final class UpdateExperienceAggregate
 
             $updated = $this->context->runAggregate(function () use ($locked, $attributes, $highlights, $technologies): Experience {
                 $locked->fill($attributes)->save();
-                $locked->highlights()->delete();
+                $locked->highlights->each(static fn (ExperienceHighlight $highlight): bool => $highlight->delete());
                 foreach ($highlights as $highlight) {
                     $locked->highlights()->create($highlight);
                 }
