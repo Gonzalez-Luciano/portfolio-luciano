@@ -10,6 +10,7 @@ use App\Domain\Publishing\PublicationValidationException;
 use App\Enums\PublicationStatus;
 use App\Enums\PublicEndpoint;
 use App\Enums\SupportedLocale;
+use App\Models\CvDocument;
 use App\Models\Project;
 use App\Support\PublicContentCache;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -33,6 +34,16 @@ final class EditorialMutationGuardTest extends TestCase
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('Sensitive editorial mutation');
+
+        $project->save();
+    }
+
+    public function test_it_rejects_direct_creation_of_already_published_content(): void
+    {
+        $project = Project::factory()->publishedHidden()->make();
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('must be created as a draft');
 
         $project->save();
     }
@@ -62,7 +73,7 @@ final class EditorialMutationGuardTest extends TestCase
 
     public function test_it_rejects_a_direct_key_change_and_direct_delete(): void
     {
-        $project = Project::factory()->publishedHidden()->create();
+        $project = $this->publishedProject();
         $project->key = 'different-key';
 
         try {
@@ -78,7 +89,7 @@ final class EditorialMutationGuardTest extends TestCase
 
     public function test_a_published_hidden_record_cannot_be_saved_with_incomplete_content(): void
     {
-        $project = Project::factory()->publishedHidden()->create();
+        $project = $this->publishedProject();
         $project->title_en = ' ';
 
         $this->expectException(PublicationValidationException::class);
@@ -100,9 +111,19 @@ final class EditorialMutationGuardTest extends TestCase
         $this->assertNull(Cache::get($cache->key(SupportedLocale::English, PublicEndpoint::Projects)));
     }
 
+    public function test_update_content_rejects_a_cv_locale_change(): void
+    {
+        $cv = CvDocument::factory()->draft()->create();
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('locale is immutable');
+
+        app(UpdateContent::class)($cv, ['locale' => SupportedLocale::Spanish]);
+    }
+
     public function test_a_key_change_is_explicitly_confirmed_and_validated_even_after_the_key_is_locked(): void
     {
-        $project = Project::factory()->publishedHidden()->create();
+        $project = $this->publishedProject();
 
         $this->expectException(LogicException::class);
         app(ChangePublicKey::class)($project, 'new-key', false);
@@ -128,7 +149,7 @@ final class EditorialMutationGuardTest extends TestCase
 
     public function test_a_confirmed_key_change_invalidates_the_owner_endpoint_for_both_locales(): void
     {
-        $project = Project::factory()->publishedHidden()->create();
+        $project = $this->publishedProject();
         $cache = app(PublicContentCache::class);
         Cache::forever($cache->key(SupportedLocale::Spanish, PublicEndpoint::Projects), ['old-es']);
         Cache::forever($cache->key(SupportedLocale::English, PublicEndpoint::Projects), ['old-en']);
@@ -176,5 +197,21 @@ final class EditorialMutationGuardTest extends TestCase
         $reordered = app(ReorderContent::class)($project, 12);
 
         $this->assertSame(12, $reordered->position);
+    }
+
+    private function publishedProject(): Project
+    {
+        $project = Project::factory()->draft()->create([
+            'title_es' => 'Proyecto técnico sintético',
+            'title_en' => 'Synthetic technical project',
+            'summary_es' => 'Resumen técnico sintético.',
+            'summary_en' => 'Synthetic technical summary.',
+            'problem_es' => 'Problema técnico sintético.',
+            'problem_en' => 'Synthetic technical problem.',
+            'solution_es' => 'Solución técnica sintética.',
+            'solution_en' => 'Synthetic technical solution.',
+        ]);
+
+        return app(PublishContent::class)($project);
     }
 }

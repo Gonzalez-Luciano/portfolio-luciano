@@ -13,6 +13,7 @@ use App\Models\SiteConfiguration;
 use App\Models\Technology;
 use App\Models\WorkCase;
 use App\Models\WorkPrinciple;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -24,9 +25,9 @@ final class ModelRelationshipTest extends TestCase
     public function test_experience_highlights_are_ordered_by_position_then_id(): void
     {
         $experience = Experience::factory()->create();
-        $later = ExperienceHighlight::factory()->create(['experience_id' => $experience->id, 'position' => 2]);
-        $firstTie = ExperienceHighlight::factory()->create(['experience_id' => $experience->id, 'position' => 1]);
-        $secondTie = ExperienceHighlight::factory()->create(['experience_id' => $experience->id, 'position' => 1]);
+        $later = $this->createHighlightFixture($experience, 2);
+        $firstTie = $this->createHighlightFixture($experience, 1);
+        $secondTie = $this->createHighlightFixture($experience, 1);
 
         $this->assertSame([$firstTie->id, $secondTie->id, $later->id], $experience->highlights()->pluck('id')->all());
     }
@@ -62,15 +63,15 @@ final class ModelRelationshipTest extends TestCase
 
         foreach ($models as $model) {
             $model::factory()->draft()->create();
-            $model::factory()->publishedHidden()->create();
-            $visible = $model::factory()->publishedVisible()->create();
+            $this->createPublishedScopeFixture($model, false);
+            $visible = $this->createPublishedScopeFixture($model, true);
 
             $this->assertSame([$visible->getKey()], $model::publiclyAvailable()->pluck('id')->all(), $model);
         }
 
         ProfessionalLink::factory()->draft()->create(['type' => 'linkedin']);
-        ProfessionalLink::factory()->publishedHidden()->create(['type' => 'github']);
-        $visible = ProfessionalLink::factory()->publishedVisible()->create(['type' => 'email', 'destination' => 'synthetic@example.test']);
+        $this->createPublishedScopeFixture(ProfessionalLink::class, false, ['type' => 'github']);
+        $visible = $this->createPublishedScopeFixture(ProfessionalLink::class, true, ['type' => 'email', 'destination' => 'synthetic@example.test']);
         $this->assertSame([$visible->id], ProfessionalLink::publiclyAvailable()->pluck('id')->all());
     }
 
@@ -100,7 +101,7 @@ final class ModelRelationshipTest extends TestCase
     public function test_cv_document_publicly_available_scope_requires_published_and_visible(): void
     {
         CvDocument::factory()->draft()->spanish()->create();
-        $english = CvDocument::factory()->publishedHidden()->create();
+        $english = $this->createPublishedScopeFixture(CvDocument::class, false);
 
         $this->assertCount(0, CvDocument::publiclyAvailable()->get());
 
@@ -121,16 +122,16 @@ final class ModelRelationshipTest extends TestCase
         ];
 
         foreach ($models as $model) {
-            $zeta = $model::factory()->publishedVisible()->create(['key' => 'zeta', 'position' => 5]);
-            $alpha = $model::factory()->publishedVisible()->create(['key' => 'alpha', 'position' => 5]);
-            $earlier = $model::factory()->publishedVisible()->create(['key' => 'middle', 'position' => 4]);
+            $zeta = $this->createPublishedScopeFixture($model, true, ['key' => 'zeta', 'position' => 5]);
+            $alpha = $this->createPublishedScopeFixture($model, true, ['key' => 'alpha', 'position' => 5]);
+            $earlier = $this->createPublishedScopeFixture($model, true, ['key' => 'middle', 'position' => 4]);
 
             $this->assertSame([$earlier->id, $alpha->id, $zeta->id], $model::publiclyAvailable()->pluck('id')->all(), $model);
         }
 
-        $email = ProfessionalLink::factory()->publishedVisible()->create(['type' => 'email', 'destination' => 'synthetic@example.test', 'position' => 5]);
-        $github = ProfessionalLink::factory()->publishedVisible()->create(['type' => 'github', 'position' => 5]);
-        $linkedin = ProfessionalLink::factory()->publishedVisible()->create(['type' => 'linkedin', 'position' => 4]);
+        $email = $this->createPublishedScopeFixture(ProfessionalLink::class, true, ['type' => 'email', 'destination' => 'synthetic@example.test', 'position' => 5]);
+        $github = $this->createPublishedScopeFixture(ProfessionalLink::class, true, ['type' => 'github', 'position' => 5]);
+        $linkedin = $this->createPublishedScopeFixture(ProfessionalLink::class, true, ['type' => 'linkedin', 'position' => 4]);
 
         $this->assertSame([$linkedin->id, $github->id, $email->id], ProfessionalLink::publiclyAvailable()->pluck('id')->all());
     }
@@ -148,5 +149,34 @@ final class ModelRelationshipTest extends TestCase
         ]);
 
         $this->assertSame(['middle', 'alpha', 'zeta'], $owner->{$relation}()->pluck('technologies.key')->all());
+    }
+
+    /** @param class-string<Model> $model @param array<string, mixed> $attributes */
+    private function createPublishedScopeFixture(string $model, bool $visible, array $attributes = []): Model
+    {
+        $draft = $model::factory()->draft()->create($attributes);
+        $published = ($visible ? $model::factory()->publishedVisible() : $model::factory()->publishedHidden())->make($attributes);
+
+        DB::table($draft->getTable())->where($draft->getKeyName(), $draft->getKey())->update([
+            ...$published->getAttributes(),
+            'updated_at' => now(),
+        ]);
+
+        return $draft->fresh();
+    }
+
+    private function createHighlightFixture(Experience $experience, int $position): ExperienceHighlight
+    {
+        $timestamp = now();
+        $id = DB::table('experience_highlights')->insertGetId([
+            'experience_id' => $experience->id,
+            'content_es' => null,
+            'content_en' => null,
+            'position' => $position,
+            'created_at' => $timestamp,
+            'updated_at' => $timestamp,
+        ]);
+
+        return ExperienceHighlight::query()->findOrFail($id);
     }
 }

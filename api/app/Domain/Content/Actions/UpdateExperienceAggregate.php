@@ -5,6 +5,7 @@ namespace App\Domain\Content\Actions;
 use App\Domain\Publishing\EditorialMutationContext;
 use App\Domain\Publishing\PublicationIssue;
 use App\Domain\Publishing\PublicationValidator;
+use App\Enums\PublicationStatus;
 use App\Enums\PublicEndpoint;
 use App\Models\Experience;
 use App\Models\ExperienceHighlight;
@@ -48,9 +49,11 @@ final class UpdateExperienceAggregate
             $candidate->fill($attributes);
             $candidate->setRelation('highlights', $this->proposedHighlights($highlights));
             $candidate->setRelation('technologies', $technologyModels);
-            $this->validator->assertPublishable($candidate);
+            if ($candidate->status === PublicationStatus::Published) {
+                $this->validator->assertPublishable($candidate);
+            }
 
-            $updated = $this->context->run(function () use ($locked, $attributes, $highlights, $technologies): Experience {
+            $updated = $this->context->runAggregate(function () use ($locked, $attributes, $highlights, $technologies): Experience {
                 $locked->fill($attributes)->save();
                 $locked->highlights()->delete();
                 foreach ($highlights as $highlight) {

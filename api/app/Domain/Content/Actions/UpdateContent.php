@@ -5,6 +5,7 @@ namespace App\Domain\Content\Actions;
 use App\Domain\Publishing\EditorialMutationContext;
 use App\Domain\Publishing\PublicationValidator;
 use App\Enums\PublicationStatus;
+use App\Models\CvDocument;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -26,6 +27,10 @@ final class UpdateContent
     /** @param array<string, mixed> $attributes */
     public function __invoke(Model $content, array $attributes): Model
     {
+        if ($content instanceof CvDocument && array_key_exists('locale', $attributes)) {
+            throw new \LogicException('The CV locale is immutable.');
+        }
+
         if (array_intersect(array_keys($attributes), self::PROTECTED_ATTRIBUTES) !== []) {
             throw new \LogicException('Sensitive editorial mutation must be performed through its dedicated domain action.');
         }

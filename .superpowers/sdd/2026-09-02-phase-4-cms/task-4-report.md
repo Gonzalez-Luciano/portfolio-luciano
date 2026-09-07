@@ -83,3 +83,58 @@ The Task 4 brief includes Show/Hide/Return-to-draft timestamp cases, but the
 approved implementation plan assigns their actions and all asset withdrawal
 ordering to Task 5. They are deliberately absent from this commit; no direct
 state mutation provides a substitute path.
+
+---
+
+## Review-fix addendum
+
+### Fixes applied
+
+1. `UpdateExperienceAggregate` now performs relation/structural preparation
+   for every candidate but calls `assertPublishable()` only for a published
+   Experience. An incomplete draft aggregate can therefore be saved, while an
+   incomplete published aggregate remains blocked before mutation.
+2. `ExperienceHighlight` creation, update, and deletion now require the active
+   aggregate-specific mutation context. A generic editorial context cannot
+   authorize these writes. Direct Eloquent writes cannot bypass the Experience
+   aggregate action; the aggregate action remains able to replace highlights
+   transactionally.
+3. `UpdateContent` rejects attempts to change `CvDocument.locale`.
+4. The defensive observer rejects every direct already-published model create;
+   managed content must start as draft/hidden and reach published state through
+   `PublishContent`. Scope tests use explicit database fixtures where their
+   sole purpose is to test query scopes, and action tests create published
+   records through the real publication action.
+
+### TDD evidence
+
+The following tests were written and run RED before their respective production
+changes. They failed for the intended missing behavior:
+
+- incomplete draft aggregate was rejected by unconditional publication
+  validation;
+- direct highlight create/update bypassed the aggregate action;
+- direct published creation was accepted;
+- generic CV update accepted a locale change;
+- a generic editorial context could authorize a direct highlight create.
+
+After the smallest implementation changes, the focused action/guard suite
+passed with **20 tests and 44 assertions**. The reviewer-complete focused
+suite then passed with **55 tests and 110 assertions**.
+
+### Final review-fix verification
+
+```powershell
+docker compose --profile test run --rm api-test php artisan test --filter='PublicationValidatorTest|EditorialMutationGuardTest|ExperienceAggregateActionTest|ModelRelationshipTest'
+docker compose --profile test run --rm api-test php artisan test
+docker compose --profile test run --rm api-test vendor/bin/pint
+docker compose --profile test run --rm api-test vendor/bin/pint --test
+git diff --check
+```
+
+Results:
+
+- Focused suite: **55 passed, 110 assertions**.
+- Full backend suite: **108 passed, 441 assertions**.
+- Pint apply corrected two style issues; final `pint --test` verification passed.
+- `git diff --check` passed.

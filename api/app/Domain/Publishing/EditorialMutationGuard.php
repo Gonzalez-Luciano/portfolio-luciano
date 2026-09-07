@@ -39,27 +39,39 @@ final class EditorialMutationGuard implements ShouldHandleEventsAfterCommit
 
     public function creating(Model $content): void
     {
+        $this->assertHighlightMutationContext($content);
+        if ($content instanceof ExperienceHighlight) {
+            return;
+        }
+
         $this->assertLocalState($content);
-        if ($content->getAttribute('status') === PublicationStatus::Published || $content->getAttribute('status') === PublicationStatus::Published->value) {
-            $this->validator->assertPublishable($content);
+        if ($this->isPublished($content)) {
+            throw new \LogicException('Managed content must be created as a draft through the publication action.');
         }
     }
 
     public function updating(Model $content): void
     {
+        $this->assertHighlightMutationContext($content);
+        if ($content instanceof ExperienceHighlight) {
+            return;
+        }
+
         $this->assertLocalState($content);
 
         if ($this->hasSensitiveChanges($content) && ! $this->context->isActive()) {
             throw new \LogicException('Sensitive editorial mutation must be performed through a domain action.');
         }
 
-        if ($content->getAttribute('status') === PublicationStatus::Published || $content->getAttribute('status') === PublicationStatus::Published->value) {
+        if ($this->isPublished($content)) {
             $this->validator->assertPublishable($content);
         }
     }
 
     public function deleting(Model $content): void
     {
+        $this->assertHighlightMutationContext($content);
+
         if (! $this->context->isActive()) {
             throw new \LogicException('Sensitive editorial mutation must be performed through a domain action.');
         }
@@ -105,6 +117,19 @@ final class EditorialMutationGuard implements ShouldHandleEventsAfterCommit
         }
 
         return false;
+    }
+
+    private function assertHighlightMutationContext(Model $content): void
+    {
+        if ($content instanceof ExperienceHighlight && ! $this->context->isAggregateActive()) {
+            throw new \LogicException('Experience highlights must be changed through the aggregate mutation context.');
+        }
+    }
+
+    private function isPublished(Model $content): bool
+    {
+        return $content->getAttribute('status') === PublicationStatus::Published
+            || $content->getAttribute('status') === PublicationStatus::Published->value;
     }
 
     private function invalidate(Model $content): void
