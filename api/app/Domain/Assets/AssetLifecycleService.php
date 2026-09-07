@@ -178,7 +178,15 @@ final class AssetLifecycleService
                 return $locked->fresh();
             });
         });
-        $this->deletePrivate($old['private'], $owner, (string) Str::uuid(), 'remove_private_cleanup');
+        try {
+            $this->removePrivateOrFail($old['private']);
+        } catch (\Throwable $exception) {
+            $operationId = (string) Str::uuid();
+            $this->restoreSnapshot($updated, $definition, $old);
+            $this->cache->invalidate($this->dependencies->for($owner));
+
+            throw $this->operationFailure('remove_private_cleanup', $owner, $operationId, $exception);
+        }
         $this->cache->invalidate($this->dependencies->for($owner));
 
         return $updated;
@@ -353,6 +361,13 @@ final class AssetLifecycleService
             Storage::disk('local')->delete($path);
         } catch (\Throwable) {
             $this->log($owner, $operationId, $operation);
+        }
+    }
+
+    private function removePrivateOrFail(string $path): void
+    {
+        if (! Storage::disk('local')->delete($path) || Storage::disk('local')->exists($path)) {
+            throw new AssetOperationException('The private original could not be removed.');
         }
     }
 

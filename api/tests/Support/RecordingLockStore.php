@@ -16,4 +16,11 @@ final class RecordingLockStore extends FileStore
 
         return new RecordingLock(parent::lock($name, $seconds, $owner), $name, $this->events);
     }
+
+    public function forget($key): bool
+    {
+        $this->events[] = "forget:{$key}";
+
+        return parent::forget($key);
+    }
 }

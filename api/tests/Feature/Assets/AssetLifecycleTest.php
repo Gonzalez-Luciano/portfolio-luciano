@@ -3,7 +3,9 @@
 namespace Tests\Feature\Assets;
 
 use App\Domain\Assets\AssetLifecycleService;
+use App\Domain\Assets\AssetOperationException;
 use App\Domain\Assets\AssetValidationException;
+use App\Domain\Content\Actions\RemoveOwnedAsset;
 use App\Models\CvDocument;
 use App\Models\Profile;
 use App\Models\Project;
@@ -11,6 +13,7 @@ use App\Models\Technology;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Mockery;
 use Tests\TestCase;
 
 final class AssetLifecycleTest extends TestCase
@@ -83,6 +86,59 @@ final class AssetLifecycleTest extends TestCase
         $this->assertSame('application/pdf', $document->mime);
         Storage::disk('local')->assertExists($document->private_path);
         Storage::disk('public')->assertDirectoryEmpty('/');
+    }
+
+    public function test_private_upload_failure_leaves_no_reference_or_orphan(): void
+    {
+        $project = Project::factory()->create();
+        $local = Mockery::mock();
+        $local->shouldReceive('putFileAs')->once()->andReturnFalse();
+        Storage::shouldReceive('disk')->with('local')->andReturn($local);
+
+        try {
+            app(AssetLifecycleService::class)->replace($project, $this->png('upload.png'));
+            $this->fail('A private upload failure must be controlled.');
+        } catch (AssetOperationException) {
+            $project->refresh();
+            $this->assertNull($project->image_private_path);
+            $this->assertNull($project->image_public_path);
+        }
+    }
+
+    public function test_private_cleanup_failure_restores_the_old_hidden_reference(): void
+    {
+        $project = Project::factory()->create();
+        $service = app(AssetLifecycleService::class);
+        $service->replace($project, $this->png('old.png'));
+        $oldPath = $project->fresh()->image_private_path;
+        $local = Mockery::mock();
+        $local->shouldReceive('delete')->with($oldPath)->once()->andReturnFalse();
+        Storage::shouldReceive('disk')->with('local')->andReturn($local);
+
+        try {
+            app(RemoveOwnedAsset::class)($project->fresh());
+            $this->fail('A failed private cleanup must not claim success.');
+        } catch (AssetOperationException) {
+            $this->assertSame($oldPath, $project->fresh()->image_private_path);
+        }
+    }
+
+    public function test_database_failure_removes_the_staged_file_and_preserves_the_old_reference(): void
+    {
+        $project = Project::factory()->create();
+        $service = app(AssetLifecycleService::class);
+        $service->replace($project, $this->png('old.png'));
+        $oldPath = $project->fresh()->image_private_path;
+        $stale = $project->fresh();
+        $stale->setAttribute('id', 999999);
+
+        try {
+            $service->replace($stale, $this->png('new.png'));
+            $this->fail('A database failure must be controlled.');
+        } catch (AssetOperationException) {
+            $this->assertSame($oldPath, $project->fresh()->image_private_path);
+            $this->assertSame([$oldPath], Storage::disk('local')->allFiles());
+        }
     }
 
     private function png(string $name, string $padding = ''): UploadedFile

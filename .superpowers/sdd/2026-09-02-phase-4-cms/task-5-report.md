@@ -70,3 +70,44 @@ git diff --check
 
 - `314024039c44a5b78f1a8f8c5ef95a51d66b0a7d` —
   `feat(api): add compensated owned asset lifecycle`
+
+## Completion addendum — fault injection and ordering coverage
+
+Additional storage-fake and fault-injection coverage now proves:
+
+- failed private staging leaves no owner reference or orphan;
+- real MIME/content, SVG and size policies reject invalid uploads;
+- a locked-row/database failure removes the staged file and preserves the prior
+  reference;
+- failed public replacement restores the owner’s former private/public paths
+  while the former public copy remains available;
+- failed public withdrawal preserves the visible owner/reference;
+- failed hidden-private cleanup restores the old database reference and returns
+  a controlled administrative error;
+- CV replacement remains private only;
+- delete removes both the public copy and private original;
+- a recording file cache store observes `withdraw -> first forget -> DB update
+  / commit -> second forget`, with mutation-lock acquisition before withdrawal
+  and release after the final forget.
+
+The cleanup-restoration test was written first and exposed that a failed private
+delete was previously logged as success after its DB reference had been cleared.
+`AssetLifecycleService` now restores the old snapshot, invalidates both locales,
+and throws its controlled exception in that case.
+
+### Final verification
+
+```powershell
+docker compose --profile test run --rm api-test php artisan test --filter='AssetLifecycleTest|AssetTransitionActionTest'
+docker compose --profile test run --rm api-test php artisan test --compact
+docker compose --profile test run --rm api-test vendor/bin/pint --test
+node infra/validation/validate-repository.mjs
+git diff --check
+```
+
+- Focused assets: **13 passed, 53 assertions**.
+- Complete backend suite: **122 passed, 496 assertions**.
+- Pint initially found one ordered-import issue after the new test imports;
+  Pint applied that fix and the final verification is run with the commit.
+- Repository validation and diff check passed before the final formatting fix;
+  both are rerun with the final commit verification.
