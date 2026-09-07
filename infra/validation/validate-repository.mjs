@@ -110,6 +110,7 @@ assert.match(
 );
 
 assert.match(apiService, /^ {6}- api_public_media:\/var\/www\/html\/storage\/app\/public$/m);
+assert.match(apiService, /^ {6}- api_private_media:\/var\/www\/html\/storage\/app\/private$/m);
 assert.equal(
   [...compose.matchAll(/^ {6}- api_public_media:\/var\/www\/html\/storage\/app\/public$/gm)].length,
   1,
@@ -129,7 +130,7 @@ assert.deepEqual(networkNames, ['front', 'data', 'test']);
 const volumeBlock = compose.match(/^volumes:\n([\s\S]*)$/m)?.[1];
 assert.ok(volumeBlock, 'compose.yaml must declare volumes');
 const volumeNames = [...volumeBlock.matchAll(/^ {2}([a-z][a-z_]*): \{\}$/gm)].map((match) => match[1]);
-assert.deepEqual(volumeNames, ['web_node_modules', 'api_vendor', 'mysql_data', 'api_public_media']);
+assert.deepEqual(volumeNames, ['web_node_modules', 'api_vendor', 'mysql_data', 'api_private_media', 'api_public_media']);
 
 for (const path of ['infra/caddy/Caddyfile', 'infra/caddy/laravel-routes.json', 'infra/caddy/ROUTE_OWNERSHIP.md', 'docs/testing/PHASE_3_BROWSER_SMOKE.md']) {
   assert.ok(existsSync(resolve(root, path)), `Missing ${path}`);

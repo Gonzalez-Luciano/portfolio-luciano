@@ -40,6 +40,7 @@ services:
     volumes:
       - ./api:/var/www/html
       - api_vendor:/var/www/html/vendor
+      - api_private_media:/var/www/html/storage/app/private
       - api_public_media:/var/www/html/storage/app/public
     environment:
       APP_ENV: local
@@ -138,4 +139,5 @@ volumes:
   web_node_modules: {}
   api_vendor: {}
   mysql_data: {}
+  api_private_media: {}
   api_public_media: {}
