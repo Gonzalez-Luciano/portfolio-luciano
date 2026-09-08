@@ -1,0 +1,203 @@
+<?php
+
+namespace Tests\Feature\Api\V1;
+
+use App\Enums\PublicationStatus;
+use App\Enums\TechnologyCategory;
+use App\Models\CvDocument;
+use App\Models\Experience;
+use App\Models\ExpertiseArea;
+use App\Models\ProfessionalLink;
+use App\Models\Project;
+use App\Models\Technology;
+use App\Models\WorkCase;
+use App\Models\WorkPrinciple;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Tests\TestCase;
+
+final class PublicApiContractTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Cache::flush();
+        Storage::fake('public');
+        Storage::fake('local');
+    }
+
+    public function test_profile_resource_has_the_exact_public_shape_and_only_exposes_a_verified_public_photo(): void
+    {
+        DB::table('profiles')->where('singleton_key', 'default')->update([
+            'name' => 'Luciano González', 'headline_es' => 'Backend', 'headline_en' => 'Backend',
+            'short_summary_es' => 'Resumen', 'short_summary_en' => 'Summary',
+            'introduction_es' => 'Introducción', 'introduction_en' => 'Introduction',
+            'availability_es' => 'Disponible', 'availability_en' => 'Available', 'cta_es' => 'Contacto', 'cta_en' => 'Contact',
+            'photo_private_path' => 'profiles/private.jpg', 'photo_public_path' => 'profiles/public.jpg',
+            'photo_mime' => 'image/jpeg', 'photo_size' => 1,
+            'photo_alt_es' => 'Retrato', 'photo_alt_en' => 'Portrait',
+            'status' => PublicationStatus::Published->value, 'is_visible' => true, 'published_at' => now(),
+        ]);
+
+        $this->getJson('/api/v1/es/profile')->assertExactJson(['data' => [
+            'name' => 'Luciano González', 'headline' => 'Backend', 'short_summary' => 'Resumen',
+            'introduction' => 'Introducción', 'availability' => 'Disponible', 'cta' => 'Contacto', 'photo' => null,
+        ]]);
+
+        Storage::disk('public')->put('profiles/public.jpg', 'image');
+        Cache::flush();
+
+        $this->getJson('/api/v1/en/profile')->assertExactJson(['data' => [
+            'name' => 'Luciano González', 'headline' => 'Backend', 'short_summary' => 'Summary',
+            'introduction' => 'Introduction', 'availability' => 'Available', 'cta' => 'Contact',
+            'photo' => ['url' => '/storage/profiles/public.jpg', 'alt' => 'Portrait'],
+        ]]);
+    }
+
+    public function test_collection_resources_emit_exact_types_normalized_dates_and_no_editorial_data(): void
+    {
+        $technology = Technology::factory()->create([
+            'key' => 'laravel', 'name' => 'Laravel', 'category' => TechnologyCategory::Backend,
+        ]);
+        $experience = Experience::factory()->create([
+            'key' => 'experience', 'organization_label_es' => null, 'organization_label_en' => null,
+            'start_year' => 2024, 'start_month' => 3, 'end_year' => 2025, 'end_month' => 1,
+        ]);
+        DB::table('experience_highlights')->insert([
+            'experience_id' => $experience->id, 'content_es' => 'Hito técnico sintético.', 'content_en' => 'Synthetic technical highlight.',
+            'position' => 0, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $experience->technologies()->attach($technology, ['position' => 0]);
+        $workCase = WorkCase::factory()->create(['key' => 'case']);
+        $workCase->technologies()->attach($technology, ['position' => 0]);
+        $project = Project::factory()->create(['key' => 'project']);
+        $this->makePublic($technology, [
+            'icon_private_path' => 'technologies/private.webp', 'icon_public_path' => 'technologies/icon.webp',
+            'icon_mime' => 'image/webp', 'icon_size' => 1,
+        ]);
+        $this->makePublic($experience, [
+            'role_es' => 'Ingeniero técnico sintético', 'role_en' => 'Synthetic technical engineer',
+            'summary_es' => 'Resumen de experiencia sintética.', 'summary_en' => 'Synthetic experience summary.',
+        ]);
+        $this->makePublic($workCase, [
+            'title_es' => 'Caso técnico sintético', 'title_en' => 'Synthetic technical case',
+            'context_es' => 'Contexto técnico sintético.', 'context_en' => 'Synthetic technical context.',
+            'problem_es' => 'Problema técnico sintético.', 'problem_en' => 'Synthetic technical problem.',
+            'contribution_es' => 'Contribución técnica sintética.', 'contribution_en' => 'Synthetic technical contribution.',
+            'technical_approach_es' => 'Enfoque técnico sintético.', 'technical_approach_en' => 'Synthetic technical approach.',
+            'outcome_es' => 'Resultado técnico sintético.', 'outcome_en' => 'Synthetic technical outcome.',
+        ]);
+        $this->makePublic($project, [
+            'title_es' => 'Proyecto técnico sintético', 'title_en' => 'Synthetic technical project',
+            'summary_es' => 'Resumen técnico sintético.', 'summary_en' => 'Synthetic technical summary.',
+            'problem_es' => 'Problema técnico sintético.', 'problem_en' => 'Synthetic technical problem.',
+            'solution_es' => 'Solución técnica sintética.', 'solution_en' => 'Synthetic technical solution.',
+            'image_private_path' => 'projects/private.jpg', 'image_public_path' => 'projects/image.jpg',
+            'image_mime' => 'image/jpeg', 'image_size' => 1, 'image_alt_es' => 'Imagen', 'image_alt_en' => 'Image',
+        ]);
+        $project->technologies()->attach($technology, ['position' => 0]);
+
+        $this->getJson('/api/v1/es/experiences')->assertExactJson(['data' => [[
+            'key' => 'experience', 'organization' => null, 'role' => 'Ingeniero técnico sintético', 'start' => '2024-03', 'end' => '2025-01',
+            'summary' => 'Resumen de experiencia sintética.', 'highlights' => ['Hito técnico sintético.'],
+            'technologies' => [['key' => 'laravel', 'name' => 'Laravel', 'category' => 'backend', 'icon' => null]],
+        ]]]);
+        $this->getJson('/api/v1/es/work-cases')->assertExactJson(['data' => [[
+            'key' => 'case', 'title' => 'Caso técnico sintético', 'context' => 'Contexto técnico sintético.', 'problem' => 'Problema técnico sintético.',
+            'contribution' => 'Contribución técnica sintética.', 'technical_approach' => 'Enfoque técnico sintético.', 'outcome' => 'Resultado técnico sintético.',
+            'technologies' => [['key' => 'laravel', 'name' => 'Laravel', 'category' => 'backend', 'icon' => null]],
+        ]]]);
+        $this->getJson('/api/v1/es/projects')->assertExactJson(['data' => [[
+            'key' => 'project', 'title' => 'Proyecto técnico sintético', 'summary' => 'Resumen técnico sintético.', 'problem' => 'Problema técnico sintético.',
+            'solution' => 'Solución técnica sintética.', 'featured' => false, 'image' => null, 'demo_url' => null, 'repository_url' => null,
+            'technologies' => [['key' => 'laravel', 'name' => 'Laravel', 'category' => 'backend', 'icon' => null]],
+        ]]]);
+        $this->getJson('/api/v1/es/technologies')->assertExactJson(['data' => [[
+            'key' => 'laravel', 'name' => 'Laravel', 'category' => 'backend', 'icon' => null,
+        ]]]);
+    }
+
+    public function test_site_resource_has_ordered_groups_independently_filtered_collections_and_a_private_cv_contract(): void
+    {
+        $this->publishSite();
+        $email = ProfessionalLink::factory()->email()->create(['position' => 2, 'label_es' => 'Correo', 'label_en' => 'Email']);
+        $github = ProfessionalLink::factory()->github()->create(['position' => 1]);
+        $expertise = ExpertiseArea::factory()->withoutDescription()->create(['key' => 'apis']);
+        $principle = WorkPrinciple::factory()->create(['key' => 'quality']);
+        $cv = CvDocument::factory()->spanish()->create(['private_path' => 'cv/es.pdf', 'mime' => 'application/pdf', 'size' => 3, 'label' => 'Descargar CV']);
+        $this->makePublic($email);
+        $this->makePublic($github, ['is_visible' => false]);
+        $this->makePublic($expertise, ['title_es' => 'Área técnica sintética', 'title_en' => 'Synthetic technical area']);
+        $this->makePublic($principle, ['statement_es' => 'Principio técnico sintético.', 'statement_en' => 'Synthetic technical principle.']);
+        $this->makePublic($cv);
+
+        $this->getJson('/api/v1/es/site')->assertExactJson(['data' => [
+            'projects_empty_message' => 'Sin proyectos', 'contact_intro' => 'Contacto',
+            'technology_groups' => [
+                ['key' => 'backend', 'label' => 'Backend'], ['key' => 'data', 'label' => 'Datos'],
+                ['key' => 'integration', 'label' => 'Integraciones'], ['key' => 'collaboration', 'label' => 'Colaboración'],
+            ],
+            'professional_links' => [['key' => 'email', 'label' => 'Correo', 'href' => 'mailto:synthetic@example.test']],
+            'expertise_areas' => [['key' => 'apis', 'title' => 'Área técnica sintética', 'description' => null]],
+            'work_principles' => [['key' => 'quality', 'statement' => 'Principio técnico sintético.']],
+            'cv' => null,
+        ]]);
+
+        Storage::disk('local')->put('cv/es.pdf', 'pdf');
+        Cache::flush();
+        $this->getJson('/api/v1/es/site')->assertJsonPath('data.cv', ['url' => '/cv/luciano-gonzalez-es.pdf', 'label' => 'Descargar CV']);
+        $this->getJson('/api/v1/en/site')->assertJsonPath('data.cv', null);
+    }
+
+    public function test_public_responses_recursively_exclude_internal_and_editorial_fields(): void
+    {
+        $technology = Technology::factory()->create(['key' => 'safe-tech']);
+        $project = Project::factory()->create(['key' => 'safe-project']);
+        $this->makePublic($technology);
+        $this->makePublic($project);
+        $project->technologies()->attach($technology, ['position' => 4]);
+
+        $payload = $this->getJson('/api/v1/es/projects')->assertOk()->json();
+        $serialized = json_encode($payload, JSON_THROW_ON_ERROR);
+
+        foreach (['id', 'position', 'pivot', 'private_path', 'public_path', 'created_at', 'updated_at', 'status', 'is_visible', 'published_at', 'key_locked', '_es', '_en', 'location', 'confidentiality_note', 'video_url', 'seo'] as $forbidden) {
+            $this->assertStringNotContainsString($forbidden, $serialized);
+        }
+    }
+
+    private function publishSite(): void
+    {
+        DB::table('site_configurations')->where('singleton_key', 'default')->update([
+            'projects_empty_message_es' => 'Sin proyectos', 'projects_empty_message_en' => 'No projects',
+            'contact_intro_es' => 'Contacto', 'contact_intro_en' => 'Contact',
+            'technology_backend_label_es' => 'Backend', 'technology_backend_label_en' => 'Backend',
+            'technology_data_label_es' => 'Datos', 'technology_data_label_en' => 'Data',
+            'technology_integration_label_es' => 'Integraciones', 'technology_integration_label_en' => 'Integrations',
+            'technology_collaboration_label_es' => 'Colaboración', 'technology_collaboration_label_en' => 'Collaboration',
+            'status' => PublicationStatus::Published->value, 'is_visible' => true, 'published_at' => now(),
+        ]);
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function makePublic(Model $model, array $attributes = []): void
+    {
+        $values = [
+            'status' => PublicationStatus::Published->value,
+            'is_visible' => true,
+            'published_at' => now(),
+            ...$attributes,
+        ];
+
+        if (in_array($model::class, [Experience::class, ExpertiseArea::class, Project::class, Technology::class, WorkCase::class, WorkPrinciple::class], true)) {
+            $values['key_locked'] = true;
+        }
+
+        DB::table($model->getTable())->where('id', $model->getKey())->update($values);
+    }
+}
