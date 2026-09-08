@@ -187,3 +187,136 @@ and the full suite again after the auto-format — still 32/32 and 190/190.
   `EditorialMutationContext` rather than adding new domain code, but it is a
   judgment call worth a second look rather than something spelled out
   verbatim in the task brief or spec.
+
+## Fix round 1 (review findings)
+
+### Important — stale public cache after admin-only alt-text edit
+
+**Root cause confirmed exactly as the reviewer described.** My original
+`EditProfile::save()` alt-text branch called
+`app(EditorialMutationContext::class)->run(fn () => $updated->forceFill([...])->save())`
+with **no** enclosing `DB::transaction()`. Every real domain action
+(`UpdateContent`, `AssetLifecycleService::replace()`/`show()`/`hide()`/
+`returnToDraft()`) wraps its `save()` inside `DB::transaction()` *and* nests
+`EditorialMutationContext::run()` inside that transaction — the transaction
+is what makes Eloquent defer the `updated` event (because
+`EditorialMutationGuard implements ShouldHandleEventsAfterCommit`) until
+after commit, by which point `context->isActive()` is back to `false` and
+`EditorialMutationGuard::invalidate()` actually invalidates the cache instead
+of no-op'ing. My branch fired `save()` with no active transaction, so the
+`updated` event dispatched synchronously while `context->isActive()` was
+still `true`, and the guard silently skipped invalidation forever (until the
+1-year `Cache::forever()` entry naturally... never expires).
+
+**Fix:** added a proper domain action instead of an ad hoc context call:
+
+- `App\Domain\Assets\AssetLifecycleService::updateAltText(Model $owner, ?string $altEs, ?string $altEn): Model`
+  — mirrors `replace()`'s shape exactly: `DB::transaction()` wrapping
+  `locked()` + `context->run()` + `save()`, a `catch (\Throwable)` that
+  rewraps any failure (including a `PublicationValidationException` raised by
+  the guard's `updating()` re-validation of an already-published record) into
+  the same `AssetOperationException` the rest of the service already uses,
+  and then an **explicit** `$this->cache->invalidate(...)` call after the
+  transaction commits — kept consistent with how `replace()`/`remove()` do
+  it (belt-and-suspenders on top of the now-correctly-firing guard
+  invalidation, not a replacement for it).
+- Added a private `altColumns(Model $owner): ?array` helper (`Profile` →
+  `photo_alt_{es,en}`, `Project` → `image_alt_{es,en}`, everything else →
+  `null`) shared by `updateAltText()` and by `clearAsset()` (minor #2 below).
+- `App\Domain\Content\Actions\UpdateOwnedAssetAltText` — a new, thin action
+  class in the same directory/style as `ReplaceOwnedAsset`/`RemoveOwnedAsset`,
+  delegating straight to `AssetLifecycleService::updateAltText()`.
+- `EditProfile::save()` now calls `app(UpdateOwnedAssetAltText::class)($updated, $altEs, $altEn)`
+  instead of touching `EditorialMutationContext` directly, and catches
+  `\Throwable` (not `PublicationValidationException` specifically) around it,
+  matching the established convention that every `AssetLifecycleService`
+  failure surfaces as a generic `AssetOperationException` message — the same
+  pattern `EditorialActions::run()` already uses for the transition buttons.
+  The `EditorialMutationContext` import was removed from `EditProfile.php`
+  since it's no longer referenced there.
+
+`UpdateContent::PROTECTED_ATTRIBUTES` and `EditorialMutationGuard` were not
+touched — the new action is the authorized path into the existing guard
+machinery, not an exception carved into it.
+
+### Minor 1 — added a regression test proving the cache reflects an edit
+
+Added `EditorialActionTest::test_editing_photo_alt_text_on_a_published_visible_profile_invalidates_the_public_cache`:
+fakes `local`/`public` disks, completes a Profile's bilingual fields, sets
+initial alt text, uploads a real photo via `AssetLifecycleService::replace()`,
+publishes and shows it (`PublishContent` + `ShowContent`), primes the public
+cache with `GET /api/v1/en/profile` (asserts the original alt text), edits
+only `photo_alt_en` through `Livewire::test(EditProfile::class)->fillForm(...)->call('save')`,
+then re-`GET`s the same public endpoint and asserts it now reflects the new
+alt text (not the stale cached value).
+
+### Minor 2 — `clearAsset()` leaving alt text behind — fixed, not deferred
+
+Turned out to be a small, safe addition once `altColumns()` existed:
+`AssetLifecycleService::clearAsset()` now also nulls the owner's alt columns
+(via the same `altColumns()` helper, a no-op for models without alt columns
+such as `Technology`/`CvDocument`), so `RemoveOwnedAsset` on a Profile/Project
+no longer leaves orphaned alt text for a photo/image that no longer exists.
+Checked the existing `AssetTransitionActionTest` suite for any assertion that
+alt text survives a `remove()` call — there is none, so this is a pure
+behavior improvement with no conflicting expectation, and the full suite
+(including that file) still passes unchanged.
+
+## Fix round 1 — TDD evidence
+
+RED (before the fix, `EditorialMutationContext` version still in place):
+```
+docker compose --profile test run --rm api-test php artisan test --filter='test_editing_photo_alt_text_on_a_published_visible_profile_invalidates_the_public_cache'
+```
+```
+FAILED  Tests\Feature\Filament\EditorialActionTest > editing photo alt te…
+Failed asserting that two strings are identical.
+-'Updated portrait'
++'Original portrait'
+Tests: 1 failed (9 assertions)
+```
+This is the exact stale-cache symptom the reviewer described (DB write
+correct, public response stale).
+
+GREEN (after adding `AssetLifecycleService::updateAltText()` +
+`UpdateOwnedAssetAltText` + rewiring `EditProfile::save()`):
+```
+docker compose --profile test run --rm api-test php artisan test --filter='EditorialActionTest|SingletonPageTest' --compact
+```
+```
+Tests\Feature\Filament\EditorialActionTest ....... 11 passed
+Tests\Feature\Filament\SingletonPageTest ......... 22 passed
+Tests: 33 passed (194 assertions)
+```
+
+Full suite:
+```
+docker compose --profile test run --rm api-test php artisan test --compact
+```
+```
+Tests: 191 passed (1059 assertions)
+```
+(190 previously + 1 new regression test; zero regressions.)
+
+Pint:
+```
+docker compose run --rm --no-deps api ./vendor/bin/pint --test
+```
+```
+PASS ... 132 files
+```
+(already clean — no formatting changes needed for this round.)
+
+## Fix round 1 — files changed
+
+- `api/app/Domain/Assets/AssetLifecycleService.php` (added `updateAltText()`
+  and `altColumns()`; `clearAsset()` now also nulls alt columns)
+- `api/app/Domain/Content/Actions/UpdateOwnedAssetAltText.php` (new)
+- `api/app/Filament/Pages/EditProfile.php` (alt-text branch now calls the new
+  action; removed the `EditorialMutationContext` import/usage)
+- `api/tests/Feature/Filament/EditorialActionTest.php` (new regression test
+  + `png()` helper + new imports)
+
+## Fix round 1 — concerns
+
+None outstanding. Both minors are now fixed (not deferred).

@@ -214,6 +214,40 @@ final class AssetLifecycleService
         $this->reduce($owner, null, null, false, true);
     }
 
+    public function updateAltText(Model $owner, ?string $altEs, ?string $altEn): Model
+    {
+        $columns = $this->altColumns($owner);
+        if ($columns === null) {
+            throw new AssetOperationException('The content type does not own alt text.');
+        }
+
+        $operationId = (string) Str::uuid();
+
+        try {
+            $updated = DB::transaction(function () use ($owner, $columns, $altEs, $altEn): Model {
+                $locked = $this->locked($owner);
+
+                return $this->context->run(function () use ($locked, $columns, $altEs, $altEn): Model {
+                    $locked->forceFill([$columns['es'] => $altEs, $columns['en'] => $altEn])->save();
+
+                    return $locked->fresh();
+                });
+            });
+        } catch (\Throwable $exception) {
+            throw $this->operationFailure('update_alt_text', $owner, $operationId, $exception);
+        }
+
+        // The mutation above commits before this call, so by now the
+        // editorial-mutation context has already exited and the model
+        // observer's own after-commit invalidation has already run; this
+        // call is a deliberate, explicit backstop kept consistent with how
+        // replace()/remove() invalidate the cache themselves rather than
+        // relying solely on the observer.
+        $this->cache->invalidate($this->dependencies->for($owner));
+
+        return $updated;
+    }
+
     private function reduce(Model $owner, ?PublicationStatus $status, ?bool $visible, bool $clearAsset = false, bool $delete = false): Model
     {
         $definition = $this->definition($owner, false);
@@ -380,12 +414,25 @@ final class AssetLifecycleService
 
     private function clearAsset(Model $owner, array $definition): void
     {
+        $altColumns = $this->altColumns($owner);
+
         $owner->forceFill([
             $definition['private'] => null,
             $definition['mime'] => null,
             $definition['size'] => null,
             ...($definition['public'] ? [$definition['publicPath'] => null] : []),
+            ...($altColumns !== null ? [$altColumns['es'] => null, $altColumns['en'] => null] : []),
         ]);
+    }
+
+    /** @return array{es:string,en:string}|null */
+    private function altColumns(Model $owner): ?array
+    {
+        return match ($owner::class) {
+            Profile::class => ['es' => 'photo_alt_es', 'en' => 'photo_alt_en'],
+            Project::class => ['es' => 'image_alt_es', 'en' => 'image_alt_en'],
+            default => null,
+        };
     }
 
     private function locked(Model $owner): Model

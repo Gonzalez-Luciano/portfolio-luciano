@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Filament;
 
+use App\Domain\Assets\AssetLifecycleService;
+use App\Domain\Content\Actions\PublishContent;
+use App\Domain\Content\Actions\ShowContent;
 use App\Enums\PublicationStatus;
 use App\Filament\Pages\EditProfile;
 use App\Filament\Pages\EditSiteConfiguration;
@@ -14,6 +17,8 @@ use App\Models\User;
 use App\Models\WorkPrinciple;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -184,6 +189,53 @@ final class EditorialActionTest extends TestCase
 
         $profile = Profile::query()->where('singleton_key', 'default')->first();
         $this->assertSame(PublicationStatus::Published, $profile->status);
+    }
+
+    public function test_editing_photo_alt_text_on_a_published_visible_profile_invalidates_the_public_cache(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+
+        $this->completeProfileFieldsExceptName();
+        Profile::query()->where('singleton_key', 'default')->update([
+            'name' => 'Synthetic Portfolio Engineer',
+            'photo_alt_es' => 'Retrato original',
+            'photo_alt_en' => 'Original portrait',
+        ]);
+        $profile = Profile::query()->where('singleton_key', 'default')->first();
+        app(AssetLifecycleService::class)->replace($profile, $this->png('profile.png'));
+
+        $profile = app(PublishContent::class)(Profile::query()->where('singleton_key', 'default')->first());
+        app(ShowContent::class)($profile);
+
+        // Prime the public cache with the original alt text.
+        $this->getJson('/api/v1/en/profile')
+            ->assertOk()
+            ->assertJsonPath('data.photo.alt', 'Original portrait');
+
+        $this->authenticateAdmin();
+
+        Livewire::test(EditProfile::class)
+            ->fillForm(['photo_alt_en' => 'Updated portrait'])
+            ->call('save')
+            ->assertNotified('Saved');
+
+        $this->assertSame(
+            'Updated portrait',
+            Profile::query()->where('singleton_key', 'default')->first()->photo_alt_en,
+        );
+
+        $this->getJson('/api/v1/en/profile')
+            ->assertOk()
+            ->assertJsonPath('data.photo.alt', 'Updated portrait');
+    }
+
+    private function png(string $name): UploadedFile
+    {
+        return UploadedFile::fake()->createWithContent(
+            $name,
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL9SAAAAABJRU5ErkJggg=='),
+        );
     }
 
     private function authenticateAdmin(): User

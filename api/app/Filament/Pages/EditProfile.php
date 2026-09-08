@@ -5,7 +5,7 @@ namespace App\Filament\Pages;
 use App\Domain\Content\Actions\RemoveOwnedAsset;
 use App\Domain\Content\Actions\ReplaceOwnedAsset;
 use App\Domain\Content\Actions\UpdateContent;
-use App\Domain\Publishing\EditorialMutationContext;
+use App\Domain\Content\Actions\UpdateOwnedAssetAltText;
 use App\Domain\Publishing\PublicationValidationException;
 use App\Enums\PublicationStatus;
 use App\Filament\Support\EditorialActions;
@@ -161,13 +161,13 @@ final class EditProfile extends Page implements HasForms
 
         if ($altEs !== $updated->photo_alt_es || $altEn !== $updated->photo_alt_en) {
             try {
-                $updated = app(EditorialMutationContext::class)->run(function () use ($updated, $altEs, $altEn): Profile {
-                    $updated->forceFill(['photo_alt_es' => $altEs, 'photo_alt_en' => $altEn])->save();
-
-                    return $updated->fresh();
-                });
-            } catch (PublicationValidationException $exception) {
-                $this->notifyValidationFailure($exception);
+                $updated = app(UpdateOwnedAssetAltText::class)($updated, $altEs, $altEn);
+            } catch (\Throwable $exception) {
+                Notification::make()
+                    ->danger()
+                    ->title('Save failed')
+                    ->body($exception->getMessage())
+                    ->send();
 
                 return;
             }
