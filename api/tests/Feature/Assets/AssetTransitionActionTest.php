@@ -293,6 +293,27 @@ final class AssetTransitionActionTest extends TestCase
         }
     }
 
+    public function test_earlier_throwing_after_commit_listener_does_not_restore_a_committed_reduction(): void
+    {
+        $project = $this->visibleProjectWithImage();
+        $publicPath = $project->image_public_path;
+        Project::updated(static function (): void {
+            DB::afterCommit(static function (): never {
+                throw new \RuntimeException('Synthetic after-commit listener failure.');
+            });
+        });
+
+        try {
+            app(HideContent::class)($project);
+            $this->fail('A post-commit listener failure must be controlled.');
+        } catch (AssetOperationException) {
+            $project->refresh();
+            $this->assertFalse($project->is_visible);
+            $this->assertNull($project->image_public_path);
+            Storage::disk('public')->assertMissing($publicPath);
+        }
+    }
+
     private function visibleProjectWithImage(): Project
     {
         $project = $this->projectForPublication();

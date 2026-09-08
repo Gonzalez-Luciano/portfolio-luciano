@@ -240,14 +240,14 @@ final class AssetLifecycleService
 
                 try {
                     $result = DB::transaction(function () use ($owner, $status, $visible, $clearAsset, $delete, $definition, &$committed): Model {
+                        DB::afterCommit(static function () use (&$committed): void {
+                            $committed = true;
+                        });
                         $locked = $this->locked($owner);
 
-                        return $this->context->run(function () use ($locked, $status, $visible, $clearAsset, $delete, $definition, &$committed): Model {
+                        return $this->context->run(function () use ($locked, $status, $visible, $clearAsset, $delete, $definition): Model {
                             if ($delete) {
                                 $locked->delete();
-                                DB::afterCommit(static function () use (&$committed): void {
-                                    $committed = true;
-                                });
 
                                 return $locked;
                             }
@@ -266,9 +266,6 @@ final class AssetLifecycleService
                                 $this->clearAsset($locked, $definition);
                             }
                             $locked->forceFill($attributes)->save();
-                            DB::afterCommit(static function () use (&$committed): void {
-                                $committed = true;
-                            });
 
                             return $locked->fresh();
                         });

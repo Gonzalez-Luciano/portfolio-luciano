@@ -187,3 +187,35 @@ git diff --check
 - Clean full backend suite: **129 passed, 522 assertions**.
 - Pint applied one lifecycle formatting correction; final Pint, repository
   validation and diff checks run immediately before commit.
+
+## Review-fix round 3
+
+- The lifecycle registers its `DB::afterCommit` commit marker before acquiring
+  and mutating the locked owner. That ordering puts the marker ahead of model
+  observers which can register after-commit callbacks during `save` or
+  `delete` event dispatch.
+- Added an injected regression: an `updated` listener registers a throwing
+  after-commit callback. The RED run showed the old implementation restoring
+  the withdrawn public copy even though the owner had committed. The GREEN
+  assertions prove the owner stays hidden, the public reference is null, and
+  the former public file remains withdrawn. The existing stale-ID test still
+  proves a genuinely pre-commit failure restores the withdrawn copy.
+
+Final review-round commands/results:
+
+```powershell
+docker compose --profile test run --rm api-test php artisan test --filter='earlier_throwing_after_commit|pre_commit_reduction_failure'
+docker compose --profile test run --rm api-test php artisan test --filter='AssetLifecycleTest|AssetTransitionActionTest'
+docker compose --profile test run --rm api-test php artisan test --compact
+docker compose --profile test run --rm api-test vendor/bin/pint --test
+node infra/validation/validate-repository.mjs
+git diff --check
+```
+
+- RED: the new regression failed because the former public file was restored.
+- Targeted commit-boundary regression: **2 passed, 6 assertions**.
+- Focused assets: **21 passed, 82 assertions**.
+- Clean full backend suite: **130 passed, 525 assertions**.
+- Pint initially identified one lifecycle formatting issue; it was fixed and
+  the final Pint, repository validation and diff checks are run after this
+  addendum.
