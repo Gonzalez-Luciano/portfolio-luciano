@@ -134,7 +134,7 @@ final class EditorialMutationGuard implements ShouldHandleEventsAfterCommit
 
     private function invalidate(Model $content): void
     {
-        if (! $this->isManagedContent($content)) {
+        if (! $this->isManagedContent($content) || $this->context->isActive()) {
             return;
         }
 

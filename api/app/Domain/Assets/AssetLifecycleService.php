@@ -221,87 +221,101 @@ final class AssetLifecycleService
         $operationId = (string) Str::uuid();
         $endpoints = $this->dependencies->for($owner);
 
-        return $this->cache->withMutationLocks($endpoints, function () use ($owner, $status, $visible, $clearAsset, $delete, $definition, $old, $operationId, $endpoints): Model {
-            if ($old !== null) {
-                $this->deletePublic($old['public'], $owner, $operationId, 'withdraw_public_copy');
-            }
-            $this->cache->invalidate($endpoints);
-
-            $mutationPersisted = false;
-
-            try {
-                $result = DB::transaction(function () use ($owner, $status, $visible, $clearAsset, $delete, $definition, &$mutationPersisted): Model {
-                    $locked = $this->locked($owner);
-
-                    return $this->context->run(function () use ($locked, $status, $visible, $clearAsset, $delete, $definition, &$mutationPersisted): Model {
-                        if ($delete) {
-                            $locked->delete();
-                            $mutationPersisted = true;
-
-                            return $locked;
-                        }
-                        $attributes = [];
-                        if ($status !== null) {
-                            $attributes['status'] = $status;
-                            $attributes['published_at'] = $status === PublicationStatus::Draft ? null : $locked->published_at;
-                        }
-                        if ($visible !== null) {
-                            $attributes['is_visible'] = $visible;
-                        }
-                        if ($definition !== null && ($old = $this->snapshot($locked, $definition))['public'] !== null) {
-                            $attributes[$definition['publicPath']] = null;
-                        }
-                        if ($clearAsset && $definition !== null) {
-                            $this->clearAsset($locked, $definition);
-                        }
-                        $locked->forceFill($attributes)->save();
-                        $mutationPersisted = true;
-
-                        return $locked->fresh();
-                    });
-                });
-            } catch (\Throwable $exception) {
-                if (! $mutationPersisted && $old !== null && $old['public'] !== null && $old['private'] !== null) {
-                    try {
-                        $this->copyPublic($old['private'], $old['public']);
-                    } catch (\Throwable $restoreException) {
-                        $this->log($owner, $operationId, 'restore_public_copy_failed');
-                    }
+        return $this->context->run(function () use ($owner, $status, $visible, $clearAsset, $delete, $definition, $old, $operationId, $endpoints): Model {
+            return $this->cache->withMutationLocks($endpoints, function () use ($owner, $status, $visible, $clearAsset, $delete, $definition, $old, $operationId, $endpoints): Model {
+                if ($old !== null) {
+                    $this->deletePublic($old['public'], $owner, $operationId, 'withdraw_public_copy');
                 }
                 try {
                     $this->cache->invalidate($endpoints);
-                } catch (\Throwable) {
-                    $this->log($owner, $operationId, 'cache_invalidation_after_failed_mutation');
-                }
-
-                throw $this->operationFailure('visibility_reduction', $owner, $operationId, $exception);
-            }
-
-            try {
-                $this->cache->invalidate($endpoints);
-            } catch (\Throwable $exception) {
-                throw $this->operationFailure('post_commit_cache_invalidation', $owner, $operationId, $exception);
-            }
-            if ($delete && $old !== null) {
-                try {
-                    if ($old['private'] !== null) {
-                        $this->removePrivateOrFail($old['private']);
-                    }
                 } catch (\Throwable $exception) {
-                    throw $this->operationFailure('delete_private_cleanup', $owner, $operationId, $exception);
-                }
-            }
-            if ($clearAsset && $old !== null) {
-                try {
-                    if ($old['private'] !== null) {
-                        $this->removePrivateOrFail($old['private']);
+                    if ($old !== null && $old['public'] !== null && $old['private'] !== null) {
+                        $this->copyPublic($old['private'], $old['public']);
                     }
-                } catch (\Throwable $exception) {
-                    throw $this->operationFailure('remove_private_cleanup', $owner, $operationId, $exception);
-                }
-            }
 
-            return $result;
+                    throw $this->operationFailure('pre_commit_cache_invalidation', $owner, $operationId, $exception);
+                }
+
+                $committed = false;
+
+                try {
+                    $result = DB::transaction(function () use ($owner, $status, $visible, $clearAsset, $delete, $definition, &$committed): Model {
+                        $locked = $this->locked($owner);
+
+                        return $this->context->run(function () use ($locked, $status, $visible, $clearAsset, $delete, $definition, &$committed): Model {
+                            if ($delete) {
+                                $locked->delete();
+                                DB::afterCommit(static function () use (&$committed): void {
+                                    $committed = true;
+                                });
+
+                                return $locked;
+                            }
+                            $attributes = [];
+                            if ($status !== null) {
+                                $attributes['status'] = $status;
+                                $attributes['published_at'] = $status === PublicationStatus::Draft ? null : $locked->published_at;
+                            }
+                            if ($visible !== null) {
+                                $attributes['is_visible'] = $visible;
+                            }
+                            if ($definition !== null && ($old = $this->snapshot($locked, $definition))['public'] !== null) {
+                                $attributes[$definition['publicPath']] = null;
+                            }
+                            if ($clearAsset && $definition !== null) {
+                                $this->clearAsset($locked, $definition);
+                            }
+                            $locked->forceFill($attributes)->save();
+                            DB::afterCommit(static function () use (&$committed): void {
+                                $committed = true;
+                            });
+
+                            return $locked->fresh();
+                        });
+                    });
+                } catch (\Throwable $exception) {
+                    if (! $committed && $old !== null && $old['public'] !== null && $old['private'] !== null) {
+                        try {
+                            $this->copyPublic($old['private'], $old['public']);
+                        } catch (\Throwable $restoreException) {
+                            $this->log($owner, $operationId, 'restore_public_copy_failed');
+                        }
+                    }
+                    try {
+                        $this->cache->invalidate($endpoints);
+                    } catch (\Throwable) {
+                        $this->log($owner, $operationId, 'cache_invalidation_after_failed_mutation');
+                    }
+
+                    throw $this->operationFailure('visibility_reduction', $owner, $operationId, $exception);
+                }
+
+                try {
+                    $this->cache->invalidate($endpoints);
+                } catch (\Throwable $exception) {
+                    throw $this->operationFailure('post_commit_cache_invalidation', $owner, $operationId, $exception);
+                }
+                if ($delete && $old !== null) {
+                    try {
+                        if ($old['private'] !== null) {
+                            $this->removePrivateOrFail($old['private']);
+                        }
+                    } catch (\Throwable $exception) {
+                        throw $this->operationFailure('delete_private_cleanup', $owner, $operationId, $exception);
+                    }
+                }
+                if ($clearAsset && $old !== null) {
+                    try {
+                        if ($old['private'] !== null) {
+                            $this->removePrivateOrFail($old['private']);
+                        }
+                    } catch (\Throwable $exception) {
+                        throw $this->operationFailure('remove_private_cleanup', $owner, $operationId, $exception);
+                    }
+                }
+
+                return $result;
+            });
         });
     }
 

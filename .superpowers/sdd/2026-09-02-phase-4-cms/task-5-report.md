@@ -159,3 +159,31 @@ git diff --check
 - Clean full backend suite: **126 passed, 510 assertions**.
 - Pint applied one fully-qualified-class style correction; final Pint, repository
   validation and diff checks are performed after this addendum is committed.
+
+## Review-fix round 2
+
+- Reductions now hold the editorial mutation context through the database
+  transaction, so the defensive after-commit observer defers to the explicit
+  lifecycle invalidation sequence.
+- `DB::afterCommit` is the commit boundary: failed pre-commit reductions restore
+  the withdrawn original; explicit post-commit cache failures retain committed
+  state and keep the public copy withdrawn.
+- The ordering test now records a real model after-commit callback rather than
+  treating SQL `UPDATE` as a commit.
+- Added public-copy verification-failure compensation coverage and committed
+  visible-delete cleanup failure coverage.
+
+Final review-round commands/results:
+
+```powershell
+docker compose --profile test run --rm api-test php artisan test --filter='AssetLifecycleTest|AssetTransitionActionTest'
+docker compose --profile test run --rm api-test php artisan test --compact
+docker compose --profile test run --rm api-test vendor/bin/pint --test
+node infra/validation/validate-repository.mjs
+git diff --check
+```
+
+- Focused assets: **20 passed, 79 assertions**.
+- Clean full backend suite: **129 passed, 522 assertions**.
+- Pint applied one lifecycle formatting correction; final Pint, repository
+  validation and diff checks run immediately before commit.

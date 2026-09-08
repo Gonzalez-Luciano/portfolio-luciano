@@ -103,6 +103,31 @@ final class AssetTransitionActionTest extends TestCase
         }
     }
 
+    public function test_failed_public_copy_verification_restores_the_prior_reference_and_retains_the_old_public_copy(): void
+    {
+        $project = $this->visibleProjectWithImage();
+        $oldPrivate = $project->image_private_path;
+        $oldPublic = $project->image_public_path;
+        $local = Storage::disk('local');
+        $public = Storage::disk('public');
+        $unverifiablePublic = Mockery::mock();
+        $unverifiablePublic->shouldReceive('put')->once()->andReturnTrue();
+        $unverifiablePublic->shouldReceive('delete')->once()->andReturnTrue();
+        $unverifiablePublic->shouldReceive('exists')->twice()->andReturnFalse();
+        Storage::shouldReceive('disk')->with('local')->andReturn($local);
+        Storage::shouldReceive('disk')->with('public')->andReturn($unverifiablePublic);
+
+        try {
+            app(AssetLifecycleService::class)->replace($project, $this->png('unverifiable.png'));
+            $this->fail('An unverifiable public copy must be compensated.');
+        } catch (AssetOperationException) {
+            $project->refresh();
+            $this->assertSame($oldPrivate, $project->image_private_path);
+            $this->assertSame($oldPublic, $project->image_public_path);
+            $this->assertTrue($public->exists($oldPublic));
+        }
+    }
+
     public function test_failed_public_withdrawal_preserves_the_visible_owner_and_reference(): void
     {
         $project = $this->visibleProjectWithImage();
@@ -137,10 +162,10 @@ final class AssetTransitionActionTest extends TestCase
         });
         $recordingPublic->shouldReceive('exists')->andReturnUsing(fn (string $path): bool => $public->exists($path));
         Storage::shouldReceive('disk')->with('public')->andReturn($recordingPublic);
-        DB::listen(function ($query) use ($store): void {
-            if (str_contains($query->sql, 'update `projects`')) {
+        Project::updated(function () use ($store): void {
+            DB::afterCommit(function () use ($store): void {
                 $store->events[] = 'db_commit';
-            }
+            });
         });
 
         app(HideContent::class)($project);
@@ -228,6 +253,43 @@ final class AssetTransitionActionTest extends TestCase
             $this->assertFalse($project->is_visible);
             $this->assertNull($project->image_public_path);
             Storage::disk('public')->assertMissing($publicPath);
+        }
+    }
+
+    public function test_pre_commit_reduction_failure_restores_the_withdrawn_public_copy(): void
+    {
+        $project = $this->visibleProjectWithImage();
+        $publicPath = $project->image_public_path;
+        $stale = $project->fresh();
+        $stale->setAttribute('id', 999999);
+
+        try {
+            app(HideContent::class)($stale);
+            $this->fail('A pre-commit mutation failure must be controlled.');
+        } catch (AssetOperationException) {
+            $project->refresh();
+            $this->assertTrue($project->is_visible);
+            $this->assertSame($publicPath, $project->image_public_path);
+            Storage::disk('public')->assertExists($publicPath);
+        }
+    }
+
+    public function test_visible_delete_reports_private_cleanup_failure_after_the_committed_deletion(): void
+    {
+        $project = $this->visibleProjectWithImage();
+        $oldPath = $project->image_private_path;
+        $local = Mockery::mock();
+        $public = Storage::disk('public');
+        $local->shouldReceive('delete')->with($oldPath)->times(3)->andReturnFalse();
+        $local->shouldReceive('exists')->with($oldPath)->times(3)->andReturnTrue();
+        Storage::shouldReceive('disk')->with('local')->andReturn($local);
+        Storage::shouldReceive('disk')->with('public')->andReturn($public);
+
+        try {
+            app(DeleteContent::class)($project);
+            $this->fail('Committed visible deletion must report failed cleanup.');
+        } catch (AssetOperationException) {
+            $this->assertDatabaseMissing('projects', ['id' => $project->id]);
         }
     }
 
