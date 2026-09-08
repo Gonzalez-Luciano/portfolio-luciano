@@ -1,0 +1,59 @@
+<?php
+
+namespace App\Filament\Resources\WorkPrinciples\Schemas;
+
+use App\Enums\PublicationStatus;
+use App\Models\WorkPrinciple;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Schema;
+
+class WorkPrincipleForm
+{
+    public static function configure(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                TextInput::make('key')
+                    ->label('Key')
+                    ->required()
+                    ->maxLength(100)
+                    ->unique(ignoreRecord: true)
+                    ->helperText('Lowercase slug (letters, digits, hyphens). Change later using the "Change key" action.')
+                    // The key is the record's identity. It is chosen here at
+                    // creation and afterward changes only through the
+                    // dedicated "Change key" action, never a plain field
+                    // edit, so it is disabled (and not dehydrated) on edit.
+                    ->disabledOn('edit'),
+
+                Tabs::make('locales')->tabs([
+                    Tab::make('Spanish')->schema([
+                        Textarea::make('statement_es')->label('Statement (ES)'),
+                    ]),
+                    Tab::make('English')->schema([
+                        Textarea::make('statement_en')->label('Statement (EN)'),
+                    ]),
+                ]),
+
+                Placeholder::make('position_display')
+                    ->label('Position')
+                    ->content(fn (?WorkPrinciple $record): string => $record !== null ? (string) $record->position : 'Assigned on creation')
+                    ->helperText('Use the "Change position" table action to reorder.'),
+                Placeholder::make('key_locked_display')
+                    ->label('Key locked')
+                    ->content(fn (?WorkPrinciple $record): string => ($record?->key_locked ?? false) ? 'Yes' : 'No'),
+                Placeholder::make('status_display')
+                    ->label('Status')
+                    ->content(fn (?WorkPrinciple $record): string => ucfirst($record?->status->value ?? PublicationStatus::Draft->value)),
+                Placeholder::make('visibility_display')
+                    ->label('Visibility')
+                    ->content(fn (?WorkPrinciple $record): string => ($record?->is_visible ?? false) ? 'Visible' : 'Hidden'),
+                Placeholder::make('published_at_display')
+                    ->label('Published at')
+                    ->content(fn (?WorkPrinciple $record): string => $record?->published_at?->toDateTimeString() ?? 'Never'),
+            ]);
+    }
+}
