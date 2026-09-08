@@ -111,3 +111,51 @@ git diff --check
   Pint applied that fix and the final verification is run with the commit.
 - Repository validation and diff check passed before the final formatting fix;
   both are rerun with the final commit verification.
+
+## Review-fix round 1
+
+### Fixes
+
+- CV show now changes only editorial visibility. It never calculates, writes or
+  copies a public path; CV hide likewise leaves its private original intact.
+- Both singleton models (`Profile` and `SiteConfiguration`) are rejected by the
+  deletion action.
+- Required private cleanup now uses three bounded attempts. A visible
+  replacement, removal or deletion whose committed-state cleanup still fails
+  returns a controlled administrative error instead of silently reporting
+  success; committed state is not fictionalized as rolled back.
+- Visibility reduction records that the database mutation was persisted before
+  handling an after-commit cache exception. A post-commit cache failure does
+  not restore a withdrawn public copy; it is logged and returned as a
+  controlled administrative failure.
+- The recording store now supports fault injection and its order test continues
+  to prove locks enclose withdrawal, first invalidation, mutation and later
+  invalidation.
+
+### TDD evidence
+
+The new CV-show and singleton-delete tests initially failed RED: CV attempted
+to force-fill an empty public-path attribute, and `SiteConfiguration` deletion
+was accepted. The smallest production changes made CVs private-only in `show`
+and rejected both singleton types; both tests then passed GREEN.
+
+The visible-removal cleanup regression initially exposed the old behavior of
+silently logging post-commit cleanup failure. The new retrying cleanup path
+returns a controlled exception while preserving the already committed cleared
+reference. The injected cache-forget test verifies the DB remains hidden and
+the public copy stays withdrawn after after-commit invalidation failure.
+
+### Review-fix verification
+
+```powershell
+docker compose --profile test run --rm api-test php artisan test --filter='AssetLifecycleTest|AssetTransitionActionTest'
+docker compose --profile test run --rm api-test php artisan test --compact
+docker compose --profile test run --rm api-test vendor/bin/pint --test
+node infra/validation/validate-repository.mjs
+git diff --check
+```
+
+- Focused assets: **17 passed, 67 assertions**.
+- Clean full backend suite: **126 passed, 510 assertions**.
+- Pint applied one fully-qualified-class style correction; final Pint, repository
+  validation and diff checks are performed after this addendum is committed.

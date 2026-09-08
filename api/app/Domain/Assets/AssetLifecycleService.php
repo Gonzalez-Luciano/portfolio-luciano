@@ -8,6 +8,7 @@ use App\Enums\PublicationStatus;
 use App\Models\CvDocument;
 use App\Models\Profile;
 use App\Models\Project;
+use App\Models\SiteConfiguration;
 use App\Models\Technology;
 use App\Support\PublicContentCache;
 use App\Support\PublicContentDependencies;
@@ -20,6 +21,8 @@ use Illuminate\Support\Str;
 
 final class AssetLifecycleService
 {
+    private const CLEANUP_ATTEMPTS = 3;
+
     public function __construct(
         private readonly EditorialMutationContext $context,
         private readonly PublicationValidator $validator,
@@ -95,7 +98,13 @@ final class AssetLifecycleService
 
         $this->cache->invalidate($this->dependencies->for($owner));
         $this->deletePublic($old['public'], $owner, $operationId, 'replace_old_public_cleanup');
-        $this->deletePrivate($old['private'], $owner, $operationId, 'replace_old_private_cleanup');
+        try {
+            if ($old['private'] !== null) {
+                $this->removePrivateOrFail($old['private']);
+            }
+        } catch (\Throwable $exception) {
+            throw $this->operationFailure('replace_old_private_cleanup', $owner, $operationId, $exception);
+        }
 
         return $updated->fresh();
     }
@@ -118,6 +127,10 @@ final class AssetLifecycleService
         $this->validator->assertPublishable($owner);
 
         if ($private === '') {
+            return $this->changeState($owner, PublicationStatus::Published, true, false);
+        }
+
+        if (! $definition['public']) {
             return $this->changeState($owner, PublicationStatus::Published, true, false);
         }
 
@@ -194,7 +207,7 @@ final class AssetLifecycleService
 
     public function delete(Model $owner): void
     {
-        if ($owner instanceof Profile) {
+        if ($owner instanceof Profile || $owner instanceof SiteConfiguration) {
             throw new AssetOperationException('Singleton content cannot be deleted.');
         }
 
@@ -214,13 +227,16 @@ final class AssetLifecycleService
             }
             $this->cache->invalidate($endpoints);
 
+            $mutationPersisted = false;
+
             try {
-                $result = DB::transaction(function () use ($owner, $status, $visible, $clearAsset, $delete, $definition): Model {
+                $result = DB::transaction(function () use ($owner, $status, $visible, $clearAsset, $delete, $definition, &$mutationPersisted): Model {
                     $locked = $this->locked($owner);
 
-                    return $this->context->run(function () use ($locked, $status, $visible, $clearAsset, $delete, $definition): Model {
+                    return $this->context->run(function () use ($locked, $status, $visible, $clearAsset, $delete, $definition, &$mutationPersisted): Model {
                         if ($delete) {
                             $locked->delete();
+                            $mutationPersisted = true;
 
                             return $locked;
                         }
@@ -239,29 +255,50 @@ final class AssetLifecycleService
                             $this->clearAsset($locked, $definition);
                         }
                         $locked->forceFill($attributes)->save();
+                        $mutationPersisted = true;
 
                         return $locked->fresh();
                     });
                 });
             } catch (\Throwable $exception) {
-                if ($old !== null && $old['public'] !== null && $old['private'] !== null) {
+                if (! $mutationPersisted && $old !== null && $old['public'] !== null && $old['private'] !== null) {
                     try {
                         $this->copyPublic($old['private'], $old['public']);
                     } catch (\Throwable $restoreException) {
                         $this->log($owner, $operationId, 'restore_public_copy_failed');
                     }
                 }
-                $this->cache->invalidate($endpoints);
+                try {
+                    $this->cache->invalidate($endpoints);
+                } catch (\Throwable) {
+                    $this->log($owner, $operationId, 'cache_invalidation_after_failed_mutation');
+                }
 
                 throw $this->operationFailure('visibility_reduction', $owner, $operationId, $exception);
             }
 
-            $this->cache->invalidate($endpoints);
+            try {
+                $this->cache->invalidate($endpoints);
+            } catch (\Throwable $exception) {
+                throw $this->operationFailure('post_commit_cache_invalidation', $owner, $operationId, $exception);
+            }
             if ($delete && $old !== null) {
-                $this->deletePrivate($old['private'], $owner, $operationId, 'delete_private_cleanup');
+                try {
+                    if ($old['private'] !== null) {
+                        $this->removePrivateOrFail($old['private']);
+                    }
+                } catch (\Throwable $exception) {
+                    throw $this->operationFailure('delete_private_cleanup', $owner, $operationId, $exception);
+                }
             }
             if ($clearAsset && $old !== null) {
-                $this->deletePrivate($old['private'], $owner, $operationId, 'remove_private_cleanup');
+                try {
+                    if ($old['private'] !== null) {
+                        $this->removePrivateOrFail($old['private']);
+                    }
+                } catch (\Throwable $exception) {
+                    throw $this->operationFailure('remove_private_cleanup', $owner, $operationId, $exception);
+                }
             }
 
             return $result;
@@ -366,9 +403,14 @@ final class AssetLifecycleService
 
     private function removePrivateOrFail(string $path): void
     {
-        if (! Storage::disk('local')->delete($path) || Storage::disk('local')->exists($path)) {
-            throw new AssetOperationException('The private original could not be removed.');
+        for ($attempt = 1; $attempt <= self::CLEANUP_ATTEMPTS; $attempt++) {
+            Storage::disk('local')->delete($path);
+            if (! Storage::disk('local')->exists($path)) {
+                return;
+            }
         }
+
+        throw new AssetOperationException('The private original could not be removed.');
     }
 
     private function deletePublic(?string $path, Model $owner, string $operationId, string $operation): void

@@ -7,9 +7,14 @@ use App\Domain\Assets\AssetOperationException;
 use App\Domain\Content\Actions\DeleteContent;
 use App\Domain\Content\Actions\HideContent;
 use App\Domain\Content\Actions\PublishContent;
+use App\Domain\Content\Actions\RemoveOwnedAsset;
 use App\Domain\Content\Actions\ReturnContentToDraft;
 use App\Domain\Content\Actions\ShowContent;
+use App\Enums\PublicationStatus;
+use App\Models\CvDocument;
+use App\Models\Profile;
 use App\Models\Project;
+use App\Models\SiteConfiguration;
 use Illuminate\Cache\Repository;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Http\UploadedFile;
@@ -154,6 +159,76 @@ final class AssetTransitionActionTest extends TestCase
         $this->assertGreaterThan($forgets[0], $mutation);
         $this->assertGreaterThan($mutation, end($forgets));
         $this->assertGreaterThan(end($forgets), $releases[0]);
+    }
+
+    public function test_cv_can_be_shown_and_hidden_without_any_public_copy_or_reference(): void
+    {
+        $cv = CvDocument::factory()->create(['label' => 'CV técnico']);
+        app(AssetLifecycleService::class)->replace($cv, UploadedFile::fake()->createWithContent('cv.pdf', "%PDF-1.4\nsynthetic"));
+        $cv = app(PublishContent::class)($cv->fresh());
+
+        $shown = app(ShowContent::class)($cv);
+        $hidden = app(HideContent::class)($shown);
+
+        $this->assertSame(PublicationStatus::Published, $shown->status);
+        $this->assertTrue($shown->is_visible);
+        $this->assertFalse($hidden->is_visible);
+        $this->assertNotNull($hidden->private_path);
+        Storage::disk('public')->assertDirectoryEmpty('/');
+    }
+
+    public function test_delete_rejects_both_singleton_models(): void
+    {
+        foreach ([Profile::query()->sole(), SiteConfiguration::query()->sole()] as $singleton) {
+            try {
+                app(DeleteContent::class)($singleton);
+                $this->fail('Singleton content must not be deleted.');
+            } catch (AssetOperationException) {
+                $this->assertTrue($singleton->exists);
+            }
+        }
+    }
+
+    public function test_visible_remove_reports_private_cleanup_failure_after_the_committed_reference_clear(): void
+    {
+        $project = $this->visibleProjectWithImage();
+        $oldPath = $project->image_private_path;
+        $local = Mockery::mock();
+        $public = Storage::disk('public');
+        $local->shouldReceive('delete')->with($oldPath)->times(3)->andReturnFalse();
+        $local->shouldReceive('exists')->with($oldPath)->times(3)->andReturnTrue();
+        Storage::shouldReceive('disk')->with('local')->andReturn($local);
+        Storage::shouldReceive('disk')->with('public')->andReturn($public);
+
+        try {
+            app(RemoveOwnedAsset::class)($project);
+            $this->fail('Committed visible removal must report failed cleanup.');
+        } catch (AssetOperationException) {
+            $project->refresh();
+            $this->assertNull($project->image_private_path);
+            $this->assertNull($project->image_public_path);
+        }
+    }
+
+    public function test_post_commit_cache_failure_does_not_restore_the_withdrawn_public_copy(): void
+    {
+        $project = $this->visibleProjectWithImage();
+        $publicPath = $project->image_public_path;
+        $store = new RecordingLockStore($this->app['files'], storage_path('framework/cache/data'));
+        $this->app['cache']->extend('failing-after-commit', static fn (): Repository => new Repository($store));
+        config(['cache.default' => 'failing-after-commit', 'cache.stores.failing-after-commit' => ['driver' => 'failing-after-commit']]);
+        Cache::forgetDriver('failing-after-commit');
+        $store->failFromForget = 3;
+
+        try {
+            app(HideContent::class)($project);
+            $this->fail('Post-commit cache invalidation failure must be controlled.');
+        } catch (AssetOperationException) {
+            $project->refresh();
+            $this->assertFalse($project->is_visible);
+            $this->assertNull($project->image_public_path);
+            Storage::disk('public')->assertMissing($publicPath);
+        }
     }
 
     private function visibleProjectWithImage(): Project
