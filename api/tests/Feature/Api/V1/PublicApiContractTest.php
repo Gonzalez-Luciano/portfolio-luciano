@@ -121,6 +121,18 @@ final class PublicApiContractTest extends TestCase
         $this->getJson('/api/v1/es/technologies')->assertExactJson(['data' => [[
             'key' => 'laravel', 'name' => 'Laravel', 'category' => 'backend', 'icon' => null,
         ]]]);
+
+        Storage::disk('public')->put('technologies/icon.webp', 'icon');
+        Storage::disk('public')->put('projects/image.jpg', 'image');
+        Cache::flush();
+
+        $this->getJson('/api/v1/en/projects')->assertJsonPath('data.0.image', [
+            'url' => '/storage/projects/image.jpg',
+            'alt' => 'Image',
+        ]);
+        $this->getJson('/api/v1/en/technologies')->assertJsonPath('data.0.icon', [
+            'url' => '/storage/technologies/icon.webp',
+        ]);
     }
 
     public function test_site_resource_has_ordered_groups_independently_filtered_collections_and_a_private_cv_contract(): void

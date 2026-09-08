@@ -131,3 +131,47 @@ feat(api): expose localized phase 4 public content
   file privately is intentionally deferred to Task 7.
 - The `public` disk URL is deliberately a relative `/storage/...` URL for
   public image copies. No private path is serialized.
+
+## Fix round 1 — review findings
+
+### Changes
+
+- Replaced the repeated nested-technology `status`/`is_visible` predicates in
+  `ExperienceController`, `WorkCaseController`, and `ProjectController` with
+  `Technology::publiclyAvailable()`. The scope is invoked before `reorder()` so
+  its public predicates are retained while the contextual `pivot.position`,
+  then key ordering remains the approved output order.
+- Strengthened `LocalizedContentApiTest` with nonempty published Spanish and
+  English Experience, WorkCase, Project, highlight, and nested Technology
+  fixtures. The test now recursively verifies equal response structure and
+  checks deliberately different ES/EN localized values for all three managed
+  collections. This prevents an always-Spanish collection Resource from being
+  accepted by structural checks against empty arrays.
+- Added positive public-copy assertions for `Project.image` and
+  `Technology.icon` after creating verified public-disk copies.
+
+### TDD and verification
+
+The expanded behavioral tests were added and run before the controller policy
+refactor. They passed against the existing locale-selection behavior, confirming
+that this review round is a policy-deduplication refactor rather than a current
+observable locale bug; after the scope substitution the same tests remained
+green.
+
+```text
+docker compose --profile test run --rm api-test php artisan test --filter='(LocalizedContentApiTest|PublicApiContractTest)'
+```
+
+Result before and after refactor: exit 0, `10 passed (189 assertions)`.
+
+```text
+docker compose --profile test run --rm api-test vendor/bin/pint --test
+```
+
+Result: exit 0, `122 files` checked.
+
+```text
+docker compose --profile test run --rm api-test php artisan test --compact
+```
+
+Result: exit 0, `140 passed (714 assertions)` in 84.37 seconds.

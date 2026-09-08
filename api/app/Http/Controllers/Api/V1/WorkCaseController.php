@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Enums\PublicationStatus;
 use App\Enums\PublicEndpoint;
 use App\Enums\SupportedLocale;
 use App\Http\Controllers\Controller;
@@ -20,9 +19,8 @@ final class WorkCaseController extends Controller
         assert($locale instanceof SupportedLocale);
         $data = $cache->remember($locale, PublicEndpoint::WorkCases, function () use ($locale): array {
             $workCases = WorkCase::query()->publiclyAvailable()->with([
-                'technologies' => static fn ($query) => $query->reorder()
-                    ->where('status', PublicationStatus::Published)
-                    ->where('is_visible', true)
+                'technologies' => static fn ($query) => $query->publiclyAvailable()
+                    ->reorder()
                     ->orderByPivot('position')
                     ->orderBy('technologies.key'),
             ])->get();

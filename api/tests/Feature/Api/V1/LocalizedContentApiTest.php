@@ -28,6 +28,7 @@ final class LocalizedContentApiTest extends TestCase
     public function test_route_locale_is_the_only_localization_source_for_all_public_endpoints(): void
     {
         $this->publishSingletons();
+        $this->createLocalizedPublicCollections();
 
         foreach (['profile', 'experiences', 'work-cases', 'projects', 'technologies', 'site'] as $endpoint) {
             $spanish = $this->getJson("/api/v1/es/{$endpoint}?locale=en", ['Accept-Language' => 'en-US,en;q=0.9'])
@@ -37,13 +38,20 @@ final class LocalizedContentApiTest extends TestCase
                 ->assertOk()
                 ->json('data');
 
-            $this->assertSame(array_keys((array) $spanish), array_keys((array) $english));
+            $this->assertSameStructure($spanish, $english);
         }
 
         $this->assertSame('Titular español', $this->getJson('/api/v1/es/profile?locale=en', ['Accept-Language' => 'en'])->json('data.headline'));
         $this->assertSame('English headline', $this->getJson('/api/v1/en/profile?locale=es', ['Accept-Language' => 'es'])->json('data.headline'));
         $this->assertSame('Contacto español', $this->getJson('/api/v1/es/site?locale=en', ['Accept-Language' => 'en'])->json('data.contact_intro'));
         $this->assertSame('English contact', $this->getJson('/api/v1/en/site?locale=es', ['Accept-Language' => 'es'])->json('data.contact_intro'));
+        $this->assertSame('Rol español distinto', $this->getJson('/api/v1/es/experiences?locale=en', ['Accept-Language' => 'en'])->json('data.0.role'));
+        $this->assertSame('Distinct English role', $this->getJson('/api/v1/en/experiences?locale=es', ['Accept-Language' => 'es'])->json('data.0.role'));
+        $this->assertSame('Caso español distinto', $this->getJson('/api/v1/es/work-cases?locale=en', ['Accept-Language' => 'en'])->json('data.0.title'));
+        $this->assertSame('Distinct English case', $this->getJson('/api/v1/en/work-cases?locale=es', ['Accept-Language' => 'es'])->json('data.0.title'));
+        $this->assertSame('Proyecto español distinto', $this->getJson('/api/v1/es/projects?locale=en', ['Accept-Language' => 'en'])->json('data.0.title'));
+        $this->assertSame('Distinct English project', $this->getJson('/api/v1/en/projects?locale=es', ['Accept-Language' => 'es'])->json('data.0.title'));
+        $this->assertSame('tecnologia-compartida', $this->getJson('/api/v1/es/projects')->json('data.0.technologies.0.key'));
     }
 
     public function test_all_collection_endpoints_return_empty_arrays_when_no_public_records_exist(): void
@@ -167,6 +175,65 @@ final class LocalizedContentApiTest extends TestCase
             'is_visible' => true,
             'published_at' => now(),
         ]);
+    }
+
+    private function createLocalizedPublicCollections(): void
+    {
+        $technology = Technology::factory()->create([
+            'key' => 'tecnologia-compartida',
+            'name' => 'Canonical Technology',
+            'category' => TechnologyCategory::Integration,
+        ]);
+        $experience = Experience::factory()->create(['key' => 'experiencia-localizada']);
+        $workCase = WorkCase::factory()->create(['key' => 'caso-localizado']);
+        $project = Project::factory()->create(['key' => 'proyecto-localizado']);
+
+        $this->makePublic($technology);
+        $this->makePublic($experience, [
+            'role_es' => 'Rol español distinto', 'role_en' => 'Distinct English role',
+            'summary_es' => 'Resumen español distinto', 'summary_en' => 'Distinct English summary',
+        ]);
+        DB::table('experience_highlights')->insert([
+            'experience_id' => $experience->id,
+            'content_es' => 'Hito español distinto',
+            'content_en' => 'Distinct English highlight',
+            'position' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->makePublic($workCase, [
+            'title_es' => 'Caso español distinto', 'title_en' => 'Distinct English case',
+            'context_es' => 'Contexto español distinto', 'context_en' => 'Distinct English context',
+            'problem_es' => 'Problema español distinto', 'problem_en' => 'Distinct English problem',
+            'contribution_es' => 'Contribución española distinta', 'contribution_en' => 'Distinct English contribution',
+            'technical_approach_es' => 'Enfoque español distinto', 'technical_approach_en' => 'Distinct English approach',
+            'outcome_es' => 'Resultado español distinto', 'outcome_en' => 'Distinct English outcome',
+        ]);
+        $this->makePublic($project, [
+            'title_es' => 'Proyecto español distinto', 'title_en' => 'Distinct English project',
+            'summary_es' => 'Resumen de proyecto español', 'summary_en' => 'Distinct English project summary',
+            'problem_es' => 'Problema de proyecto español', 'problem_en' => 'Distinct English project problem',
+            'solution_es' => 'Solución de proyecto española', 'solution_en' => 'Distinct English project solution',
+        ]);
+
+        $experience->technologies()->attach($technology, ['position' => 0]);
+        $workCase->technologies()->attach($technology, ['position' => 0]);
+        $project->technologies()->attach($technology, ['position' => 0]);
+    }
+
+    private function assertSameStructure(mixed $spanish, mixed $english): void
+    {
+        $this->assertSame(get_debug_type($spanish), get_debug_type($english));
+
+        if (! is_array($spanish)) {
+            return;
+        }
+
+        $this->assertSame(array_keys($spanish), array_keys($english));
+
+        foreach ($spanish as $key => $value) {
+            $this->assertSameStructure($value, $english[$key]);
+        }
     }
 
     /** @param array<string, mixed> $attributes */

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Enums\PublicationStatus;
 use App\Enums\PublicEndpoint;
 use App\Enums\SupportedLocale;
 use App\Http\Controllers\Controller;
@@ -21,9 +20,8 @@ final class ExperienceController extends Controller
         $data = $cache->remember($locale, PublicEndpoint::Experiences, function () use ($locale): array {
             $experiences = Experience::query()->publiclyAvailable()->with([
                 'highlights',
-                'technologies' => static fn ($query) => $query->reorder()
-                    ->where('status', PublicationStatus::Published)
-                    ->where('is_visible', true)
+                'technologies' => static fn ($query) => $query->publiclyAvailable()
+                    ->reorder()
                     ->orderByPivot('position')
                     ->orderBy('technologies.key'),
             ])->get();
