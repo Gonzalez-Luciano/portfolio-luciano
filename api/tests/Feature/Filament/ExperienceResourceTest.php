@@ -451,6 +451,47 @@ final class ExperienceResourceTest extends TestCase
     }
 
     /**
+     * The highest-risk behavior of an aggregate-root form: since
+     * `UpdateExperienceAggregate` always fully replaces the highlights list
+     * and the technology pivot from whatever the `highlights`/`technologies`
+     * form state holds, editing an unrelated field (here, `role_es`) must
+     * NOT wipe existing highlights/technologies just because the test
+     * itself never mentions them. This only proves anything if the form is
+     * exercised through its normal mount/fill cycle (so `highlights`/
+     * `technologies` are populated by `mutateFormDataBeforeFill()` from the
+     * existing relations, exactly as a real admin session would leave them
+     * untouched), so `fillForm()` below sets `role_es` only.
+     */
+    public function test_editing_an_unrelated_field_does_not_wipe_existing_highlights_or_technologies(): void
+    {
+        $experience = $this->bilingualDraft();
+        $this->insertHighlight($experience, 'Hito existente sintético.', 'Existing synthetic highlight.', 0);
+        $technology = Technology::factory()->create();
+        $experience->technologies()->attach($technology, ['position' => 0]);
+        $this->authenticateAdmin();
+
+        Livewire::test(EditExperience::class, ['record' => $experience->getKey()])
+            ->fillForm(['role_es' => 'Rol sintético actualizado'])
+            ->call('save')
+            ->assertHasNoFormErrors()
+            ->assertNotified('Saved');
+
+        $experience = $experience->fresh();
+        $this->assertSame('Rol sintético actualizado', $experience->role_es);
+
+        $highlights = $experience->highlights;
+        $this->assertCount(1, $highlights);
+        $this->assertSame('Hito existente sintético.', $highlights[0]->content_es);
+        $this->assertSame('Existing synthetic highlight.', $highlights[0]->content_en);
+        $this->assertSame(0, $highlights[0]->position);
+
+        $technologies = $experience->technologies;
+        $this->assertCount(1, $technologies);
+        $this->assertSame($technology->getKey(), $technologies[0]->getKey());
+        $this->assertSame(0, $technologies[0]->pivot->position);
+    }
+
+    /**
      * Inserts an experience highlight directly via the query builder,
      * bypassing Eloquent events: `ExperienceHighlight` may only be
      * created/updated/deleted through `UpdateExperienceAggregate`'s

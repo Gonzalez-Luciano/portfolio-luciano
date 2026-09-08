@@ -112,8 +112,20 @@ class EditExperience extends EditRecord
      */
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        $highlightsInput = $data['highlights'] ?? [];
-        $technologiesInput = $data['technologies'] ?? [];
+        // Both repeaters are always dehydrated on this page (their
+        // `dehydrated()` closure only ever returns false on Create, where
+        // this method is never called), so both keys must always be
+        // present here. Failing loudly on a missing key, rather than
+        // silently defaulting to an empty list, guards against a future
+        // change to the repeaters' `hidden()`/`dehydrated()` conditions
+        // silently turning into data loss: `UpdateExperienceAggregate`
+        // treats an empty list as "delete every highlight/technology",
+        // so a missing key must never be mistaken for "nothing changed".
+        if (! array_key_exists('highlights', $data) || ! array_key_exists('technologies', $data)) {
+            throw new \LogicException('The experience form did not submit its highlights/technologies state.');
+        }
+        $highlightsInput = $data['highlights'];
+        $technologiesInput = $data['technologies'];
 
         // Defense in depth: none of these are exposed as plain form fields
         // (key is disabled/not dehydrated on edit, position only changes
