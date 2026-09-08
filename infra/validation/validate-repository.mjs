@@ -152,6 +152,9 @@ assert.match(caddy, /handle \{\n\t\treverse_proxy web:3000\n\t}\n}/, 'Caddy must
 const routeInventory = JSON.parse(read('infra/caddy/laravel-routes.json'));
 assert.ok(routeInventory.some((route) => route.uri === 'api/v1'));
 assert.ok(routeInventory.some((route) => /^livewire-[^/]+\//.test(route.uri)));
+assert.ok(routeInventory.some((route) => route.uri === 'cv/luciano-gonzalez-es.pdf'));
+assert.ok(routeInventory.some((route) => route.uri === 'cv/luciano-gonzalez-en.pdf'));
+assert.match(caddy, /^\t@laravel path[^\n]*\/cv\/\*/m, 'The @laravel matcher must cover /cv/*');
 
 const readme = read('README.md');
 assert.match(readme, /docker compose up -d --wait/);

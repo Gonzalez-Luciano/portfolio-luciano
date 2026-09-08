@@ -52,5 +52,7 @@ class AppServiceProvider extends ServiceProvider
                 details: [],
                 status: 429,
             )->withHeaders($headers)));
+
+        RateLimiter::for('cv-download', static fn (Request $request): Limit => Limit::perMinute(30)->by($request->ip()));
     }
 }

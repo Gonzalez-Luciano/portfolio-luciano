@@ -8,7 +8,7 @@
 	}
 
 	# Laravel route inventory and browser-observed Filament assets establish these families.
-	@laravel path /api /api/* /admin /admin/* /up /storage/* /filament /filament/* /css/filament/* /fonts/filament/* /js/filament/*
+	@laravel path /api /api/* /admin /admin/* /up /storage/* /filament /filament/* /css/filament/* /fonts/filament/* /js/filament/* /cv/*
 	handle @laravel {
 		reverse_proxy api:80
 	}
