@@ -328,49 +328,49 @@ Permitir administrar todo el contenido relevante desde Laravel/Filament.
 
 ### Modelado
 
-- [ ] Crear perfil.
-- [ ] Crear experiencias.
-- [ ] Crear casos de trabajo.
-- [ ] Crear proyectos.
-- [ ] Crear tecnologías.
-- [ ] Crear enlaces.
-- [ ] Crear configuración del sitio.
-- [ ] Crear medios.
-- [ ] Crear estados borrador y publicado.
-- [ ] Crear orden manual.
-- [ ] Crear visibilidad por elemento.
-- [ ] Crear campos bilingües.
+- [x] Crear perfil.
+- [x] Crear experiencias.
+- [x] Crear casos de trabajo.
+- [x] Crear proyectos.
+- [x] Crear tecnologías.
+- [x] Crear enlaces.
+- [x] Crear configuración del sitio.
+- [x] Crear medios.
+- [x] Crear estados borrador y publicado.
+- [x] Crear orden manual.
+- [x] Crear visibilidad por elemento.
+- [x] Crear campos bilingües.
 
 ### Administración
 
-- [ ] CRUD de perfil.
-- [ ] CRUD de experiencias.
-- [ ] CRUD de casos.
-- [ ] CRUD de proyectos.
-- [ ] CRUD de tecnologías.
-- [ ] Gestión de enlaces.
-- [ ] Gestión del CV.
-- [ ] Gestión de imágenes.
-- [ ] Filtros por estado.
-- [ ] Ordenamiento.
-- [ ] Validaciones.
-- [ ] Confirmaciones de eliminación.
-- [ ] Vista previa o mecanismo de revisión.
+- [x] CRUD de perfil.
+- [x] CRUD de experiencias.
+- [x] CRUD de casos.
+- [x] CRUD de proyectos.
+- [x] CRUD de tecnologías.
+- [x] Gestión de enlaces.
+- [x] Gestión del CV.
+- [x] Gestión de imágenes.
+- [x] Filtros por estado.
+- [x] Ordenamiento.
+- [x] Validaciones.
+- [x] Confirmaciones de eliminación.
+- [x] Vista previa o mecanismo de revisión.
 
 ### API
 
-- [ ] Endpoint público de configuración.
-- [ ] Endpoint público de perfil.
-- [ ] Endpoint público de experiencia.
-- [ ] Endpoint público de casos.
-- [ ] Endpoint público de proyectos.
-- [ ] Endpoint público de tecnologías.
-- [ ] Respuestas por idioma.
-- [ ] Solo contenido publicado.
-- [ ] Recursos JSON consistentes.
-- [ ] Caché inicial.
-- [ ] Errores controlados.
-- [ ] Documentación del contrato.
+- [x] Endpoint público de configuración.
+- [x] Endpoint público de perfil.
+- [x] Endpoint público de experiencia.
+- [x] Endpoint público de casos.
+- [x] Endpoint público de proyectos.
+- [x] Endpoint público de tecnologías.
+- [x] Respuestas por idioma.
+- [x] Solo contenido publicado.
+- [x] Recursos JSON consistentes.
+- [x] Caché inicial.
+- [x] Errores controlados.
+- [x] Documentación del contrato.
 
 ## Entregables
 
@@ -389,6 +389,11 @@ Permitir administrar todo el contenido relevante desde Laravel/Filament.
 - Los proyectos pueden quedar ocultos hasta estar listos.
 - El sitio puede funcionar con cero proyectos.
 - La API no expone datos administrativos.
+
+> Fase 4 verificada y cerrada el 2026-09-09. Evidencia completa de
+> verificación en `docs/testing/PHASE_4_VERIFICATION.md`. La revisión final
+> independiente de todo el branch (fila 14 de esa evidencia) queda a cargo de
+> un despacho separado del controller antes de fusionar o cerrar la rama.
 
 ---
 
