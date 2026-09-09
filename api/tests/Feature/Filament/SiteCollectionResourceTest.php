@@ -202,6 +202,74 @@ final class SiteCollectionResourceTest extends TestCase
         $this->assertSame(PublicationStatus::Draft, $link->refresh()->status);
     }
 
+    public function test_expertise_area_editorial_transitions_go_through_editorial_actions(): void
+    {
+        $area = ExpertiseArea::factory()->create([
+            'title_es' => 'Título sintético',
+            'title_en' => 'Synthetic title',
+        ]);
+        $this->authenticateAdmin();
+
+        Livewire::test(EditExpertiseArea::class, ['record' => $area->getKey()])
+            ->assertActionExists('publish')
+            ->callAction('publish')
+            ->assertNotified('Publish succeeded');
+
+        $area->refresh();
+        $this->assertSame(PublicationStatus::Published, $area->status);
+        $this->assertFalse($area->is_visible);
+
+        Livewire::test(EditExpertiseArea::class, ['record' => $area->getKey()])
+            ->callAction('show')
+            ->assertNotified('Show succeeded');
+        $this->assertTrue($area->refresh()->is_visible);
+
+        Livewire::test(EditExpertiseArea::class, ['record' => $area->getKey()])
+            ->callAction('hide')
+            ->assertNotified('Hide succeeded');
+        $this->assertFalse($area->refresh()->is_visible);
+
+        Livewire::test(EditExpertiseArea::class, ['record' => $area->getKey()])
+            ->assertActionExists('return_to_draft', checkActionUsing: fn ($action) => $action->isConfirmationRequired())
+            ->callAction('return_to_draft')
+            ->assertNotified('Return to draft succeeded');
+        $this->assertSame(PublicationStatus::Draft, $area->refresh()->status);
+    }
+
+    public function test_work_principle_editorial_transitions_go_through_editorial_actions(): void
+    {
+        $principle = WorkPrinciple::factory()->create([
+            'statement_es' => 'Principio sintético.',
+            'statement_en' => 'Synthetic principle.',
+        ]);
+        $this->authenticateAdmin();
+
+        Livewire::test(EditWorkPrinciple::class, ['record' => $principle->getKey()])
+            ->assertActionExists('publish')
+            ->callAction('publish')
+            ->assertNotified('Publish succeeded');
+
+        $principle->refresh();
+        $this->assertSame(PublicationStatus::Published, $principle->status);
+        $this->assertFalse($principle->is_visible);
+
+        Livewire::test(EditWorkPrinciple::class, ['record' => $principle->getKey()])
+            ->callAction('show')
+            ->assertNotified('Show succeeded');
+        $this->assertTrue($principle->refresh()->is_visible);
+
+        Livewire::test(EditWorkPrinciple::class, ['record' => $principle->getKey()])
+            ->callAction('hide')
+            ->assertNotified('Hide succeeded');
+        $this->assertFalse($principle->refresh()->is_visible);
+
+        Livewire::test(EditWorkPrinciple::class, ['record' => $principle->getKey()])
+            ->assertActionExists('return_to_draft', checkActionUsing: fn ($action) => $action->isConfirmationRequired())
+            ->callAction('return_to_draft')
+            ->assertNotified('Return to draft succeeded');
+        $this->assertSame(PublicationStatus::Draft, $principle->refresh()->status);
+    }
+
     // ---- Delete ----
 
     public function test_professional_link_delete_requires_confirmation_and_uses_delete_content(): void
@@ -278,6 +346,18 @@ final class SiteCollectionResourceTest extends TestCase
         $this->assertSame(2, $area->refresh()->position);
     }
 
+    public function test_expertise_area_reorder_action_rejects_a_negative_position(): void
+    {
+        $area = ExpertiseArea::factory()->create(['position' => 3]);
+        $this->authenticateAdmin();
+
+        Livewire::test(ListExpertiseAreas::class)
+            ->callTableAction('reorder', $area, data: ['position' => -1])
+            ->assertHasTableActionErrors(['position']);
+
+        $this->assertSame(3, $area->refresh()->position);
+    }
+
     public function test_work_principle_reorder_action_updates_position_via_reorder_content(): void
     {
         $principle = WorkPrinciple::factory()->create(['position' => 0]);
@@ -288,6 +368,18 @@ final class SiteCollectionResourceTest extends TestCase
             ->assertHasNoTableActionErrors();
 
         $this->assertSame(7, $principle->refresh()->position);
+    }
+
+    public function test_work_principle_reorder_action_rejects_a_negative_position(): void
+    {
+        $principle = WorkPrinciple::factory()->create(['position' => 3]);
+        $this->authenticateAdmin();
+
+        Livewire::test(ListWorkPrinciples::class)
+            ->callTableAction('reorder', $principle, data: ['position' => -1])
+            ->assertHasTableActionErrors(['position']);
+
+        $this->assertSame(3, $principle->refresh()->position);
     }
 
     // ---- Filters ----
