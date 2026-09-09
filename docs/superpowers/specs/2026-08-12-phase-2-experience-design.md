@@ -33,7 +33,7 @@ Phase 1 has no issue that blocks Phase 2. Its remaining work is classified as fo
 - Photo crop direction, prototype-ready derivatives, and light/dark visual validation are resolved naturally in Phase 2.
 - Public wording for multi-institution support remains deferred because no approved copy exists. Phase 2 supports that content structurally but does not invent it.
 - Production media delivery and final CMS optimization remain later integration work.
-- The Spanish CV's incorrect `/Lang(en-US)` tag must be corrected and the file reapproved before publication. Until a locale-specific CV is available and approved, its download action is omitted.
+- The Spanish CV's previously incorrect `/Lang(en-US)` tag was corrected to `/Lang(es-AR)` and the replacement file was approved on 2026-09-09. A locale-specific CV download action is still omitted whenever its CMS slot is unavailable or not public.
 - Full CV text comparison may remain deferred and cannot be used to create new claims during Phase 2.
 
 Phase 2 does not initialize `web/`, `api/`, or `infra/`; install packages; consume the future Laravel API; or implement Motion, GSAP, ScrollTrigger, node-field behavior, scroll narratives, or other Phase 6 work.

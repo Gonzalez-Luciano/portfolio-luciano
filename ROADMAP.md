@@ -116,7 +116,7 @@ Definir qué verá y entenderá el reclutador antes de diseñar la interfaz fina
 - [x] Confirmar correo público.
 - [x] Aprobar versión del CV descargable.
 
-> Los dos PDF están aprobados como activos para futura publicación, pero su extracción y comparación textual siguen pendientes; no se usaron para respaldar nuevas afirmaciones. Además, el PDF español declara actualmente `/Lang(en-US)` y debe reexportarse o retagearse como español, con nueva aprobación, antes de ser servido.
+> Los dos PDF fueron reemplazados y aprobados como activos para futura publicación el 2026-09-09. El PDF español declara `/Lang(es-AR)` y el inglés `/Lang(en-US)`. Su contenido textual no se considera automáticamente aprobado como fuente de nuevas afirmaciones del sitio: esa reconciliación permanece dentro de la revisión de contenido de Fase 5.
 
 ### Fotografía
 

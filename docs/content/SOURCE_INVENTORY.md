@@ -37,8 +37,8 @@
 
 | Source ID | Description | Owner/location | Verification | Publication authority | Notes |
 |---|---|---|---|---|---|
-| SRC-001 | Provided primary Spanish CV for history, dates, technologies, education, and profile facts | `.source-materials/cv/cv-es.pdf`; approved tracked copy `docs/content/approved-assets/cv-es.pdf` | verified by Luciano | public | Luciano approved tracked storage and future publication of this CV asset. Text extraction/comparison remains pending; do not derive unsupported facts. |
-| SRC-002 | Provided primary English CV for history, dates, technologies, education, and profile facts | `.source-materials/cv/cv-en.pdf`; approved tracked copy `docs/content/approved-assets/cv-en.pdf` | verified by Luciano | public | Luciano approved tracked storage and future publication of this CV asset. Text extraction/comparison remains pending; do not derive unsupported facts. |
+| SRC-001 | Provided primary Spanish CV for history, dates, technologies, education, and profile facts | `.source-materials/cv/cv-es.pdf`; approved tracked copy `docs/content/approved-assets/cv-es.pdf` | replacement verified by Luciano on 2026-09-09 | public | Luciano approved tracked storage and future publication of the replacement CV asset. The tracked PDF declares `/Lang(es-AR)`. Reconciliation of its wording with approved site content remains a Phase 5 review step; do not derive unsupported facts automatically. |
+| SRC-002 | Provided primary English CV for history, dates, technologies, education, and profile facts | `.source-materials/cv/cv-en.pdf`; approved tracked copy `docs/content/approved-assets/cv-en.pdf` | replacement verified by Luciano on 2026-09-09 | public | Luciano approved tracked storage and future publication of the replacement CV asset. The tracked PDF declares `/Lang(en-US)`. Reconciliation of its wording with approved site content remains a Phase 5 review step; do not derive unsupported facts automatically. |
 
 ## Visual assets
 
