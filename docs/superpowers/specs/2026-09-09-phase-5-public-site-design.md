@@ -92,6 +92,37 @@ After Phase 5 implementation:
 13. No Phase 6 motion, Phase 8 advanced metadata, Phase 10 E2E infrastructure,
     or deployment work is introduced.
 
+### 3.1 Implementation completion and Phase 5 acceptance are different gates
+
+**Implementation complete** means the specified code, import command,
+automated tests, integration checks, and QA procedure have been implemented and
+verified without inventing missing editorial data. Runtime support for an empty
+Experience collection, unpublished singletons, and incomplete drafts can be
+complete even while human content decisions remain pending.
+
+**Phase 5 accepted / editorially ready** means a representative release-candidate
+dataset has also passed the ROADMAP Phase 5 content review and the public site
+actually presents its required real content. It does not require deployment to
+the final home server, but it does require evidence through the normal Phase 4
+publication flow that:
+
+- Profile and Site are complete, published, visible, and consumable in ES/EN;
+- the approved Profile photograph is present in the published Profile;
+- the approved Work Cases have every Phase 4-required bilingual field approved
+  and are publishable/public, rather than being replaced by a neutral Work state;
+- Experience has either received approved structured CMS data or Luciano has
+  made an explicit documented editorial decision that an empty Experience
+  subsection is acceptable for the Phase 5 release candidate;
+- Technology group labels have exact human-approved ES/EN copy so Site can be
+  published;
+- approved professional links and both locale CVs are published and verified;
+- Projects remains the explicitly approved empty collection until Phase 7.
+
+Until those conditions are met, implementation may be reported complete, but
+Phase 5 must remain **editorial acceptance blocked**. Its ROADMAP acceptance
+criteria and completion checkboxes must not be closed merely because the
+structural-unavailability or neutral-empty states work correctly.
+
 ## 4. Scope
 
 Phase 5 includes:
@@ -179,6 +210,7 @@ app/[locale]/page.tsx
 app/[locale]/loading.tsx
 app/[locale]/error.tsx
 app/[locale]/not-found.tsx
+app/global-error.tsx
 ```
 
 Exact placement may adapt to the installed Next.js version, but responsibilities
@@ -205,6 +237,8 @@ Client Components are limited to:
 - the narrowly scoped `FragmentFocusManager`;
 - `error.tsx`, because App Router requires error boundaries to be Client
   Components.
+- `global-error.tsx`, because the root localized layout also needs a parent/root
+  fallback and Next requires global error UI to be a Client Component.
 
 A Server Component section does not become a Client Component merely because it
 contains one of these islands.
@@ -242,7 +276,7 @@ non-translated IDs:
 Their order is Work, Expertise, Projects, Approach, Contact on desktop, mobile,
 and no-JavaScript fallback.
 
-The full recognized anchor allowlist is:
+The cross-locale-preserved and focus-managed anchor allowlist is:
 
 ```text
 #work
@@ -257,6 +291,12 @@ The full recognized anchor allowlist is:
 #technologies
 #work-principles
 ```
+
+`#top` is a valid local anchor used by the header identity, but it is
+deliberately outside that allowlist. It needs no cross-locale preservation:
+switching locale from `#top` navigates to the other locale without a fragment,
+which already lands at the top. Local `#top` navigation uses native browser
+positioning and is not managed by `FragmentFocusManager`.
 
 Grouped structure and narrative order are:
 
@@ -352,7 +392,7 @@ type Experience = {
   organization: string | null;
   role: string;
   start: string;       // YYYY-MM
-  end: string | null;  // YYYY-MM or current
+  end: string | null;  // YYYY-MM; null means the experience is current
   summary: string;
   highlights: string[];
   technologies: Technology[];
@@ -446,12 +486,17 @@ Validators must check:
 
 `site.technology_groups` must contain the four unique canonical keys in the
 Phase 4 order `backend`, `data`, `integration`, `collaboration`, each with a
-string label. This validates a closed public structural contract; it does not
-reclassify Technologies in Next.
+string label. Exact membership and order are formally part of
+`docs/api/PUBLIC_API_V1.md`: `SiteResource` emits `TechnologyCategory::cases()`
+directly and its contract guarantees exactly four entries in declaration order.
+Rejecting another order therefore validates the HTTP contract; it does not
+duplicate publication logic, sort the response, or reclassify Technologies in
+Next.
 
 Additional unconsumed backend fields are tolerated. Missing or malformed
-consumed fields fail the endpoint. Validators check shape, not whether Laravel
-should have published a record or chosen its order.
+consumed fields fail the endpoint. Validators check the documented HTTP shape;
+they do not decide whether Laravel should publish a record, calculate positions,
+sort content, or infer a different order.
 
 Small composable guards for records, arrays, nullable values, and primitives are
 allowed only where they reduce duplication. They must not become a generic
@@ -658,10 +703,22 @@ per endpoint and no six-stage streaming composition.
 Expected API failures are values handled by page composition, not exceptions
 sent to `error.tsx`.
 
-`error.tsx` is the App Router safety net for unexpected exceptions. It is the
-documented technical exception to Server Components by default, uses safe
-localized copy, exposes no technical detail, and provides framework-compatible
-recovery. It must not become the normal endpoint failure model.
+`app/[locale]/error.tsx` is the App Router safety net for unexpected exceptions
+in the localized page/subtree below the localized layout. It is the documented
+technical exception to Server Components by default, uses safe localized copy,
+exposes no technical detail, and provides framework-compatible recovery. It
+must not become the normal endpoint failure model.
+
+An error boundary does not catch an exception thrown by the layout in its own
+route segment because the boundary is nested inside that layout. In the current
+application, `app/[locale]/layout.tsx` is the root layout. Therefore Phase 5 also
+requires the minimum `app/global-error.tsx` prescribed by Next.js for unexpected
+root/localized-layout failure. It is a Client Component, defines its own
+`<html>` and `<body>`, uses a self-contained safe technical fallback because the
+locale provider/theme shell may not exist, and provides the version-appropriate
+reset/retry control. It contains no professional content, data acquisition, or
+observability system. This follows the installed App Router boundary model
+documented by Next.js in `https://nextjs.org/docs/app/getting-started/error-handling`.
 
 The Phase 5 404 uses the visual shell and technical localized copy, links back
 to a valid localized page, and contains no professional fallback. A valid `es`
@@ -719,6 +776,14 @@ The mobile Client Component coordinates only:
   behavior;
 - cleanup on unmount.
 
+The dialog owns a local `(min-width: 64rem)` media-query listener. If an open
+dialog crosses into desktop mode, it closes, removes its scroll lock, and does
+not leave focus inside closed/hidden content. Because the mobile trigger becomes
+hidden, focus moves to a sensible visible header target such as the identity
+link rather than being restored to a hidden trigger. Returning below `64rem`
+starts with the dialog closed. This state is local to the dialog; there is no
+global breakpoint store.
+
 It does not implement a manual focus trap or manual `inert` unless a verified
 supported-browser defect requires a separately approved scope change. No Radix,
 Headless UI, or dialog dependency is added.
@@ -728,11 +793,21 @@ The no-JavaScript mobile fallback is a semantic named `<nav>` within
 and a real link to the other locale. It is not a second dialog or navigation
 configuration, and it has no separate labels or URLs.
 
+With JavaScript disabled, controls whose behavior requires hydration must not be
+visibly exposed or remain in the accessibility tree as dead controls. In
+particular, the mobile Menu trigger and interactive theme toggle are hidden or
+otherwise not exposed, while native desktop anchors, the other-locale link, and
+the mobile `<noscript>` navigation remain functional. The implementation plan
+chooses the smallest mechanism compatible with the existing theme bootstrap; the
+specification requires behavior, not a second no-JavaScript application.
+
 The footer consumes only available CMS identity/link data plus technical UI copy.
 It contains no duplicated biography or hardcoded professional URL.
 
-The following Phase 2 labels are fixed UI catalog entries rather than CMS
-professional content:
+The following localized UI catalog entries are fixed for Phase 5 rather than
+being CMS professional content. Primary navigation, section, and Menu/Close
+labels come from Phase 2. Date/field/new-tab labels are Phase 5 technical copy
+submitted for approval in this specification, as recorded in section 33:
 
 | Purpose | Spanish | English |
 |---|---|---|
@@ -874,6 +949,13 @@ The desktop widget uses correct `tablist`, `tab`, `tabpanel`, `aria-selected`,
 and Home/End; and Enter/Space where activation is not automatic. Tab enters and
 leaves the widget without visiting every tab. No content is fetched client-side
 or absent from initial HTML.
+
+Indexed Detail owns its local `(min-width: 64rem)` reconciliation. Crossing
+below `64rem` removes desktop-only tab semantics/state from the rendered
+interaction, unhides every dossier, and restores sequential reading. Crossing
+back to desktop reapplies the accessible tab mode using its local selected item
+or the first item when no valid selection exists. It shares no global breakpoint
+state with the mobile dialog or any other component.
 
 Experience renders organization when non-null, role, localized `YYYY-MM` dates,
 summary, highlights, and Technologies. `end: null` receives localized
@@ -1171,7 +1253,7 @@ The second execution fails during baseline preflight and performs no DB or
 filesystem mutation, including after an administrator has published or edited
 content.
 
-### 29.5 Deliberate initial gaps
+### 29.5 Known editorial gaps and specification self-review finding
 
 The current approved Experience prose does not supply the organization label,
 role, and required start month/year needed for an Experience record. Therefore:
@@ -1197,14 +1279,34 @@ Phase 4. It does not invent, automatically translate, or provision temporary
 copy. Phase 4 correctly prevents Site publication until an administrator enters
 and approves required labels in Filament.
 
-The approved Work Case documents provide a title and one contextual paragraph
-per case, but not separately approved `problem`, `contribution`,
-`technical_approach`, and `outcome` values. Phase 4 requires all six bilingual
-narrative fields before publication. The initial dataset therefore imports the
-approved title/context values and leaves the remaining draft fields null. It
-does not split or paraphrase the approved paragraph to manufacture the missing
-structure. Filament correctly prevents each Work Case from being published
-until those exact fields receive human-approved bilingual content.
+The following Work Case issue is a **new editorial gap discovered during the
+specification self-review**. It was not one of the two gaps explicitly approved
+during brainstorming and must not be represented as a prior human content
+decision.
+
+Concrete evidence:
+
+- `docs/content/CONTENT.es.md` and `CONTENT.en.md` contain a heading plus one
+  approved descriptive paragraph for each of the four Work Cases; they do not
+  contain separately approved Problem, Contribution, Technical Approach, and
+  Outcome copy;
+- `api/database/seeders/PortfolioContentSeeder.php` documents that mismatch and
+  currently writes the approved paragraph to `context_es/en` while leaving
+  `problem`, `contribution`, `technical_approach`, and `outcome` null;
+- `App\Domain\Publishing\PublicationValidator::workCaseIssues()` requires
+  bilingual `title`, `context`, `problem`, `contribution`,
+  `technical_approach`, and `outcome` before publication;
+- `App\Http\Resources\Api\V1\WorkCaseResource` exposes those six fields to the
+  public API.
+
+The gap is therefore fully supported by the current Phase 1 sources and Phase 4
+implementation. The initial dataset imports the approved title/context values
+and leaves the remaining draft fields null. It does not split or paraphrase the
+paragraph to manufacture the missing structure. Filament correctly prevents
+each Work Case from being published until those exact fields receive
+human-approved bilingual content. Until then, this is an editorial acceptance
+blocker under section 3.1, not an implementation defect and not permission to
+close Phase 5 with neutral Work content.
 
 The initial editorial procedure is:
 
@@ -1219,8 +1321,11 @@ run guarded import
 -> public API begins serving content
 ```
 
-It is acceptable for the public site to show structural unavailability before
-Profile and Site are published. No Next fallback masks that interval.
+It is acceptable runtime behavior for the public site to show structural
+unavailability during the interval before Profile and Site are published. No
+Next fallback masks that interval. That interim state does not satisfy Phase 5
+editorial acceptance or authorize closing its ROADMAP criteria; section 3.1
+remains controlling.
 
 ## 30. Automated testing contract
 
@@ -1252,8 +1357,12 @@ Vitest and Testing Library cover, at minimum:
 - mobile-dialog observable DOM behavior: accessible trigger/name, open, explicit
   close, Escape event handling where jsdom can represent it, navigation close,
   locale close, and focus restoration;
+- local `64rem` transitions: an open dialog closes and releases its state on
+  desktop entry, while Indexed Detail removes tab mode and reveals every dossier
+  on narrow entry;
 - desktop/mobile using the same navigation definition;
-- `<noscript>` fallback in server HTML;
+- `<noscript>` fallback in server HTML and absence of exposed dead Menu/theme
+  controls in the no-JavaScript contract;
 - `RetryButton` visibility, labels, click-to-refresh, and absence from success or
   empty states;
 - theme behavior already supported by the test environment;
@@ -1261,7 +1370,11 @@ Vitest and Testing Library cover, at minimum:
 - Contact with intro only;
 - CV URL/label consumption without hardcoded routes;
 - metadata for ES, EN, Profile failure, and Site-only failure;
-- heading and landmark relationships observable in rendered markup.
+- heading and landmark relationships observable in rendered markup;
+- localized subtree error UI and the minimal root-layout `global-error` fallback;
+- no hydration mismatch/error warning or uncaught client exception in the
+  automated ES/EN, theme, Indexed Detail, and responsive-island scenarios that
+  the test environment can exercise.
 
 Tests must not claim to prove native dialog modality/focus trapping, real scroll,
 fragment positioning, image optimization, browser zoom, or screen-reader output
@@ -1295,8 +1408,10 @@ commit, environment, command, result, and evidence for:
 - light/dark and ES/EN independently;
 - keyboard, skip link, visible focus, headings, and landmarks;
 - mobile dialog with native modality, Escape, close, destination selection,
-  background scroll, and focus restoration;
-- real JavaScript-disabled fallback;
+  background scroll, focus restoration, and clean transition across `64rem`;
+- Indexed Detail transition across `64rem`, including all dossiers becoming
+  visible below the breakpoint;
+- real JavaScript-disabled fallback with no exposed dead Menu/theme controls;
 - locale change with recognized hash;
 - native fragment positioning plus enhanced focus behavior;
 - Indexed Detail and no-JavaScript sequential dossiers;
@@ -1306,6 +1421,11 @@ commit, environment, command, result, and evidence for:
 - Contact and locale CV download;
 - Caddy/Next optimizer/Laravel storage integration from section 27;
 - responsive reflow with long ES/EN copy;
+- browser console free of hydration warnings, hydration errors, and uncaught
+  client exceptions while exercising ES/EN, theme bootstrap, Indexed Detail,
+  mobile dialog, and breakpoint changes;
+- localized subtree unexpected-error fallback and the minimal root-layout
+  global fallback, without professional content;
 - a real screen-reader run recording browser, reader, exact flow, and result.
 
 Controlled failure states may use clearly synthetic test fixtures or a
@@ -1323,6 +1443,7 @@ backend tests
 Pint
 repository validation
 documented real-browser QA
+no hydration warnings/errors or uncaught client errors in the recorded flows
 ```
 
 ## 32. Phase 6 extension points
@@ -1337,7 +1458,27 @@ ScrollTrigger hook, empty animation wrapper, field-of-nodes scaffold, or
 animation dependency. Phase 6 adapts the semantic DOM only where its approved
 storyboard requires it.
 
-## 33. Documentation outcomes
+## 33. Traceability of concrete specification assertions
+
+Concrete details added while writing or reviewing this specification have the
+following provenance. This table distinguishes repository evidence from new
+Phase 5 choices being submitted for human approval.
+
+| Assertion | Evidence or decision status |
+|---|---|
+| LinkedIn and GitHub open in a new tab with safe `rel` | The approved Phase 2 localized prototype files contain `target="_blank" rel="me noopener noreferrer"` for those two links, and `docs/design/phase-2/VALIDATION_REPORT.md` records Contact/external-link validation. The localized new-tab announcement is a Phase 5 accessibility requirement approved during brainstorming, not claimed as pre-existing Phase 2 copy. |
+| Fixed approved photo and CV input paths | `docs/content/ASSET_INVENTORY.md` entries AST-PHOTO-PROFILE, AST-CV-ES, and AST-CV-EN and `docs/content/SOURCE_INVENTORY.md` name the three tracked files exactly. |
+| Fourteen production-baseline tables | The names exactly match the Phase 4 content and pivot tables created by `api/database/migrations/2026_09_02_000000` through `000003`. Treating the complete initial content graph, including deliberate empty Experience/Project collections, as the one-time baseline is a Phase 5 import-safety decision approved in this specification; users/authentication are not inferred into it. |
+| Exact Technology group membership/order | `docs/api/PUBLIC_API_V1.md` formally guarantees exactly four entries in canonical order; `SiteResource` iterates `TechnologyCategory::cases()` directly; `PublicApiContractTest` asserts the exact JSON order. |
+| Primary navigation, section, and Menu/Close labels | The Phase 2 `SITEMAP.md`, localized prototype HTML, wireframes, and artifact validator contain these exact labels. |
+| Work Case field labels, `Actualidad`/`Present`, 404 copy, and new-tab suffix | These are technical UI-copy choices introduced and clearly enumerated by this Phase 5 specification. They are not represented as prior Phase 1 professional content or hidden Phase 2 decisions; human approval of this revised specification approves them. |
+| Root-layout global error fallback | The installed dependency is Next.js `16.2.12`; the official App Router error-handling contract states that same-segment `error.tsx` does not cover its layout and that `app/global-error.tsx` handles root-layout failures. |
+| New Work Case editorial gap | Evidence and status are recorded explicitly in section 29.5. It is a self-review discovery, not a brainstorming decision. |
+
+No concrete assertion in this table authorizes extraction of professional facts
+from CVs, prototypes, tests, or implementation history.
+
+## 34. Documentation outcomes
 
 Implementation must update documentation that becomes inaccurate because of
 Phase 5, including:
@@ -1353,9 +1494,10 @@ Phase 5, including:
 Historic Phase 4 verification drift remains a separately reported documentation
 cleanup; this spec does not silently rewrite Phase 4 history.
 
-## 34. Final acceptance criteria
+## 35. Final acceptance criteria
 
-Phase 5 is complete only when all of the following are true:
+Phase 5 is accepted only when both the implementation gate and the editorial
+readiness gate in section 3.1 are satisfied and all of the following are true:
 
 1. The six real Phase 4 contracts are validated at runtime from `unknown`.
 2. All six no-store requests begin in parallel and render one coordinated SSR
@@ -1384,5 +1526,10 @@ Phase 5 is complete only when all of the following are true:
     Project, URL, asset, or professional claim is invented.
 14. Frontend/backend checks, production build, formatting, repository validation,
     and manual Phase 5 QA pass.
-15. No Phase 6, Phase 8, Phase 10, Phase 11, or deployment scope has leaked into
+15. Recorded ES/EN, theme, Indexed Detail, dialog, and responsive flows have no
+    hydration warning/error or uncaught client exception.
+16. Profile, Site, approved Work Cases, photo, professional links, and both CVs
+    meet the editorial readiness requirements; unresolved Experience inclusion
+    is recorded as an editorial acceptance blocker unless explicitly decided.
+17. No Phase 6, Phase 8, Phase 10, Phase 11, or deployment scope has leaked into
     the implementation.
