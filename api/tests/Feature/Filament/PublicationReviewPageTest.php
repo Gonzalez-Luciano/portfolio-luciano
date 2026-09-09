@@ -24,6 +24,7 @@ use App\Filament\Resources\WorkCases\Pages\EditWorkCase;
 use App\Filament\Resources\WorkCases\Pages\ListWorkCases;
 use App\Filament\Resources\WorkPrinciples\Pages\EditWorkPrinciple;
 use App\Filament\Resources\WorkPrinciples\Pages\ListWorkPrinciples;
+use App\Filament\Support\ReviewLink;
 use App\Models\CvDocument;
 use App\Models\Experience;
 use App\Models\ExpertiseArea;
@@ -203,6 +204,33 @@ final class PublicationReviewPageTest extends TestCase
             ->assertSee('Current');
     }
 
+    // ---- WorkCase: bilingual content and ordered contextual technologies ----
+
+    public function test_work_case_review_shows_bilingual_content_and_ordered_technologies(): void
+    {
+        $workCase = WorkCase::factory()->create([
+            'title_es' => 'Caso técnico sintético',
+            'title_en' => 'Synthetic technical case',
+        ]);
+        $second = Technology::factory()->create(['key' => 'synthetic-workcase-technology-second', 'name' => 'Synthetic Second']);
+        $first = Technology::factory()->create(['key' => 'synthetic-workcase-technology-first', 'name' => 'Synthetic First']);
+        $workCase->technologies()->attach($first, ['position' => 0]);
+        $workCase->technologies()->attach($second, ['position' => 1]);
+        $this->authenticateAdmin();
+
+        $component = Livewire::test(ReviewContent::class, ['type' => 'work-case', 'record' => $workCase->getKey()])
+            ->assertSee('Caso técnico sintético')
+            ->assertSee('Synthetic technical case')
+            ->assertSee('Synthetic First')
+            ->assertSee('Synthetic Second');
+
+        $review = $component->instance()->review;
+        $this->assertSame(
+            ['Synthetic First', 'Synthetic Second'],
+            array_column($review['relationships']['Contextual technologies'], 'value'),
+        );
+    }
+
     // ---- Project: image asset info without exposing a raw path ----
 
     public function test_project_review_shows_image_asset_presence_and_metadata_without_a_raw_path(): void
@@ -229,6 +257,26 @@ final class PublicationReviewPageTest extends TestCase
 
         Livewire::test(ReviewContent::class, ['type' => 'project', 'record' => $project->getKey()])
             ->assertSee('Absent');
+    }
+
+    public function test_project_review_shows_ordered_contextual_technologies(): void
+    {
+        $project = Project::factory()->create();
+        $second = Technology::factory()->create(['key' => 'synthetic-project-technology-second', 'name' => 'Synthetic Second']);
+        $first = Technology::factory()->create(['key' => 'synthetic-project-technology-first', 'name' => 'Synthetic First']);
+        $project->technologies()->attach($first, ['position' => 0]);
+        $project->technologies()->attach($second, ['position' => 1]);
+        $this->authenticateAdmin();
+
+        $component = Livewire::test(ReviewContent::class, ['type' => 'project', 'record' => $project->getKey()])
+            ->assertSee('Synthetic First')
+            ->assertSee('Synthetic Second');
+
+        $review = $component->instance()->review;
+        $this->assertSame(
+            ['Synthetic First', 'Synthetic Second'],
+            array_column($review['relationships']['Contextual technologies'], 'value'),
+        );
     }
 
     // ---- CvDocument: PDF asset presence/metadata ----
@@ -265,6 +313,38 @@ final class PublicationReviewPageTest extends TestCase
             ->assertSee('synthetic-consumer-experience')
             ->assertSee('synthetic-consumer-work-case')
             ->assertSee('synthetic-consumer-project');
+    }
+
+    // ---- WorkPrinciple: bilingual statement ----
+
+    public function test_work_principle_review_shows_bilingual_statement(): void
+    {
+        $principle = WorkPrinciple::factory()->create([
+            'statement_es' => 'Principio de revisión sintético.',
+            'statement_en' => 'Synthetic review principle.',
+        ]);
+        $this->authenticateAdmin();
+
+        Livewire::test(ReviewContent::class, ['type' => 'work-principle', 'record' => $principle->getKey()])
+            ->assertSee('Principio de revisión sintético.')
+            ->assertSee('Synthetic review principle.');
+    }
+
+    // ---- ProfessionalLink: label and destination on its own review page ----
+
+    public function test_professional_link_review_shows_label_and_destination(): void
+    {
+        $link = ProfessionalLink::factory()->create([
+            'label_es' => 'Enlace de revisión sintético',
+            'label_en' => 'Synthetic review link',
+            'destination' => 'https://example.test/synthetic-review-destination',
+        ]);
+        $this->authenticateAdmin();
+
+        Livewire::test(ReviewContent::class, ['type' => 'professional-link', 'record' => $link->getKey()])
+            ->assertSee('Enlace de revisión sintético')
+            ->assertSee('Synthetic review link')
+            ->assertSee('https://example.test/synthetic-review-destination');
     }
 
     // ---- Exact blocking issue codes/messages, verbatim, spot-checked ----
@@ -316,7 +396,9 @@ final class PublicationReviewPageTest extends TestCase
         $component = Livewire::test(ReviewContent::class, ['type' => 'expertise-area', 'record' => $expertiseArea->getKey()]);
 
         $this->assertSame([], $component->instance()->review['issues']);
-        $component->assertSee('publishable');
+        $component->assertSee('publishable')
+            ->assertSee('Área técnica sintética')
+            ->assertSee('Synthetic technical area');
     }
 
     // ---- SiteConfiguration dependencies are informative only ----
@@ -400,16 +482,20 @@ final class PublicationReviewPageTest extends TestCase
     {
         $this->authenticateAdmin();
 
-        Livewire::test(EditProfile::class)
-            ->assertActionExists('review');
+        $component = Livewire::test(EditProfile::class);
+        $record = $component->instance()->record;
+
+        $component->assertActionExists('review', checkActionUsing: fn ($action) => $action->getUrl() === ReviewLink::url($record));
     }
 
     public function test_edit_site_configuration_page_has_a_review_action(): void
     {
         $this->authenticateAdmin();
 
-        Livewire::test(EditSiteConfiguration::class)
-            ->assertActionExists('review');
+        $component = Livewire::test(EditSiteConfiguration::class);
+        $record = $component->instance()->record;
+
+        $component->assertActionExists('review', checkActionUsing: fn ($action) => $action->getUrl() === ReviewLink::url($record));
     }
 
     public function test_experience_list_table_has_a_review_row_action(): void
