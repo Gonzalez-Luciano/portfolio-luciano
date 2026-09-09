@@ -72,7 +72,11 @@ final class CvDownloadTest extends TestCase
 
     public function test_an_absent_english_slot_also_returns_not_found(): void
     {
-        $this->get('/cv/luciano-gonzalez-en.pdf')->assertNotFound();
+        $response = $this->get('/cv/luciano-gonzalez-en.pdf');
+
+        $response->assertNotFound();
+        $response->assertDontSee('private_path', false);
+        $response->assertDontSee('storage/app', false);
     }
 
     public function test_a_hidden_published_cv_returns_not_found(): void
@@ -80,7 +84,12 @@ final class CvDownloadTest extends TestCase
         $cv = $this->createPublishedCv(spanish: true, visible: false, privatePath: 'cv/hidden.pdf');
         Storage::disk('local')->put($cv->private_path, '%PDF-1.4');
 
-        $this->get('/cv/luciano-gonzalez-es.pdf')->assertNotFound();
+        $response = $this->get('/cv/luciano-gonzalez-es.pdf');
+
+        $response->assertNotFound();
+        $response->assertDontSee('private_path', false);
+        $response->assertDontSee('storage/app', false);
+        $response->assertDontSee($cv->private_path, false);
     }
 
     public function test_a_draft_cv_returns_not_found(): void
@@ -90,15 +99,25 @@ final class CvDownloadTest extends TestCase
         ]);
         Storage::disk('local')->put($cv->private_path, '%PDF-1.4');
 
-        $this->get('/cv/luciano-gonzalez-es.pdf')->assertNotFound();
+        $response = $this->get('/cv/luciano-gonzalez-es.pdf');
+
+        $response->assertNotFound();
+        $response->assertDontSee('private_path', false);
+        $response->assertDontSee('storage/app', false);
+        $response->assertDontSee($cv->private_path, false);
     }
 
     public function test_a_published_visible_cv_with_a_missing_private_file_returns_not_found(): void
     {
-        $this->createPublishedCv(spanish: true, visible: true, privatePath: 'cv/missing-file.pdf');
+        $cv = $this->createPublishedCv(spanish: true, visible: true, privatePath: 'cv/missing-file.pdf');
         // Deliberately never writing the file to the fake disk.
 
-        $this->get('/cv/luciano-gonzalez-es.pdf')->assertNotFound();
+        $response = $this->get('/cv/luciano-gonzalez-es.pdf');
+
+        $response->assertNotFound();
+        $response->assertDontSee('private_path', false);
+        $response->assertDontSee('storage/app', false);
+        $response->assertDontSee($cv->private_path, false);
     }
 
     public function test_no_storage_alias_ever_serves_the_private_cv(): void
