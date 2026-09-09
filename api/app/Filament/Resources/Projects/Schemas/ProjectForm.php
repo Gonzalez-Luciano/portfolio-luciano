@@ -46,18 +46,18 @@ class ProjectForm
 
                 Tabs::make('locales')->tabs([
                     Tab::make('Spanish')->schema([
-                        TextInput::make('title_es')->label('Title (ES)'),
-                        Textarea::make('summary_es')->label('Summary (ES)'),
-                        Textarea::make('problem_es')->label('Problem (ES)'),
-                        Textarea::make('solution_es')->label('Solution (ES)'),
-                        TextInput::make('image_alt_es')->label('Image alt text (ES)'),
+                        TextInput::make('title_es')->label('Title (ES)')->maxLength(255),
+                        Textarea::make('summary_es')->label('Summary (ES)')->maxLength(10000),
+                        Textarea::make('problem_es')->label('Problem (ES)')->maxLength(10000),
+                        Textarea::make('solution_es')->label('Solution (ES)')->maxLength(10000),
+                        TextInput::make('image_alt_es')->label('Image alt text (ES)')->maxLength(500),
                     ]),
                     Tab::make('English')->schema([
-                        TextInput::make('title_en')->label('Title (EN)'),
-                        Textarea::make('summary_en')->label('Summary (EN)'),
-                        Textarea::make('problem_en')->label('Problem (EN)'),
-                        Textarea::make('solution_en')->label('Solution (EN)'),
-                        TextInput::make('image_alt_en')->label('Image alt text (EN)'),
+                        TextInput::make('title_en')->label('Title (EN)')->maxLength(255),
+                        Textarea::make('summary_en')->label('Summary (EN)')->maxLength(10000),
+                        Textarea::make('problem_en')->label('Problem (EN)')->maxLength(10000),
+                        Textarea::make('solution_en')->label('Solution (EN)')->maxLength(10000),
+                        TextInput::make('image_alt_en')->label('Image alt text (EN)')->maxLength(500),
                     ]),
                 ]),
 
@@ -65,7 +65,9 @@ class ProjectForm
                     ->label('Image')
                     ->image()
                     ->storeFiles(false)
-                    ->helperText('Optional. Uploading a new image replaces the current one only after saving. Alt text in both languages is required for publication once an image is present.'),
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->maxSize(8 * 1024)
+                    ->helperText('Optional. JPEG, PNG, or WebP, up to 8 MiB. Uploading a new image replaces the current one only after saving. Alt text in both languages is required for publication once an image is present.'),
                 Placeholder::make('image_display')
                     ->label('Current image')
                     ->content(fn (?Project $record): string => filled($record?->image_private_path) ? 'Present' : 'None'),

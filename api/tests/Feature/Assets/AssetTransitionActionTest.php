@@ -202,6 +202,30 @@ final class AssetTransitionActionTest extends TestCase
         Storage::disk('public')->assertDirectoryEmpty('/');
     }
 
+    /**
+     * `changeState()` is used by Show/Hide/Return-to-draft. Simulating the
+     * row disappearing between the admin's initial fetch and the action
+     * actually running (e.g. a concurrent hard delete) makes its internal
+     * `lockForUpdate()->findOrFail()` raise `ModelNotFoundException`; this
+     * must reach the caller as a sanitized `AssetOperationException`, not
+     * a raw framework exception.
+     */
+    public function test_a_change_state_failure_is_sanitized_instead_of_leaking_a_raw_exception(): void
+    {
+        $cv = CvDocument::factory()->create(['label' => 'CV técnico']);
+        app(AssetLifecycleService::class)->replace($cv, UploadedFile::fake()->createWithContent('cv.pdf', "%PDF-1.4\nsynthetic"));
+        $cv = app(PublishContent::class)($cv->fresh());
+
+        DB::table('cv_documents')->where('id', $cv->getKey())->delete();
+
+        try {
+            app(ShowContent::class)($cv);
+            $this->fail('A change-state failure must not succeed silently.');
+        } catch (AssetOperationException $exception) {
+            $this->assertSame('The asset operation could not be completed.', $exception->getMessage());
+        }
+    }
+
     public function test_delete_rejects_both_singleton_models(): void
     {
         foreach ([Profile::query()->sole(), SiteConfiguration::query()->sole()] as $singleton) {

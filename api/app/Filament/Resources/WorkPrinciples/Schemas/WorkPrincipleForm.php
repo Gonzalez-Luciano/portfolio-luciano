@@ -31,10 +31,10 @@ class WorkPrincipleForm
 
                 Tabs::make('locales')->tabs([
                     Tab::make('Spanish')->schema([
-                        Textarea::make('statement_es')->label('Statement (ES)'),
+                        Textarea::make('statement_es')->label('Statement (ES)')->maxLength(10000),
                     ]),
                     Tab::make('English')->schema([
-                        Textarea::make('statement_en')->label('Statement (EN)'),
+                        Textarea::make('statement_en')->label('Statement (EN)')->maxLength(10000),
                     ]),
                 ]),
 

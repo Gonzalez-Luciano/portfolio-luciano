@@ -31,12 +31,12 @@ class ExpertiseAreaForm
 
                 Tabs::make('locales')->tabs([
                     Tab::make('Spanish')->schema([
-                        TextInput::make('title_es')->label('Title (ES)'),
-                        Textarea::make('description_es')->label('Description (ES)'),
+                        TextInput::make('title_es')->label('Title (ES)')->maxLength(255),
+                        Textarea::make('description_es')->label('Description (ES)')->maxLength(10000),
                     ]),
                     Tab::make('English')->schema([
-                        TextInput::make('title_en')->label('Title (EN)'),
-                        Textarea::make('description_en')->label('Description (EN)'),
+                        TextInput::make('title_en')->label('Title (EN)')->maxLength(255),
+                        Textarea::make('description_en')->label('Description (EN)')->maxLength(10000),
                     ]),
                 ]),
 

@@ -127,4 +127,28 @@ final class EditorialActions
             ->body($body)
             ->send();
     }
+
+    /**
+     * Shared UI-glue for owned-asset actions (Replace/Remove) invoked
+     * outside the four transition buttons above. Every owned-asset call
+     * site in the admin (EditProfile, EditProject, EditTechnology,
+     * EditCvDocument) catches its `ReplaceOwnedAsset`/`RemoveOwnedAsset`
+     * call and routes the failure through this single method instead of
+     * reimplementing the issue-list/sanitized-message distinction that
+     * `run()` above already establishes for the four transition actions.
+     */
+    public static function notifyAssetFailure(string $label, \Throwable $exception): void
+    {
+        if ($exception instanceof PublicationValidationException) {
+            self::notifyIssues($label, $exception);
+
+            return;
+        }
+
+        Notification::make()
+            ->danger()
+            ->title("{$label} failed")
+            ->body($exception->getMessage())
+            ->send();
+    }
 }

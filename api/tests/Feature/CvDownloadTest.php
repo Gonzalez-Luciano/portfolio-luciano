@@ -120,6 +120,13 @@ final class CvDownloadTest extends TestCase
         $response->assertDontSee($cv->private_path, false);
     }
 
+    /**
+     * The private `local` disk pins `serve => false` (spec section 19):
+     * with no `storage.local` route registered at all, Laravel's router
+     * returns a plain 404 for any `/storage/{path}` request rather than
+     * the signed-route middleware's 403 that a `serve => true` default
+     * would otherwise produce.
+     */
     public function test_no_storage_alias_ever_serves_the_private_cv(): void
     {
         $cv = $this->createPublishedCv(spanish: true, visible: true, privatePath: 'cv/es.pdf');
@@ -127,7 +134,7 @@ final class CvDownloadTest extends TestCase
 
         $response = $this->get('/storage/'.$cv->private_path);
 
-        $response->assertStatus(403);
+        $response->assertNotFound();
     }
 
     public function test_the_cv_routes_carry_no_dynamic_path_segment(): void

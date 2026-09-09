@@ -19,6 +19,26 @@ use Illuminate\Support\Str;
 
 final class PublicationValidator
 {
+    /**
+     * Application maximum for names, titles, labels, roles, CTA text, and
+     * other bounded `VARCHAR(255)` columns (spec section 8).
+     */
+    private const BOUNDED_MAX_LENGTH = 255;
+
+    /**
+     * Application maximum for `TEXT` narrative columns (summary,
+     * introduction, problem, solution, approach, outcome, statement, and
+     * highlight content). MySQL `TEXT` holds up to 65,535 bytes; this is a
+     * generous, uniform application ceiling well under that limit even at
+     * 4 bytes/character (spec section 8).
+     */
+    private const NARRATIVE_MAX_LENGTH = 10000;
+
+    /**
+     * Application maximum for alt text (spec section 8).
+     */
+    private const ALT_TEXT_MAX_LENGTH = 500;
+
     /** @return list<PublicationIssue> */
     public function issues(Model $content): array
     {
@@ -64,16 +84,26 @@ final class PublicationValidator
             ...$this->required($profile, ['name']),
             ...$this->requiredPairs($profile, ['headline', 'short_summary', 'introduction', 'availability', 'cta']),
             ...$this->imageAssetIssues($profile, 'photo', 5 * 1024 * 1024),
+            ...$this->maxLength($profile, ['name'], self::BOUNDED_MAX_LENGTH),
+            ...$this->maxLengthPairs($profile, ['cta'], self::BOUNDED_MAX_LENGTH),
+            ...$this->maxLengthPairs($profile, ['headline', 'short_summary', 'introduction', 'availability'], self::NARRATIVE_MAX_LENGTH),
+            ...$this->maxLength($profile, ['photo_alt_es', 'photo_alt_en'], self::ALT_TEXT_MAX_LENGTH),
         ];
     }
 
     /** @return list<PublicationIssue> */
     private function siteConfigurationIssues(SiteConfiguration $configuration): array
     {
-        return $this->requiredPairs($configuration, [
-            'projects_empty_message', 'contact_intro', 'technology_backend_label', 'technology_data_label',
-            'technology_integration_label', 'technology_collaboration_label',
-        ]);
+        return [
+            ...$this->requiredPairs($configuration, [
+                'projects_empty_message', 'contact_intro', 'technology_backend_label', 'technology_data_label',
+                'technology_integration_label', 'technology_collaboration_label',
+            ]),
+            ...$this->maxLengthPairs($configuration, ['projects_empty_message', 'contact_intro'], self::NARRATIVE_MAX_LENGTH),
+            ...$this->maxLengthPairs($configuration, [
+                'technology_backend_label', 'technology_data_label', 'technology_integration_label', 'technology_collaboration_label',
+            ], self::BOUNDED_MAX_LENGTH),
+        ];
     }
 
     /** @return list<PublicationIssue> */
@@ -84,6 +114,8 @@ final class PublicationValidator
             ...$this->requiredPairs($experience, ['role', 'summary']),
             ...$this->optionalPairs($experience, ['organization_label']),
             ...$this->experienceDateIssues($experience),
+            ...$this->maxLengthPairs($experience, ['role', 'organization_label'], self::BOUNDED_MAX_LENGTH),
+            ...$this->maxLengthPairs($experience, ['summary'], self::NARRATIVE_MAX_LENGTH),
         ];
 
         $highlights = $experience->relationLoaded('highlights')
@@ -103,6 +135,8 @@ final class PublicationValidator
         return [
             ...$this->keyIssues($workCase),
             ...$this->requiredPairs($workCase, ['title', 'context', 'problem', 'contribution', 'technical_approach', 'outcome']),
+            ...$this->maxLengthPairs($workCase, ['title'], self::BOUNDED_MAX_LENGTH),
+            ...$this->maxLengthPairs($workCase, ['context', 'problem', 'contribution', 'technical_approach', 'outcome'], self::NARRATIVE_MAX_LENGTH),
         ];
     }
 
@@ -114,6 +148,9 @@ final class PublicationValidator
             ...$this->requiredPairs($project, ['title', 'summary', 'problem', 'solution']),
             ...$this->httpsUrlIssues($project, ['demo_url', 'repository_url']),
             ...$this->imageAssetIssues($project, 'image', 8 * 1024 * 1024),
+            ...$this->maxLengthPairs($project, ['title'], self::BOUNDED_MAX_LENGTH),
+            ...$this->maxLengthPairs($project, ['summary', 'problem', 'solution'], self::NARRATIVE_MAX_LENGTH),
+            ...$this->maxLength($project, ['image_alt_es', 'image_alt_en'], self::ALT_TEXT_MAX_LENGTH),
         ];
 
         return $issues;
@@ -126,25 +163,39 @@ final class PublicationValidator
             ...$this->keyIssues($technology),
             ...$this->required($technology, ['name']),
             ...$this->iconAssetIssues($technology),
+            ...$this->maxLength($technology, ['name'], self::BOUNDED_MAX_LENGTH),
         ];
     }
 
     /** @return list<PublicationIssue> */
     private function expertiseAreaIssues(ExpertiseArea $area): array
     {
-        return [...$this->keyIssues($area), ...$this->requiredPairs($area, ['title']), ...$this->optionalPairs($area, ['description'])];
+        return [
+            ...$this->keyIssues($area),
+            ...$this->requiredPairs($area, ['title']),
+            ...$this->optionalPairs($area, ['description']),
+            ...$this->maxLengthPairs($area, ['title'], self::BOUNDED_MAX_LENGTH),
+            ...$this->maxLengthPairs($area, ['description'], self::NARRATIVE_MAX_LENGTH),
+        ];
     }
 
     /** @return list<PublicationIssue> */
     private function workPrincipleIssues(WorkPrinciple $principle): array
     {
-        return [...$this->keyIssues($principle), ...$this->requiredPairs($principle, ['statement'])];
+        return [
+            ...$this->keyIssues($principle),
+            ...$this->requiredPairs($principle, ['statement']),
+            ...$this->maxLengthPairs($principle, ['statement'], self::NARRATIVE_MAX_LENGTH),
+        ];
     }
 
     /** @return list<PublicationIssue> */
     private function professionalLinkIssues(ProfessionalLink $link): array
     {
-        $issues = $this->requiredPairs($link, ['label']);
+        $issues = [
+            ...$this->requiredPairs($link, ['label']),
+            ...$this->maxLengthPairs($link, ['label'], self::BOUNDED_MAX_LENGTH),
+        ];
         $type = $link->type instanceof ProfessionalLinkType ? $link->type : ProfessionalLinkType::tryFrom((string) $link->type);
         $destination = (string) $link->destination;
 
@@ -162,7 +213,10 @@ final class PublicationValidator
     /** @return list<PublicationIssue> */
     private function cvDocumentIssues(CvDocument $document): array
     {
-        $issues = $this->required($document, ['label']);
+        $issues = [
+            ...$this->required($document, ['label']),
+            ...$this->maxLength($document, ['label'], self::BOUNDED_MAX_LENGTH),
+        ];
         $hasAny = $this->hasValue($document->private_path) || $this->hasValue($document->mime) || $document->size !== null;
 
         if (! $hasAny) {
@@ -228,7 +282,10 @@ final class PublicationValidator
     /** @return list<PublicationIssue> */
     private function highlightIssues(ExperienceHighlight $highlight, string $prefix): array
     {
-        return $this->requiredPairs($highlight, ['content'], "{$prefix}.");
+        return [
+            ...$this->requiredPairs($highlight, ['content'], "{$prefix}."),
+            ...$this->maxLengthPairs($highlight, ['content'], self::NARRATIVE_MAX_LENGTH, "{$prefix}."),
+        ];
     }
 
     /** @param list<string> $fields @return list<PublicationIssue> */
@@ -271,6 +328,32 @@ final class PublicationValidator
         }
 
         return $issues;
+    }
+
+    /** @param list<string> $fields @return list<PublicationIssue> */
+    private function maxLength(Model $content, array $fields, int $max, string $prefix = ''): array
+    {
+        $issues = [];
+        foreach ($fields as $field) {
+            $value = $content->getAttribute($field);
+            if (is_string($value) && mb_strlen($value) > $max) {
+                $issues[] = $this->issue('max_length_exceeded', "{$prefix}{$field}", "This field must not exceed {$max} characters.");
+            }
+        }
+
+        return $issues;
+    }
+
+    /** @param list<string> $pairs @return list<PublicationIssue> */
+    private function maxLengthPairs(Model $content, array $pairs, int $max, string $prefix = ''): array
+    {
+        $fields = [];
+        foreach ($pairs as $pair) {
+            $fields[] = "{$pair}_es";
+            $fields[] = "{$pair}_en";
+        }
+
+        return $this->maxLength($content, $fields, $max, $prefix);
     }
 
     /** @param list<string> $fields @return list<PublicationIssue> */

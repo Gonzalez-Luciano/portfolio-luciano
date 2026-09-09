@@ -66,20 +66,20 @@ final class EditSiteConfiguration extends Page implements HasForms
             ->components([
                 Tabs::make('locales')->tabs([
                     Tab::make('Spanish')->schema([
-                        Textarea::make('projects_empty_message_es')->label('Projects empty message (ES)'),
-                        Textarea::make('contact_intro_es')->label('Contact intro (ES)'),
-                        TextInput::make('technology_backend_label_es')->label('Backend label (ES)'),
-                        TextInput::make('technology_data_label_es')->label('Data label (ES)'),
-                        TextInput::make('technology_integration_label_es')->label('Integration label (ES)'),
-                        TextInput::make('technology_collaboration_label_es')->label('Collaboration label (ES)'),
+                        Textarea::make('projects_empty_message_es')->label('Projects empty message (ES)')->maxLength(10000),
+                        Textarea::make('contact_intro_es')->label('Contact intro (ES)')->maxLength(10000),
+                        TextInput::make('technology_backend_label_es')->label('Backend label (ES)')->maxLength(255),
+                        TextInput::make('technology_data_label_es')->label('Data label (ES)')->maxLength(255),
+                        TextInput::make('technology_integration_label_es')->label('Integration label (ES)')->maxLength(255),
+                        TextInput::make('technology_collaboration_label_es')->label('Collaboration label (ES)')->maxLength(255),
                     ]),
                     Tab::make('English')->schema([
-                        Textarea::make('projects_empty_message_en')->label('Projects empty message (EN)'),
-                        Textarea::make('contact_intro_en')->label('Contact intro (EN)'),
-                        TextInput::make('technology_backend_label_en')->label('Backend label (EN)'),
-                        TextInput::make('technology_data_label_en')->label('Data label (EN)'),
-                        TextInput::make('technology_integration_label_en')->label('Integration label (EN)'),
-                        TextInput::make('technology_collaboration_label_en')->label('Collaboration label (EN)'),
+                        Textarea::make('projects_empty_message_en')->label('Projects empty message (EN)')->maxLength(10000),
+                        Textarea::make('contact_intro_en')->label('Contact intro (EN)')->maxLength(10000),
+                        TextInput::make('technology_backend_label_en')->label('Backend label (EN)')->maxLength(255),
+                        TextInput::make('technology_data_label_en')->label('Data label (EN)')->maxLength(255),
+                        TextInput::make('technology_integration_label_en')->label('Integration label (EN)')->maxLength(255),
+                        TextInput::make('technology_collaboration_label_en')->label('Collaboration label (EN)')->maxLength(255),
                     ]),
                 ]),
 

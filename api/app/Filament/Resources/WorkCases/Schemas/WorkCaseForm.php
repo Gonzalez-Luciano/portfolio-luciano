@@ -34,20 +34,20 @@ class WorkCaseForm
 
                 Tabs::make('locales')->tabs([
                     Tab::make('Spanish')->schema([
-                        TextInput::make('title_es')->label('Title (ES)'),
-                        Textarea::make('context_es')->label('Context (ES)'),
-                        Textarea::make('problem_es')->label('Problem (ES)'),
-                        Textarea::make('contribution_es')->label('Contribution (ES)'),
-                        Textarea::make('technical_approach_es')->label('Technical approach (ES)'),
-                        Textarea::make('outcome_es')->label('Outcome (ES)'),
+                        TextInput::make('title_es')->label('Title (ES)')->maxLength(255),
+                        Textarea::make('context_es')->label('Context (ES)')->maxLength(10000),
+                        Textarea::make('problem_es')->label('Problem (ES)')->maxLength(10000),
+                        Textarea::make('contribution_es')->label('Contribution (ES)')->maxLength(10000),
+                        Textarea::make('technical_approach_es')->label('Technical approach (ES)')->maxLength(10000),
+                        Textarea::make('outcome_es')->label('Outcome (ES)')->maxLength(10000),
                     ]),
                     Tab::make('English')->schema([
-                        TextInput::make('title_en')->label('Title (EN)'),
-                        Textarea::make('context_en')->label('Context (EN)'),
-                        Textarea::make('problem_en')->label('Problem (EN)'),
-                        Textarea::make('contribution_en')->label('Contribution (EN)'),
-                        Textarea::make('technical_approach_en')->label('Technical approach (EN)'),
-                        Textarea::make('outcome_en')->label('Outcome (EN)'),
+                        TextInput::make('title_en')->label('Title (EN)')->maxLength(255),
+                        Textarea::make('context_en')->label('Context (EN)')->maxLength(10000),
+                        Textarea::make('problem_en')->label('Problem (EN)')->maxLength(10000),
+                        Textarea::make('contribution_en')->label('Contribution (EN)')->maxLength(10000),
+                        Textarea::make('technical_approach_en')->label('Technical approach (EN)')->maxLength(10000),
+                        Textarea::make('outcome_en')->label('Outcome (EN)')->maxLength(10000),
                     ]),
                 ]),
 

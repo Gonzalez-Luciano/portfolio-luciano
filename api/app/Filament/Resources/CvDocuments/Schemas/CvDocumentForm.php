@@ -52,9 +52,10 @@ class CvDocumentForm
                     ->label('CV PDF')
                     ->storeFiles(false)
                     ->acceptedFileTypes(['application/pdf'])
+                    ->maxSize(5 * 1024)
                     // This asset is private-only: there is no public copy
                     // and no public-path field anywhere on this model.
-                    ->helperText('Optional here; required to publish. Private only, never exposed as a public copy. Uploading a new PDF replaces the current one only after saving.'),
+                    ->helperText('Optional here; required to publish. Private only, never exposed as a public copy. Up to 5 MiB. Uploading a new PDF replaces the current one only after saving.'),
                 Placeholder::make('pdf_display')
                     ->label('Current PDF')
                     ->content(fn (?CvDocument $record): string => filled($record?->private_path) ? 'Present' : 'None'),

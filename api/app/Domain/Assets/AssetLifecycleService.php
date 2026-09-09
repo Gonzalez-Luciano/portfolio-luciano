@@ -352,19 +352,25 @@ final class AssetLifecycleService
 
     private function changeState(Model $owner, PublicationStatus $status, bool $visible, bool $clearPublishedAt): Model
     {
-        return DB::transaction(function () use ($owner, $status, $visible, $clearPublishedAt): Model {
-            $locked = $this->locked($owner);
+        $operationId = (string) Str::uuid();
 
-            return $this->context->run(function () use ($locked, $status, $visible, $clearPublishedAt): Model {
-                $locked->forceFill([
-                    'status' => $status,
-                    'is_visible' => $visible,
-                    'published_at' => $clearPublishedAt ? null : $locked->published_at,
-                ])->save();
+        try {
+            return DB::transaction(function () use ($owner, $status, $visible, $clearPublishedAt): Model {
+                $locked = $this->locked($owner);
 
-                return $locked->fresh();
+                return $this->context->run(function () use ($locked, $status, $visible, $clearPublishedAt): Model {
+                    $locked->forceFill([
+                        'status' => $status,
+                        'is_visible' => $visible,
+                        'published_at' => $clearPublishedAt ? null : $locked->published_at,
+                    ])->save();
+
+                    return $locked->fresh();
+                });
             });
-        });
+        } catch (\Throwable $exception) {
+            throw $this->operationFailure('change_state', $owner, $operationId, $exception);
+        }
     }
 
     private function copyPublic(string $privatePath, string $publicPath): void

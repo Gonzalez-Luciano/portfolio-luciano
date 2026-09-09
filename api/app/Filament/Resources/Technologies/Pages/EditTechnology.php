@@ -81,7 +81,14 @@ class EditTechnology extends EditRecord
             ->requiresConfirmation()
             ->visible(fn (): bool => filled($this->getRecord()->icon_private_path))
             ->action(function (): void {
-                $updated = app(RemoveOwnedAsset::class)($this->getRecord());
+                try {
+                    $updated = app(RemoveOwnedAsset::class)($this->getRecord());
+                } catch (\Throwable $exception) {
+                    EditorialActions::notifyAssetFailure('Remove icon', $exception);
+
+                    return;
+                }
+
                 $this->syncRecord($updated);
                 Notification::make()->success()->title('Icon removed')->send();
             });
@@ -141,7 +148,13 @@ class EditTechnology extends EditRecord
         }
 
         if ($icon instanceof UploadedFile) {
-            $updated = app(ReplaceOwnedAsset::class)($updated, $icon);
+            try {
+                $updated = app(ReplaceOwnedAsset::class)($updated, $icon);
+            } catch (\Throwable $exception) {
+                EditorialActions::notifyAssetFailure('Save', $exception);
+
+                throw new Halt;
+            }
         }
 
         $this->record = $updated;

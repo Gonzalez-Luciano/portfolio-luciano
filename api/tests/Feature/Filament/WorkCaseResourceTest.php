@@ -138,6 +138,19 @@ final class WorkCaseResourceTest extends TestCase
         $this->assertSame(0, DB::table('technology_work_case')->where('work_case_id', $workCase->getKey())->count());
     }
 
+    // ---- Application maximum-length validation ----
+
+    public function test_an_overlong_narrative_text_field_is_rejected_as_a_form_validation_error_on_save(): void
+    {
+        $workCase = WorkCase::factory()->create();
+        $this->authenticateAdmin();
+
+        Livewire::test(EditWorkCase::class, ['record' => $workCase->getKey()])
+            ->fillForm(['outcome_es' => str_repeat('a', 10001)])
+            ->call('save')
+            ->assertHasFormErrors(['outcome_es' => 'max']);
+    }
+
     public function test_editing_an_unrelated_field_does_not_wipe_existing_technologies(): void
     {
         $workCase = WorkCase::factory()->create(['context_es' => 'Contexto existente sintético']);

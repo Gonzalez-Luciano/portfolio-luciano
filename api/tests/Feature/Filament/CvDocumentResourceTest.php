@@ -230,6 +230,44 @@ final class CvDocumentResourceTest extends TestCase
         $this->assertNull($cv->fresh()->private_path);
     }
 
+    // ---- Owned-asset failures are controlled, not raw exceptions ----
+
+    public function test_removing_a_pdf_from_a_published_cv_shows_a_controlled_notification_instead_of_an_uncaught_exception(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+
+        $cv = CvDocument::factory()->create(['label' => 'Synthetic technical CV']);
+        app(ReplaceOwnedAsset::class)($cv, UploadedFile::fake()->createWithContent('resume.pdf', "%PDF-1.4\nsynthetic"));
+        $cv = app(PublishContent::class)($cv->fresh());
+        $privatePath = $cv->private_path;
+        $this->authenticateAdmin();
+
+        Livewire::test(EditCvDocument::class, ['record' => $cv->getKey()])
+            ->callAction('remove_pdf')
+            ->assertNotified('Remove PDF failed');
+
+        $cv->refresh();
+        $this->assertSame($privatePath, $cv->private_path);
+        Storage::disk('local')->assertExists($privatePath);
+    }
+
+    public function test_uploading_an_oversized_pdf_shows_a_controlled_notification_instead_of_a_raw_exception(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+
+        $cv = CvDocument::factory()->create();
+        $this->authenticateAdmin();
+
+        Livewire::test(EditCvDocument::class, ['record' => $cv->getKey()])
+            ->fillForm(['pdf' => UploadedFile::fake()->create('resume.pdf', (5 * 1024) + 1, 'application/pdf')])
+            ->call('save')
+            ->assertHasFormErrors(['pdf']);
+
+        $this->assertNull($cv->fresh()->private_path);
+    }
+
     // ---- Transitions, including Publish failing without a valid PDF ----
 
     public function test_publish_fails_without_a_valid_private_pdf(): void

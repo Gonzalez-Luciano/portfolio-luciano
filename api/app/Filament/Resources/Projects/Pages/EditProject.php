@@ -109,7 +109,14 @@ class EditProject extends EditRecord
             ->requiresConfirmation()
             ->visible(fn (): bool => filled($this->getRecord()->image_private_path))
             ->action(function (): void {
-                $updated = app(RemoveOwnedAsset::class)($this->getRecord());
+                try {
+                    $updated = app(RemoveOwnedAsset::class)($this->getRecord());
+                } catch (\Throwable $exception) {
+                    EditorialActions::notifyAssetFailure('Remove image', $exception);
+
+                    return;
+                }
+
                 $this->syncRecord($updated);
                 Notification::make()->success()->title('Image removed')->send();
             });
@@ -178,7 +185,13 @@ class EditProject extends EditRecord
         }
 
         if ($photo instanceof UploadedFile) {
-            $updated = app(ReplaceOwnedAsset::class)($updated, $photo);
+            try {
+                $updated = app(ReplaceOwnedAsset::class)($updated, $photo);
+            } catch (\Throwable $exception) {
+                EditorialActions::notifyAssetFailure('Save', $exception);
+
+                throw new Halt;
+            }
         }
 
         if ($altEs !== $updated->image_alt_es || $altEn !== $updated->image_alt_en) {

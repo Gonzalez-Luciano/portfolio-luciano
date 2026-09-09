@@ -33,7 +33,14 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Pinned deliberately: the entire private-media confidentiality
+            // boundary (unpublished CV PDFs, unpublished photo/image/icon
+            // originals) must never rely on Laravel's stock unsigned-route
+            // default. This disk is never served through a public
+            // `storage/{path}` route at all; application code is the only
+            // reader (CvDownloadController, and the copy-to-`public`-disk
+            // step in AssetLifecycleService).
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

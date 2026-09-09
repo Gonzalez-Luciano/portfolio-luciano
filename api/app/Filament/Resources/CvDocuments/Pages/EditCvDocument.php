@@ -47,7 +47,14 @@ class EditCvDocument extends EditRecord
             ->requiresConfirmation()
             ->visible(fn (): bool => filled($this->getRecord()->private_path))
             ->action(function (): void {
-                $updated = app(RemoveOwnedAsset::class)($this->getRecord());
+                try {
+                    $updated = app(RemoveOwnedAsset::class)($this->getRecord());
+                } catch (\Throwable $exception) {
+                    EditorialActions::notifyAssetFailure('Remove PDF', $exception);
+
+                    return;
+                }
+
                 $this->syncRecord($updated);
                 Notification::make()->success()->title('PDF removed')->send();
             });
@@ -75,7 +82,13 @@ class EditCvDocument extends EditRecord
         }
 
         if ($pdf instanceof UploadedFile) {
-            $updated = app(ReplaceOwnedAsset::class)($updated, $pdf);
+            try {
+                $updated = app(ReplaceOwnedAsset::class)($updated, $pdf);
+            } catch (\Throwable $exception) {
+                EditorialActions::notifyAssetFailure('Save', $exception);
+
+                throw new Halt;
+            }
         }
 
         $this->record = $updated;

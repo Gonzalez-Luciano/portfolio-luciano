@@ -196,6 +196,45 @@ final class PublicationValidatorTest extends TestCase
         ], array_map(static fn ($issue): array => ['code' => $issue->code, 'path' => $issue->path], $issues));
     }
 
+    public function test_it_flags_a_bounded_varchar_field_that_exceeds_its_application_maximum_length(): void
+    {
+        $project = Project::factory()->publishedHidden()->make(['title_es' => str_repeat('a', 256)]);
+
+        $issues = app(PublicationValidator::class)->issues($project);
+        $issue = collect($issues)->firstWhere('path', 'title_es');
+
+        $this->assertNotNull($issue, 'An overlong bounded field must be reported as a blocking publication issue.');
+        $this->assertSame('max_length_exceeded', $issue->code);
+    }
+
+    public function test_it_flags_a_narrative_text_field_that_exceeds_its_application_maximum_length(): void
+    {
+        $workCase = WorkCase::factory()->publishedHidden()->make(['outcome_es' => str_repeat('a', 10001)]);
+
+        $issues = app(PublicationValidator::class)->issues($workCase);
+        $issue = collect($issues)->firstWhere('path', 'outcome_es');
+
+        $this->assertNotNull($issue, 'An overlong narrative field must be reported as a blocking publication issue.');
+        $this->assertSame('max_length_exceeded', $issue->code);
+    }
+
+    public function test_it_flags_alt_text_that_exceeds_its_five_hundred_character_application_maximum(): void
+    {
+        $profile = Profile::factory()->publishedHidden()->make([
+            'photo_private_path' => 'profiles/synthetic.webp',
+            'photo_mime' => 'image/webp',
+            'photo_size' => 1,
+            'photo_alt_es' => str_repeat('a', 501),
+            'photo_alt_en' => 'Synthetic portrait',
+        ]);
+
+        $issues = app(PublicationValidator::class)->issues($profile);
+        $issue = collect($issues)->firstWhere('path', 'photo_alt_es');
+
+        $this->assertNotNull($issue, 'Alt text over 500 characters must be reported as a blocking publication issue.');
+        $this->assertSame('max_length_exceeded', $issue->code);
+    }
+
     public function test_publish_transitions_a_valid_draft_to_the_hidden_published_state_and_locks_its_key(): void
     {
         $project = Project::factory()->draft()->create([

@@ -49,6 +49,7 @@ class TechnologyForm
                     ->label('Icon')
                     ->storeFiles(false)
                     ->acceptedFileTypes(['image/png', 'image/webp'])
+                    ->maxSize(1024)
                     // Icons are decorative: no alt text field exists for
                     // them anywhere in this schema or the underlying model.
                     ->helperText('Optional. PNG or WebP, up to 1 MiB, decorative (no alt text). Uploading a new icon replaces the current one only after saving.'),

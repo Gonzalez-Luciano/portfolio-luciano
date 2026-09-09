@@ -40,10 +40,10 @@ class ProfessionalLinkForm
 
                 Tabs::make('locales')->tabs([
                     Tab::make('Spanish')->schema([
-                        TextInput::make('label_es')->label('Label (ES)'),
+                        TextInput::make('label_es')->label('Label (ES)')->maxLength(255),
                     ]),
                     Tab::make('English')->schema([
-                        TextInput::make('label_en')->label('Label (EN)'),
+                        TextInput::make('label_en')->label('Label (EN)')->maxLength(255),
                     ]),
                 ]),
 

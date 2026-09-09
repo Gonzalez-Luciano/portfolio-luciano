@@ -47,6 +47,19 @@ final class ExperienceResourceTest extends TestCase
         $this->get(ListExperiences::getUrl())->assertForbidden();
     }
 
+    // ---- Application maximum-length validation ----
+
+    public function test_an_overlong_bounded_field_is_rejected_as_a_form_validation_error_on_save(): void
+    {
+        $experience = Experience::factory()->create();
+        $this->authenticateAdmin();
+
+        Livewire::test(EditExperience::class, ['record' => $experience->getKey()])
+            ->fillForm(['role_es' => str_repeat('a', 256)])
+            ->call('save')
+            ->assertHasFormErrors(['role_es' => 'max']);
+    }
+
     // ---- Aggregate is not a standalone resource ----
 
     public function test_experience_highlight_has_no_dedicated_resource_or_pages(): void

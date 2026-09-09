@@ -27,6 +27,32 @@ final class PhaseFourSchemaTest extends TestCase
         $this->assertSame(['profile-photo', 'project-image', 'technology-icon', 'cv'], array_column(OwnedAssetKind::cases(), 'value'));
     }
 
+    /**
+     * Spec section 8 requires alt text to carry a 500-character application
+     * maximum. The Task 1 migrations declared these four columns as the
+     * default `VARCHAR(255)`; a later additive migration widens them
+     * in place without touching the Task 1 migration files.
+     */
+    public function test_owned_asset_alt_text_columns_are_widened_to_five_hundred_characters(): void
+    {
+        $columns = [
+            ['profiles', 'photo_alt_es'],
+            ['profiles', 'photo_alt_en'],
+            ['projects', 'image_alt_es'],
+            ['projects', 'image_alt_en'],
+        ];
+
+        foreach ($columns as [$table, $column]) {
+            $length = DB::table('information_schema.columns')
+                ->where('table_schema', DB::getDatabaseName())
+                ->where('table_name', $table)
+                ->where('column_name', $column)
+                ->value('character_maximum_length');
+
+            $this->assertSame(500, (int) $length, "{$table}.{$column} must be widened to VARCHAR(500).");
+        }
+    }
+
     public function test_migrations_create_exactly_one_empty_draft_hidden_singleton_of_each_kind(): void
     {
         $this->assertDatabaseCount('profiles', 1);

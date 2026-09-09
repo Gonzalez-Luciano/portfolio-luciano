@@ -56,14 +56,14 @@ class ExperienceForm
 
                 Tabs::make('locales')->tabs([
                     Tab::make('Spanish')->schema([
-                        TextInput::make('role_es')->label('Role (ES)'),
-                        Textarea::make('summary_es')->label('Summary (ES)'),
-                        TextInput::make('organization_label_es')->label('Organization label (ES)'),
+                        TextInput::make('role_es')->label('Role (ES)')->maxLength(255),
+                        Textarea::make('summary_es')->label('Summary (ES)')->maxLength(10000),
+                        TextInput::make('organization_label_es')->label('Organization label (ES)')->maxLength(255),
                     ]),
                     Tab::make('English')->schema([
-                        TextInput::make('role_en')->label('Role (EN)'),
-                        Textarea::make('summary_en')->label('Summary (EN)'),
-                        TextInput::make('organization_label_en')->label('Organization label (EN)'),
+                        TextInput::make('role_en')->label('Role (EN)')->maxLength(255),
+                        Textarea::make('summary_en')->label('Summary (EN)')->maxLength(10000),
+                        TextInput::make('organization_label_en')->label('Organization label (EN)')->maxLength(255),
                     ]),
                 ]),
 
@@ -71,8 +71,8 @@ class ExperienceForm
                     ->label('Highlights')
                     ->addActionLabel('Add highlight')
                     ->schema([
-                        Textarea::make('content_es')->label('Content (ES)'),
-                        Textarea::make('content_en')->label('Content (EN)'),
+                        Textarea::make('content_es')->label('Content (ES)')->maxLength(10000),
+                        Textarea::make('content_en')->label('Content (EN)')->maxLength(10000),
                     ])
                     ->defaultItems(0)
                     ->columns(1)

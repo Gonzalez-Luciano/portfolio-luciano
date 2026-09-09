@@ -71,24 +71,25 @@ final class EditProfile extends Page implements HasForms
             ->components([
                 TextInput::make('name')
                     ->label('Name')
+                    ->maxLength(255)
                     ->helperText('Required to publish. Not required to save a draft.'),
 
                 Tabs::make('locales')->tabs([
                     Tab::make('Spanish')->schema([
-                        TextInput::make('headline_es')->label('Headline (ES)'),
-                        Textarea::make('short_summary_es')->label('Short summary (ES)'),
-                        Textarea::make('introduction_es')->label('Introduction (ES)'),
-                        TextInput::make('availability_es')->label('Availability (ES)'),
-                        TextInput::make('cta_es')->label('Call to action (ES)'),
-                        TextInput::make('photo_alt_es')->label('Photo alt text (ES)'),
+                        TextInput::make('headline_es')->label('Headline (ES)')->maxLength(10000),
+                        Textarea::make('short_summary_es')->label('Short summary (ES)')->maxLength(10000),
+                        Textarea::make('introduction_es')->label('Introduction (ES)')->maxLength(10000),
+                        TextInput::make('availability_es')->label('Availability (ES)')->maxLength(10000),
+                        TextInput::make('cta_es')->label('Call to action (ES)')->maxLength(255),
+                        TextInput::make('photo_alt_es')->label('Photo alt text (ES)')->maxLength(500),
                     ]),
                     Tab::make('English')->schema([
-                        TextInput::make('headline_en')->label('Headline (EN)'),
-                        Textarea::make('short_summary_en')->label('Short summary (EN)'),
-                        Textarea::make('introduction_en')->label('Introduction (EN)'),
-                        TextInput::make('availability_en')->label('Availability (EN)'),
-                        TextInput::make('cta_en')->label('Call to action (EN)'),
-                        TextInput::make('photo_alt_en')->label('Photo alt text (EN)'),
+                        TextInput::make('headline_en')->label('Headline (EN)')->maxLength(10000),
+                        Textarea::make('short_summary_en')->label('Short summary (EN)')->maxLength(10000),
+                        Textarea::make('introduction_en')->label('Introduction (EN)')->maxLength(10000),
+                        TextInput::make('availability_en')->label('Availability (EN)')->maxLength(10000),
+                        TextInput::make('cta_en')->label('Call to action (EN)')->maxLength(255),
+                        TextInput::make('photo_alt_en')->label('Photo alt text (EN)')->maxLength(500),
                     ]),
                 ]),
 
@@ -96,7 +97,9 @@ final class EditProfile extends Page implements HasForms
                     ->label('Photo')
                     ->image()
                     ->storeFiles(false)
-                    ->helperText('Uploading a new photo replaces the current one only after saving.'),
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->maxSize(5 * 1024)
+                    ->helperText('JPEG, PNG, or WebP, up to 5 MiB. Uploading a new photo replaces the current one only after saving.'),
 
                 Placeholder::make('status_display')
                     ->label('Status')
@@ -132,7 +135,14 @@ final class EditProfile extends Page implements HasForms
             ->requiresConfirmation()
             ->visible(fn (): bool => filled($this->record?->photo_private_path))
             ->action(function (): void {
-                $updated = app(RemoveOwnedAsset::class)($this->record);
+                try {
+                    $updated = app(RemoveOwnedAsset::class)($this->record);
+                } catch (\Throwable $exception) {
+                    EditorialActions::notifyAssetFailure('Remove photo', $exception);
+
+                    return;
+                }
+
                 $this->syncRecord($updated);
                 Notification::make()->success()->title('Photo removed')->send();
             });
@@ -158,7 +168,13 @@ final class EditProfile extends Page implements HasForms
         }
 
         if ($photo instanceof UploadedFile) {
-            $updated = app(ReplaceOwnedAsset::class)($updated, $photo);
+            try {
+                $updated = app(ReplaceOwnedAsset::class)($updated, $photo);
+            } catch (\Throwable $exception) {
+                EditorialActions::notifyAssetFailure('Save', $exception);
+
+                return;
+            }
         }
 
         if ($altEs !== $updated->photo_alt_es || $altEn !== $updated->photo_alt_en) {
