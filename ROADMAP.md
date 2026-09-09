@@ -454,6 +454,16 @@ Construir una versión funcional, accesible y responsive antes de añadir la cap
 - [ ] Prueba con lector de pantalla.
 - [ ] Prueba sin animaciones.
 
+### Contenido final y siembra de producción
+
+- [ ] Revisar todo el contenido real aprobado (experiencia, casos de trabajo,
+      proyectos, tecnologías, enlaces, CV) y confirmar qué está listo para
+      publicarse tal cual quedó definido en Fase 1/2.
+- [ ] Crear un seeder de producción (distinto del `PortfolioContentSeeder` de
+      desarrollo, que deliberadamente deja Experience/Project/CV vacíos) que
+      cargue ese contenido real aprobado, para ejecutarse una única vez al
+      desplegar en el servidor definitivo.
+
 ## Entregables
 
 - Portfolio funcional.
@@ -462,6 +472,7 @@ Construir una versión funcional, accesible y responsive antes de añadir la cap
 - Contenido conectado al CMS.
 - Versión responsive.
 - Versión accesible base.
+- Seeder de producción listo para la primera carga en el servidor.
 
 ## Criterios de aceptación
 
