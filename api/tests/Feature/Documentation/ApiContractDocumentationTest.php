@@ -92,7 +92,8 @@ final class ApiContractDocumentationTest extends TestCase
         $actualKey = $cache->key(SupportedLocale::Spanish, PublicEndpoint::Profile);
 
         $this->assertSame('public-content:v1:es:profile', $actualKey);
-        $this->assertStringContainsString('public-content:v1:', $document, 'The documented cache namespace must match PublicContentCache::key().');
+        $this->assertStringContainsString('public-content:v1:{locale}:{endpoint}', $document, 'The documented cache key template must match PublicContentCache::key() exactly, not merely share a namespace prefix.');
+        $this->assertSame($actualKey, strtr('public-content:v1:{locale}:{endpoint}', ['{locale}' => 'es', '{endpoint}' => 'profile']), 'Substituting the documented template placeholders must reproduce the actual built key.');
     }
 
     private function document(): string
