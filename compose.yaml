@@ -109,6 +109,13 @@ services:
       # Compose environment values below remain the authoritative test runtime
       # configuration.
       - ./api/.env.example:/var/www/html/.env.testing:ro
+      # The ./api bind mount above replaces the container's view of anything
+      # above /var/www/html, so repository documentation is otherwise
+      # unreachable from inside the container. This read-only mount lets
+      # ApiContractDocumentationTest verify docs/api/PUBLIC_API_V1.md against
+      # live application constants/routes without granting write access or
+      # changing any application runtime behavior.
+      - ./docs:/mnt/repo-docs:ro
     environment:
       APP_ENV: testing
       APP_DEBUG: "false"

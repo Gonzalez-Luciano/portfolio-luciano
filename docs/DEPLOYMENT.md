@@ -100,6 +100,48 @@ Datos no regenerables que operaciones debe persistir y respaldar:
 
 Los contenedores son reemplazables; eliminar o recrear un contenedor no debe borrar esos datos. La ubicación física final y la política de backup se deciden externamente después de inspeccionar el servidor.
 
+### Fase 4 — dos volúmenes de media persistentes
+
+Desde Fase 4 la persistencia de media se divide en dos volúmenes Docker con nombre, declarados en `compose.yaml`:
+
+- `api_private_media` -> `storage/app/private` dentro del contenedor API. Contiene los originales privados de foto de Profile, imagen de Project, ícono de Technology, y **todo** PDF de CV. Nunca se sirve directamente; solo se lee por código de aplicación (copia a `public` cuando corresponde, o streaming controlado para CV).
+- `api_public_media` -> `storage/app/public` dentro del contenedor API, expuesto vía el enlace estándar `public/storage`. Contiene únicamente copias públicas verificadas de foto/imagen/ícono cuyo dueño está `published` y `is_visible=true` en ese momento.
+
+Ambos son volúmenes Docker nombrados y reemplazar o recrear el contenedor `api` no los borra. La API nunca escribe un asset owned (foto/imagen/ícono/CV) fuera de estos dos volúmenes, y el disco `public` nunca contiene un PDF de CV.
+
+### Permisos de storage
+
+El proceso Apache/PHP dentro del contenedor API necesita permisos de escritura sobre `storage/` (incluyendo ambos subárboles `app/private` y `app/public`) y `bootstrap/cache`, igual que en Fase 3. El entrypoint de la API ya administra esos directorios/permisos; no crea el enlace `public/storage` por sí mismo (ver Fase 3, sección de bootstrap). Un volumen de producción para `api_private_media`/`api_public_media` debe conservar esos mismos permisos de escritura del proceso de aplicación tras cualquier restore.
+
+### Requisitos del almacén de caché
+
+El contenido público (`PublicContentCache`) requiere que el almacén de caché configurado implemente `Illuminate\Contracts\Cache\LockProvider`; el servicio lo verifica en tiempo de ejecución y falla explícitamente en vez de degradar silenciosamente el contrato de bloqueo. En este repositorio:
+
+- el servicio `api` de desarrollo fija `CACHE_STORE=file` en `compose.yaml`;
+- `api/.env.example` y el default de Laravel (`config/cache.php`) usan `database` (que ya tiene su migración de tablas `cache`/`cache_locks`);
+- el servicio `api-test` descartable fija `CACHE_STORE=array`, válido únicamente para pruebas de un solo proceso;
+- las pruebas de concurrencia/lock de caché fuerzan explícitamente `file` o `database`, nunca `array`.
+
+Tanto Laravel `FileStore` como `DatabaseStore` implementan `LockProvider`; ninguno requiere Redis. Un handoff de producción puede conservar `file` (un solo contenedor API con filesystem de caché compartido) o usar `database` (ya migrada); no debe seleccionarse un almacén sin soporte de lock (por ejemplo, un backend que no implemente `LockProvider`). Esto no es una decisión de operaciones externas: es un requisito de la propia aplicación que cualquier configuración de despliegue debe respetar.
+
+### Nota de compatibilidad de lock atómico
+
+El lock de reconstrucción (`public-content-rebuild:v1:{locale}:{endpoint}`) y el lock de mutación administrativa comparten el mismo almacén de caché configurado. Si el almacén de producción cambia de `file`/`database` a otro backend, ese backend debe seguir implementando `LockProvider` con semántica de adquisición atómica real (no una emulación de "mejor esfuerzo"); de lo contrario la garantía documentada en `docs/api/PUBLIC_API_V1.md` (una petición pública nunca ve una reconstrucción parcial ni contenido obsoleto tras una reducción de visibilidad) deja de sostenerse.
+
+### Ruta de CV
+
+`GET /cv/luciano-gonzalez-es.pdf` y `GET /cv/luciano-gonzalez-en.pdf` son rutas Laravel estables, registradas fuera de `/api/v1` (ver `infra/caddy/ROUTE_OWNERSHIP.md`, familia `/cv/*`). Sirven contenido de `api_private_media` mediante streaming autenticado por estado en cada request; no dependen de la caché pública ni de `/storage/*`. Operaciones no necesita configuración adicional para esta ruta más allá de lo ya cubierto por la persistencia de `api_private_media` y el mismo entrypoint/gateway existentes.
+
+### Semilla de contenido (opcional, nunca automática)
+
+`PortfolioContentSeeder` es explícito y nunca se ejecuta como parte de bootstrap, migración o despliegue. Cuando un operador decide cargarlo deliberadamente (por ejemplo, para revisión editorial en un entorno no productivo):
+
+```bash
+php artisan db:seed --class=PortfolioContentSeeder
+```
+
+El seeder es idempotente (`updateOrCreate` sobre claves/tipos propios aprobados), nunca publica ni hace visible nada, nunca crea `Project`, `CvDocument`, usuarios o secretos, y nunca sube ni copia un archivo a ningún disco. Ejecutarlo dos veces no duplica filas ni borra contenido no relacionado.
+
 ## Variables y secretos
 
 El repositorio proporciona archivos de ejemplo con placeholders y documentación de ownership. Los valores reales permanecen fuera de Git.
@@ -158,11 +200,17 @@ repositorio no ejecuta ni prescribe acciones de host.
 - El comando rechaza duplicados/estados ambiguos, no actualiza usuarios y no imprime ni registra secretos.
 - Si producción necesita un mecanismo no interactivo, operaciones lo decide después del preflight real; Fase 3 no especula cómo inyectar ese secreto.
 
-Las unidades persistentes relevantes son MySQL y `storage/app/public` de
-Laravel (media y, cuando exista, CV administrado). En desarrollo se
-materializan como `mysql_data` y `api_public_media`; `web_node_modules` y
-`api_vendor` son cachés regenerables. `mysql-test` usa `tmpfs`, no entra en
-backups y no contiene datos de desarrollo.
+Las unidades persistentes relevantes son MySQL y, desde Fase 4, los dos
+volúmenes de media descritos arriba: `api_private_media`
+(`storage/app/private`, incluyendo todo CV) y `api_public_media`
+(`storage/app/public`). `web_node_modules` y `api_vendor` son cachés
+regenerables. `mysql-test` usa `tmpfs`, no entra en backups y no contiene
+datos de desarrollo.
+
+Las migraciones de Fase 4 son puramente aditivas: crean tablas y columnas
+nuevas, no alteran ni eliminan estructura de Fases 1–3. `migrate` en
+producción permanece seguro sin pasos de compatibilidad especiales
+adicionales a los ya vigentes.
 
 ## Health checks y smoke checks
 
@@ -201,6 +249,20 @@ Antes del lanzamiento, el handoff externo debe confirmar:
 - ruta para volver a una versión anterior;
 - tratamiento de migraciones incompatibles;
 - smoke checks posteriores al rollback.
+
+### Frontera de backup/restore de assets (Fase 4)
+
+Siguiendo la misma frontera que `docs/SERVER_ARCHITECTURE.md` ya establece para MySQL, el repositorio identifica qué debe respaldarse pero no ejecuta backups:
+
+- **Debe respaldarse:** el contenido de `api_private_media` (todo original privado de foto/imagen/ícono, y todo PDF de CV — sin esto el asset se pierde de forma irrecuperable) y `api_public_media` (copias públicas verificadas; regenerables desde el original privado por la propia aplicación, pero su backup evita una ventana de imagen faltante tras un restore).
+- **Responsabilidad externa:** rutas físicas de backup, agenda, retención, copia externa/offsite y el restore mismo del contenido de esos volúmenes, exactamente igual que para el volumen de datos de MySQL. El repositorio no ejecuta ni programa esa copia.
+- Un restore de `api_private_media` sin el `api_public_media` correspondiente es seguro: la aplicación no recrea automáticamente copias públicas al arrancar, así que un asset publicado antes del backup queda con imagen ausente hasta la próxima operación de publicación/edición sobre ese registro. Esto no es un error de aplicación a corregir; es el comportamiento esperado de un asset "propio" sin daemon de reconciliación (explícitamente fuera de alcance, spec sección 22).
+
+### Advertencias de rollback (Fase 4)
+
+- `key_locked` es de una sola dirección durante la vida de una fila: `PublishContent` la fija a `true` en la primera publicación y ningún código la vuelve a `false`. Revertir a una versión de aplicación anterior no revierte ese estado en la base de datos; una fila publicada antes del rollback permanece con la clave bloqueada.
+- Las migraciones de Fase 4 son aditivas (tablas nuevas, sin `ALTER`/`DROP` sobre tablas de Fases 1–3). Un rollback de aplicación a una versión pre-Fase-4 con la base de datos ya migrada a Fase 4 deja tablas nuevas sin uso, pero no rompe el esquema previo; no se requiere una migración `down` destructiva para un rollback seguro de código.
+- Ningún rollback de código elimina archivos de `api_private_media`/`api_public_media` por sí mismo; la limpieza de esos volúmenes sigue siendo responsabilidad explícita de operaciones si realmente se desea revertir contenido, no solo código.
 
 ## Supuestos que deben descubrirse
 

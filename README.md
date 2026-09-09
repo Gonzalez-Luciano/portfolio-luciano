@@ -99,11 +99,23 @@ docker compose exec -T api php artisan storage:link
 docker compose exec -T api sh -lc 'test -L public/storage && test -d storage/app/public'
 ```
 
+Ese mismo enlace `public/storage` es lo que Fase 4 usa para exponer copias públicas de foto/imagen/ícono: la aplicación solo copia un asset a `storage/app/public` (el volumen `api_public_media`) después de verificar que su dueño está publicado y visible, y el Resource público solo emite una URL después de reverificar que esa copia existe en disco. Ningún PDF de CV pasa nunca por `storage/app/public` ni por este enlace; se sirve exclusivamente por streaming autenticado desde `/cv/*` (ver `docs/api/PUBLIC_API_V1.md`).
+
 Compose no crea migraciones, seeds ni administradores por sí solo. La política de seeds de Fase 3 es no ejecutar `db:seed` ni `migrate --seed`: no existen seeds de credenciales y cualquier seed futuro debe ser seguro, revisado y solicitado explícitamente. Crear el primer administrador solo en una terminal local interactiva; la contraseña queda fuera de argumentos, variables, historial, Git y documentación:
 
 ```powershell
 docker compose exec api php artisan portfolio:bootstrap-admin
 ```
+
+Fase 4 agrega un único seed opcional, explícito y nunca automático: `PortfolioContentSeeder`. No forma parte del bootstrap ni de ningún script; se ejecuta solo cuando alguien lo pide deliberadamente, típicamente para revisión editorial local:
+
+```powershell
+docker compose exec api php artisan db:seed --class=PortfolioContentSeeder
+```
+
+Es seguro ejecutarlo más de una vez: usa `updateOrCreate` sobre claves/tipos propios aprobados, nunca publica ni hace visible contenido, nunca crea `Project`, `CvDocument`, usuarios o secretos, y nunca sube ni copia un archivo a ningún disco (ver `docs/DEPLOYMENT.md`).
+
+El límite de autenticación/autorización de Filament sigue siendo exactamente el de Fase 3 (`users.is_admin` + `portfolio:bootstrap-admin`); Fase 4 agrega recursos y páginas administrables dentro de ese mismo panel, sin cambiar cómo se crea o autoriza un administrador.
 
 Para reiniciar sin borrar datos: `docker compose restart`. Para detener el entorno: `docker compose stop`. Los logs se consultan con `docker compose logs --tail=200 <servicio>`.
 
@@ -122,6 +134,25 @@ docker compose run --rm --no-deps web pnpm build
 ```
 
 El build de Next debe poder ejecutarse con `gateway`, `api` y `mysql` detenidos. `api-test` usa únicamente `mysql-test` descartable. Después de una sesión de test se puede retirar exclusivamente ese contenedor con `docker compose --profile test rm -sf mysql-test`.
+
+`docker compose --profile test run --rm api-test` ya ejecuta `php artisan test` (el `command` del servicio); la forma explícita, útil para pasar opciones, es:
+
+```powershell
+docker compose --profile test run --rm api-test php artisan test
+docker compose --profile test run --rm api-test php artisan test --compact
+docker compose --profile test run --rm api-test php artisan test --filter=ApiContractDocumentationTest
+```
+
+Todas las pruebas de dominio, API, caché, assets y Filament de Fase 4 corren contra `mysql-test` real, nunca SQLite. Verificaciones adicionales específicas de Fase 4:
+
+```powershell
+docker compose run --rm --no-deps api ./vendor/bin/pint --test
+node infra/validation/validate-repository.mjs
+docker compose run --rm --no-deps api php artisan route:list --path=api/v1
+docker compose run --rm --no-deps api php artisan route:list --path=cv
+```
+
+El detalle completo del contrato público (`docs/api/PUBLIC_API_V1.md`) y la matriz de verificación de Fase 4 (`docs/testing/PHASE_4_VERIFICATION.md`) documentan qué exactamente confirma cada comando.
 
 Los checks directos y el inventario de rutas no imprimen secretos:
 

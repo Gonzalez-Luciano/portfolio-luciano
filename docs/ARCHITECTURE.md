@@ -295,6 +295,8 @@ Los errores manejados usan exclusivamente:
 
 El contenido en borrador nunca debe filtrarse a endpoints públicos.
 
+Fase 4 agrega seis endpoints públicos localizados (`GET /api/v1/{locale}/profile`, `experiences`, `work-cases`, `projects`, `technologies`, `site`) más las dos rutas estables de descarga de CV (`/cv/luciano-gonzalez-es.pdf`, `/cv/luciano-gonzalez-en.pdf`, fuera de `/api/v1`). El contrato exacto de campos, códigos de error y comportamiento de caché vive en `docs/api/PUBLIC_API_V1.md`; ese documento es la fuente de verdad byte a byte y está verificado automáticamente contra el código real por `api/tests/Feature/Documentation/ApiContractDocumentationTest.php`.
+
 ---
 
 ## Modelo de contenido
@@ -368,6 +370,106 @@ La demo URL puede apuntar a subdominios alojados en el mismo servidor.
 - Open Graph.
 - Secciones.
 - Disponibilidad.
+
+---
+
+## Fase 4 — CMS relacional (implementado)
+
+Esta sección documenta lo que el código realmente implementa, no una intención futura. El detalle exacto de campos/JSON público está en `docs/api/PUBLIC_API_V1.md`; esta sección cubre el modelo de dominio, el ciclo de vida de publicación y de assets, y la caché que ese contrato consume.
+
+### Modelos explícitos
+
+No existe una capa CMS/media genérica. Cada tabla tiene su propio modelo Eloquent explícito:
+
+```text
+Profile              (singleton)
+SiteConfiguration    (singleton)
+Experience
+ExperienceHighlight  (pertenece a una Experience; sin publicación propia)
+WorkCase
+Project
+Technology
+ExpertiseArea
+WorkPrinciple
+ProfessionalLink
+CvDocument
+```
+
+`Experience`, `WorkCase`, `Project` y `Technology` tienen una relación many-to-many con `Technology` a través de una tabla pivote con columna `position` propia; el pivote se reordena de forma explícita, nunca implícita.
+
+### Máquina de estados de publicación
+
+Todo modelo con publicación propia usa el mismo par de columnas: `status` (`draft`/`published`) y `is_visible` (bool), más `published_at`. Las transiciones administrativas son acciones de dominio explícitas, no ediciones directas de esas columnas:
+
+```text
+draft --Publish--> published (is_visible=false, published_at=now())
+published (hidden) --Show--> published (is_visible=true) [+ copia pública si aplica]
+published (visible) --Hide--> published (is_visible=false) [retira copia pública]
+published --Return to draft--> draft (is_visible=false, published_at=null)
+cualquier estado --Delete--> fila eliminada [+ limpieza de asset privado]
+```
+
+`Publish` exige que el contenido pase `PublicationValidator::assertPublishable()` (ver reglas bilingües abajo) antes de escribir la transacción, y solo puede aplicarse a contenido `draft`. `Show`/`Hide`/`Return to draft` para modelos con asset propio (`Profile`, `Project`, `Technology`, `CvDocument` para casos análogos) se ejecutan mediante `AssetLifecycleService`, no la acción de publicación simple, porque cambian también la copia pública del asset. Ninguna transición sensible puede ejecutarse fuera de una acción de dominio: `EditorialMutationGuard` (un observer Eloquent) rechaza cualquier escritura directa de `status`, `is_visible`, `published_at`, `key`, `key_locked` o de las columnas de asset propio que no ocurra dentro de `EditorialMutationContext::run()`.
+
+### Bloqueo de clave pública (`key_locked`)
+
+Cada modelo con clave pública (`key`) tiene una columna `key_locked`. `PublishContent` la fija a `true` en la primera publicación y nunca la vuelve a poner en `false` en ningún punto del código; es una transición de una sola dirección durante la vida de la fila. Con la clave bloqueada, `ChangePublicKey` exige confirmación explícita del editor para poder cambiar la clave igualmente; sin esa confirmación, el cambio se rechaza. Antes de la primera publicación (`key_locked=false`) la clave puede cambiarse libremente. No existe regeneración automática de clave a partir del título.
+
+### Validación bilingüe
+
+`PublicationValidator` decide, por tipo de contenido, qué pares `_es`/`_en` son obligatorios para publicar y cuáles son opcionales-mas-parejos:
+
+- **Obligatorios (ambos idiomas requeridos para publicar):** `Profile` (`headline`, `short_summary`, `introduction`, `availability`, `cta`), `SiteConfiguration` (`projects_empty_message`, `contact_intro`, las cuatro etiquetas de categoría de tecnología), `Experience` (`role`, `summary`), `WorkCase` (`title`, `context`, `problem`, `contribution`, `technical_approach`, `outcome`), `Project` (`title`, `summary`, `problem`, `solution`), `ExpertiseArea` (`title`), `WorkPrinciple` (`statement`), `ProfessionalLink` (`label`), cada `ExperienceHighlight.content`.
+- **Opcionales pero pareados (ambos presentes o ambos ausentes):** `Experience.organization_label`, `ExpertiseArea.description`. Un asset con imagen (`Profile.photo`, `Project.image`) exige su texto alternativo bilingüe únicamente cuando el asset existe.
+- `Technology.name` no está localizado (nombres de marca/tecnología no se traducen).
+
+La validación de clave pública es independiente (`assertKey()`): slug ASCII en minúsculas, único entre filas del mismo modelo.
+
+### Mapa de dependencias de caché y protocolo de lock
+
+`PublicContentDependencies::for()` traduce cada modelo mutado a la lista de endpoints públicos que debe invalidar en ambos locales:
+
+| Mutación | Endpoints invalidados |
+|---|---|
+| `Profile` | `profile` |
+| `SiteConfiguration`, `ProfessionalLink`, `ExpertiseArea`, `WorkPrinciple`, `CvDocument` | `site` |
+| `Experience`, `ExperienceHighlight` | `experiences` |
+| `WorkCase` | `work-cases` |
+| `Project` | `projects` |
+| `Technology` | `technologies`, `experiences`, `work-cases`, `projects` |
+
+Las claves de caché son `public-content:v1:{locale}:{endpoint}`; las de lock de reconstrucción son `public-content-rebuild:v1:{locale}:{endpoint}`. Un miss público adquiere ese lock, revalida dentro del lock, reconstruye desde los scopes públicos y guarda con `Cache::forever()`; un hit normal nunca toma lock. Una mutación que reduce visibilidad adquiere los locks de todos los endpoints afectados, en orden lexicográfico, antes de retirar el asset público y antes del primer `forget`; los libera en orden inverso al terminar. Esto cierra la carrera donde una reconstrucción vieja podría escribir contenido obsoleto después de que la mutación ya invalidó. El almacén de caché configurado debe implementar `Illuminate\Contracts\Cache\LockProvider`; el servicio lo verifica en tiempo de ejecución y falla explícitamente si no.
+
+### Ciclo de vida de assets propios
+
+No existe un modelo `Media` genérico. `Profile.photo`, `Project.image`, `Technology.icon` y `CvDocument` (su único PDF) son columnas propias de cada modelo (`*_private_path`, `*_public_path` cuando aplica, `*_mime`, `*_size`). El PDF de CV nunca tiene copia pública; solo se sirve por streaming autenticado por estado a través de `/cv/*`.
+
+Publicar o reemplazar una imagen pública sigue este orden: guardar el nuevo original privado -> validar contenido/tamaño/estado/alt bilingüe/entidad completa -> calcular (sin crear) la nueva ruta pública -> commitear la mutación de base de datos referenciando ambas rutas -> crear la copia pública -> verificar su existencia -> invalidar caché -> recién entonces borrar el asset anterior. Si la copia pública falla, una mutación compensatoria restaura la referencia/estado anterior, el asset anterior permanece, las rutas nuevas se limpian donde sea seguro, ambos locales se invalidan y Filament recibe un error controlado.
+
+Retirar visibilidad, devolver a borrador o eliminar sigue el orden inverso de exposición primero: adquirir los locks de mutación -> borrar y verificar la copia pública -> olvidar caché ES/EN -> ejecutar y commitear la transición/eliminación en base de datos -> olvidar caché ES/EN otra vez -> limpieza segura del archivo privado (solo en eliminación) -> liberar locks. La primera invalidación es una excepción intencional al patrón normal "invalidar después del commit": prioriza cerrar el acceso público lo antes posible. La limpieza de filesystem usa reintentos acotados; un fallo final nunca se vuelve éxito silencioso, sino un error administrativo con un ID de operación registrado en logs (sin contenido binario, credenciales ni rutas privadas completas).
+
+Límites de validación por asset:
+
+| Asset | Contenido aceptado | Máximo |
+|---|---|---:|
+| Foto de Profile | JPEG, PNG, WebP | 5 MiB |
+| Imagen de Project | JPEG, PNG, WebP | 8 MiB |
+| Ícono de Technology | PNG, WebP | 1 MiB |
+| PDF de CvDocument | PDF real y extensión `.pdf` | 5 MiB |
+
+### Frontera de reparación de singleton ("ensure")
+
+`Profile` y `SiteConfiguration` son singletons estructurales (`singleton_key = 'default'`). La garantía normal es la migración. Como defensa adicional ante un borrado manual excepcional de esa fila, las páginas Filament `EditProfile`/`EditSiteConfiguration` ejecutan un `insertOrIgnore` idempotente sobre la fila `default` en su `mount()`. Esa reparación:
+
+- nunca se ejecuta desde un `GET` público — vive exclusivamente en páginas Filament autenticadas;
+- nunca cambia una fila existente, solo crea la fila `default` si falta;
+- nunca publica ni hace visible nada (inserta siempre en `draft`, `is_visible=false`, `published_at=null`).
+
+Los endpoints públicos (`ProfileController`, `SiteController`) permanecen estrictamente de solo lectura: nunca crean esa fila. Una ausencia estructural anómala en producción responde `not_found`, no una reparación automática desde una request pública.
+
+### Explícitamente fuera de alcance en Fase 4
+
+Por diseño aprobado (spec sección 22), Fase 4 no implementa: el frontend público de Fase 5 ni integración completa de Next.js; preview público o tokens de preview; revisiones/historial de versiones/flujo de aprobación ni estados editoriales adicionales a `draft`/`published`; soft deletes; páginas públicas de detalle o ruteo por clave; alias/historial de clave; video de Project; SEO/Open Graph/analítica/metadata de Fase 8; animación o comportamiento de Fase 6; S3, URLs firmadas, Redis introducido solo para esta caché, colas/workers o un daemon de reconciliación; una arquitectura genérica de media/CMS/traducción/taxonomía/page-builder; registro público, múltiples roles, teams, tenants o RBAC empresarial; el hardening final de Fase 9.
 
 ---
 
@@ -529,12 +631,17 @@ administrador. El comando interactivo `portfolio:bootstrap-admin` crea una
 sola cuenta administradora y nunca acepta ni muestra contraseñas por argumentos,
 variables o logs.
 
-Los volúmenes persistentes del desarrollo son `mysql_data` y
-`api_public_media`; `web_node_modules` y `api_vendor` son cachés reproducibles
-de dependencias. `mysql-test` usa `tmpfs`, no tiene volumen nombrado y no puede
-reutilizar la base de desarrollo. La evidencia de rutas, Caddy y smoke manual
-está en `infra/caddy/GATEWAY_INTEGRATION_EVIDENCE.md` y
-`docs/testing/PHASE_3_VERIFICATION.md`.
+Los volúmenes persistentes del desarrollo son `mysql_data`, `api_public_media`
+y (desde Fase 4) `api_private_media`; `web_node_modules` y `api_vendor` son
+cachés reproducibles de dependencias. `api_private_media` respalda
+`storage/app/private` (originales de foto/imagen/ícono y todo PDF de CV, que
+nunca se sirve desde `public`); `api_public_media` respalda
+`storage/app/public`, servido a través del enlace `public/storage`.
+`mysql-test` usa `tmpfs`, no tiene volumen nombrado y no puede reutilizar la
+base de desarrollo. La evidencia de rutas, Caddy y smoke manual está en
+`infra/caddy/GATEWAY_INTEGRATION_EVIDENCE.md` y
+`docs/testing/PHASE_3_VERIFICATION.md`; el registro equivalente de Fase 4 está
+en `docs/testing/PHASE_4_VERIFICATION.md`.
 
 ---
 
