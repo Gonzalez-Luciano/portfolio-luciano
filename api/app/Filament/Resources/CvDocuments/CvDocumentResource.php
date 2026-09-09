@@ -7,6 +7,7 @@ use App\Filament\Resources\CvDocuments\Pages\EditCvDocument;
 use App\Filament\Resources\CvDocuments\Pages\ListCvDocuments;
 use App\Filament\Resources\CvDocuments\Schemas\CvDocumentForm;
 use App\Filament\Resources\CvDocuments\Tables\CvDocumentsTable;
+use App\Filament\Support\ReviewLink;
 use App\Models\CvDocument;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -30,7 +31,7 @@ class CvDocumentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return CvDocumentsTable::configure($table);
+        return CvDocumentsTable::configure($table)->pushRecordActions([ReviewLink::rowAction()]);
     }
 
     public static function getRelations(): array

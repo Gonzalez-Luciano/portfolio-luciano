@@ -9,6 +9,7 @@ use App\Domain\Content\Actions\UpdateOwnedAssetAltText;
 use App\Domain\Publishing\PublicationValidationException;
 use App\Enums\PublicationStatus;
 use App\Filament\Support\EditorialActions;
+use App\Filament\Support\ReviewLink;
 use App\Models\Profile;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -114,6 +115,7 @@ final class EditProfile extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
+            ReviewLink::action(fn (): Profile => $this->record),
             EditorialActions::publish(fn (): Profile => $this->record, $this->syncRecord(...)),
             EditorialActions::show(fn (): Profile => $this->record, $this->syncRecord(...)),
             EditorialActions::hide(fn (): Profile => $this->record, $this->syncRecord(...)),

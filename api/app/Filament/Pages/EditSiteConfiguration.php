@@ -6,6 +6,7 @@ use App\Domain\Content\Actions\UpdateContent;
 use App\Domain\Publishing\PublicationValidationException;
 use App\Enums\PublicationStatus;
 use App\Filament\Support\EditorialActions;
+use App\Filament\Support\ReviewLink;
 use App\Models\SiteConfiguration;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
@@ -99,6 +100,7 @@ final class EditSiteConfiguration extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
+            ReviewLink::action(fn (): SiteConfiguration => $this->record),
             EditorialActions::publish(fn (): SiteConfiguration => $this->record, $this->syncRecord(...)),
             EditorialActions::show(fn (): SiteConfiguration => $this->record, $this->syncRecord(...)),
             EditorialActions::hide(fn (): SiteConfiguration => $this->record, $this->syncRecord(...)),

@@ -7,6 +7,7 @@ use App\Filament\Resources\ProfessionalLinks\Pages\EditProfessionalLink;
 use App\Filament\Resources\ProfessionalLinks\Pages\ListProfessionalLinks;
 use App\Filament\Resources\ProfessionalLinks\Schemas\ProfessionalLinkForm;
 use App\Filament\Resources\ProfessionalLinks\Tables\ProfessionalLinksTable;
+use App\Filament\Support\ReviewLink;
 use App\Models\ProfessionalLink;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -30,7 +31,7 @@ class ProfessionalLinkResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return ProfessionalLinksTable::configure($table);
+        return ProfessionalLinksTable::configure($table)->pushRecordActions([ReviewLink::rowAction()]);
     }
 
     public static function getRelations(): array

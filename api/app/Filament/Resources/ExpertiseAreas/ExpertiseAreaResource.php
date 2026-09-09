@@ -7,6 +7,7 @@ use App\Filament\Resources\ExpertiseAreas\Pages\EditExpertiseArea;
 use App\Filament\Resources\ExpertiseAreas\Pages\ListExpertiseAreas;
 use App\Filament\Resources\ExpertiseAreas\Schemas\ExpertiseAreaForm;
 use App\Filament\Resources\ExpertiseAreas\Tables\ExpertiseAreasTable;
+use App\Filament\Support\ReviewLink;
 use App\Models\ExpertiseArea;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -30,7 +31,7 @@ class ExpertiseAreaResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return ExpertiseAreasTable::configure($table);
+        return ExpertiseAreasTable::configure($table)->pushRecordActions([ReviewLink::rowAction()]);
     }
 
     public static function getRelations(): array

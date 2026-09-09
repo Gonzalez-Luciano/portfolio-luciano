@@ -7,6 +7,7 @@ use App\Filament\Resources\Technologies\Pages\EditTechnology;
 use App\Filament\Resources\Technologies\Pages\ListTechnologies;
 use App\Filament\Resources\Technologies\Schemas\TechnologyForm;
 use App\Filament\Resources\Technologies\Tables\TechnologiesTable;
+use App\Filament\Support\ReviewLink;
 use App\Models\Technology;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -30,7 +31,7 @@ class TechnologyResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return TechnologiesTable::configure($table);
+        return TechnologiesTable::configure($table)->pushRecordActions([ReviewLink::rowAction()]);
     }
 
     public static function getRelations(): array

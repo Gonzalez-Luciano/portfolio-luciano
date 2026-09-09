@@ -7,6 +7,7 @@ use App\Filament\Resources\WorkCases\Pages\EditWorkCase;
 use App\Filament\Resources\WorkCases\Pages\ListWorkCases;
 use App\Filament\Resources\WorkCases\Schemas\WorkCaseForm;
 use App\Filament\Resources\WorkCases\Tables\WorkCasesTable;
+use App\Filament\Support\ReviewLink;
 use App\Models\WorkCase;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -30,7 +31,7 @@ class WorkCaseResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return WorkCasesTable::configure($table);
+        return WorkCasesTable::configure($table)->pushRecordActions([ReviewLink::rowAction()]);
     }
 
     public static function getRelations(): array

@@ -7,6 +7,7 @@ use App\Filament\Resources\WorkPrinciples\Pages\EditWorkPrinciple;
 use App\Filament\Resources\WorkPrinciples\Pages\ListWorkPrinciples;
 use App\Filament\Resources\WorkPrinciples\Schemas\WorkPrincipleForm;
 use App\Filament\Resources\WorkPrinciples\Tables\WorkPrinciplesTable;
+use App\Filament\Support\ReviewLink;
 use App\Models\WorkPrinciple;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -30,7 +31,7 @@ class WorkPrincipleResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return WorkPrinciplesTable::configure($table);
+        return WorkPrinciplesTable::configure($table)->pushRecordActions([ReviewLink::rowAction()]);
     }
 
     public static function getRelations(): array

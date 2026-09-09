@@ -7,6 +7,7 @@ use App\Filament\Resources\Experiences\Pages\EditExperience;
 use App\Filament\Resources\Experiences\Pages\ListExperiences;
 use App\Filament\Resources\Experiences\Schemas\ExperienceForm;
 use App\Filament\Resources\Experiences\Tables\ExperiencesTable;
+use App\Filament\Support\ReviewLink;
 use App\Models\Experience;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -30,7 +31,7 @@ class ExperienceResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return ExperiencesTable::configure($table);
+        return ExperiencesTable::configure($table)->pushRecordActions([ReviewLink::rowAction()]);
     }
 
     public static function getRelations(): array
