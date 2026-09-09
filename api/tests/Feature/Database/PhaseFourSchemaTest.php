@@ -70,6 +70,30 @@ final class PhaseFourSchemaTest extends TestCase
         ]));
     }
 
+    public function test_the_publication_state_check_rejects_draft_with_a_timestamp_and_published_without_one(): void
+    {
+        $this->assertDatabaseRejects(fn () => DB::table('work_cases')->insert([
+            ...$this->keyedRow('draft-with-a-published-at'),
+            'published_at' => now(),
+        ]));
+
+        $this->assertDatabaseRejects(fn () => DB::table('work_cases')->insert([
+            ...$this->keyedRow('published-without-a-published-at'),
+            'status' => 'published',
+            'key_locked' => true,
+            'published_at' => null,
+        ]));
+
+        DB::table('work_cases')->insert([
+            ...$this->keyedRow('published-and-hidden'),
+            'status' => 'published',
+            'key_locked' => true,
+            'published_at' => now(),
+        ]);
+
+        $this->assertDatabaseHas('work_cases', ['key' => 'published-and-hidden', 'is_visible' => false]);
+    }
+
     public function test_schema_enforces_unique_keys_link_types_and_cv_locales(): void
     {
         DB::table('experiences')->insert($this->experienceRow('first-experience'));
