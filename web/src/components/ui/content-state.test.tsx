@@ -47,7 +47,7 @@ describe('StructuralFailure', () => {
 describe('RegionalFailure', () => {
   afterEach(cleanup);
 
-  it('renders the exact regional-failure copy inside a semantic region with Retry', () => {
+  it('renders the exact regional-failure copy and Retry with no heading of its own', () => {
     const {container} = render(
       <RegionalFailure
         message="We couldn't load this section."
@@ -61,6 +61,13 @@ describe('RegionalFailure', () => {
     expect(container.querySelector('section')).not.toBeNull();
     expect(screen.getByRole('button', {name: 'Retry'})).toBeInTheDocument();
     assertNoLiveRegion(container);
+
+    // The host section always supplies the granular anchor + <h3> heading
+    // (spec §15.2 / §20). RegionalFailure must not emit a competing heading.
+    expect(container.querySelector('h1,h2,h3,h4,h5,h6')).toBeNull();
+    expect(
+      container.querySelector('.content-state__message'),
+    ).not.toBeNull();
   });
 });
 

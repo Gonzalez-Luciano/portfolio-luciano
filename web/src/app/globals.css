@@ -641,6 +641,294 @@ a[href] {
 }
 
 /* --------------------------------------------------------------------------
+   Visually-hidden utility — kept in the accessibility tree, removed from view
+   (spec §20 visually hidden group heading, §26). First use is the WorkGroup
+   `#work` group <h2>; shared by later section groups.
+   -------------------------------------------------------------------------- */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Regional / neutral state surfaces (spec §15.2 / §16). The host section owns
+   the granular anchor + <h3>; these surfaces stay quiet — a paragraph, a rule,
+   and (for a failure) the single Retry control. No live-region role, no colour-
+   only signalling.
+   -------------------------------------------------------------------------- */
+.content-state {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: flex-start;
+  max-width: var(--measure-reading);
+  padding-block: var(--space-5);
+}
+
+.content-state--regional {
+  border-inline-start: var(--rule-emphasis) solid var(--color-border-meaningful);
+  padding-inline-start: var(--space-4);
+}
+
+.content-state__message {
+  margin: 0;
+  font-size: var(--font-size-lead);
+  color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Work group (#work) + its granular regions (#work-cases, #experience) —
+   spec §20/§22 and the approved Phase 2 "Work cases" / "Professional
+   experience" wireframes. Rules and text separate the regions; no decorative
+   cards, no animation, tokens reused throughout, both themes.
+   -------------------------------------------------------------------------- */
+.work-group {
+  padding-block: var(--space-8);
+}
+
+.work-group__region {
+  padding-block: var(--space-7);
+}
+
+.work-group__region + .work-group__region {
+  border-top: var(--rule-standard) solid var(--color-border-meaningful);
+}
+
+.work-group__region-heading {
+  margin: 0 0 var(--space-5);
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-subheading);
+  line-height: 1.15;
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   Work Case dossier — label/value narrative pairs at a deliberate reading
+   measure. The label uses the established mono utility treatment; the value is
+   ordinary prose. Comprehensible with zero JavaScript.
+   -------------------------------------------------------------------------- */
+.indexed-work-cases {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+}
+
+.work-case {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.indexed-work-cases > .work-case + .work-case {
+  padding-top: var(--space-7);
+  border-top: var(--rule-standard) solid var(--color-border-meaningful);
+}
+
+.work-case__title {
+  margin: 0;
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-subheading);
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+.work-case__fields {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.work-case__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.work-case__label {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-utility);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.work-case__value {
+  margin: 0;
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-body);
+}
+
+/* --------------------------------------------------------------------------
+   Supporting technology taxonomy — a wrap of named tags; the icon is
+   decorative and never stands in for the name.
+   -------------------------------------------------------------------------- */
+.tech-tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.tech-tags__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-utility);
+  letter-spacing: 0.02em;
+  color: var(--color-text-muted);
+}
+
+.tech-tags__icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+/* --------------------------------------------------------------------------
+   Indexed Detail — desktop vertical tabs (>= 64rem, multiple cases, after
+   hydration). Left rail is the tablist, right column the active panel. Below
+   64rem / no-JS this class is never applied and the dossiers stay sequential.
+   The active tab is signalled by weight + an inline-start accent bar + a raised
+   surface, never colour alone (Phase 2 light/dark note). No transitions.
+   -------------------------------------------------------------------------- */
+@media (min-width: 64rem) {
+  .indexed-work-cases--tabs {
+    display: grid;
+    grid-template-columns: minmax(12rem, 18rem) minmax(0, 1fr);
+    gap: var(--grid-gutter);
+    align-items: start;
+  }
+}
+
+.indexed-work-cases__tablist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.indexed-work-cases__tab {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-inline-start: var(--rule-emphasis) solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.indexed-work-cases__tab:hover {
+  color: var(--color-text-primary);
+}
+
+.indexed-work-cases__tab[aria-selected='true'] {
+  border-inline-start-color: var(--color-accent);
+  background: var(--color-surface-selected);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.indexed-work-cases__tab-index {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-utility);
+  color: var(--color-accent);
+}
+
+.indexed-work-cases__tab-label {
+  font-size: var(--font-size-body);
+}
+
+.indexed-work-cases__panels {
+  min-width: 0;
+}
+
+.indexed-work-cases__panel {
+  min-width: 0;
+}
+
+.indexed-work-cases__panel:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-accent);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* --------------------------------------------------------------------------
+   Experience — a typed reading timeline after the cases. A single spine rule
+   plus the mono meta line distinguish it from the cases without cards
+   (Phase 2 "Professional experience" note).
+   -------------------------------------------------------------------------- */
+.experience {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.experience__entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-inline-start: var(--space-5);
+  border-inline-start: var(--rule-standard) solid var(--color-border-meaningful);
+}
+
+.experience__role {
+  margin: 0;
+  font-size: var(--font-size-lead);
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.experience__meta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-utility);
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+/* The date range reads as a timestamp label; the organization keeps its case. */
+.experience__dates {
+  text-transform: uppercase;
+}
+
+.experience__summary {
+  margin: 0;
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-body);
+}
+
+.experience__highlights {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-body);
+}
+
+/* --------------------------------------------------------------------------
    Reduced motion — remove smooth scrolling and non-essential motion (spec §26).
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {

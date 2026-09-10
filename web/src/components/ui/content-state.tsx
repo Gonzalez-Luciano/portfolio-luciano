@@ -39,13 +39,18 @@ export function StructuralFailure({message, retry}: FailureProps) {
 }
 
 /**
- * One region failed while the rest of a structurally valid page renders. Sits
- * inside a section that keeps its own granular anchor.
+ * One region failed while the rest of a structurally valid page renders.
+ *
+ * It always sits inside a host `<section>` that already provides the granular
+ * anchor and its `<h3>` heading (WorkGroup, ExpertiseGroup, …), so this surface
+ * renders the safe copy as a plain paragraph — never a competing heading — plus
+ * the {@link RetryButton}. It keeps its identifiable region wrapper and the
+ * no-automatic-live-region contract (spec §15.2 / §20).
  */
 export function RegionalFailure({message, retry}: FailureProps) {
   return (
     <section className="content-state content-state--regional">
-      <h2>{message}</h2>
+      <p className="content-state__message">{message}</p>
       <RetryButton label={retry.label} pendingLabel={retry.pendingLabel} />
     </section>
   );
