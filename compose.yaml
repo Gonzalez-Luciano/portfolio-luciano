@@ -42,6 +42,13 @@ services:
       - api_vendor:/var/www/html/vendor
       - api_private_media:/var/www/html/storage/app/private
       - api_public_media:/var/www/html/storage/app/public
+      # The ./api bind mount hides everything above /var/www/html, so the
+      # sibling repository docs/ directory is otherwise unreachable in the
+      # container. This read-only mount lets `portfolio:import-initial-content`
+      # read the approved tracked source assets
+      # (docs/content/approved-assets/*) via base_path('../docs/...') without
+      # copying them into the API tree, a public volume, or an image layer.
+      - ./docs:/var/www/docs:ro
     environment:
       APP_ENV: local
       APP_DEBUG: "true"
@@ -116,6 +123,11 @@ services:
       # live application constants/routes without granting write access or
       # changing any application runtime behavior.
       - ./docs:/mnt/repo-docs:ro
+      # The guarded initial-content import resolves its approved tracked source
+      # assets (docs/content/approved-assets/*) via base_path('../docs/...'),
+      # which is /var/www/docs in the container. This second read-only mount of
+      # the same directory keeps the existing /mnt/repo-docs contract intact.
+      - ./docs:/var/www/docs:ro
     environment:
       APP_ENV: testing
       APP_DEBUG: "false"
