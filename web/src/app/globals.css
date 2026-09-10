@@ -929,6 +929,107 @@ a[href] {
 }
 
 /* --------------------------------------------------------------------------
+   Expertise group (#expertise) + its granular regions (#specialties,
+   #technologies) — spec §20/§22 and the approved Phase 2 "Specializations" /
+   "Technologies" wireframes. Same rule-and-text separation as the Work group:
+   no decorative cards, no animation, tokens reused, both themes.
+   -------------------------------------------------------------------------- */
+.expertise-group {
+  padding-block: var(--space-8);
+}
+
+.expertise-group__region {
+  padding-block: var(--space-7);
+}
+
+.expertise-group__region + .expertise-group__region {
+  border-top: var(--rule-standard) solid var(--color-border-meaningful);
+}
+
+.expertise-group__region-heading {
+  margin: 0 0 var(--space-5);
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-subheading);
+  line-height: 1.15;
+  font-weight: 500;
+}
+
+/* Areas of specialization — a single reading flow on mobile; at wider ranges a
+   content-fit multi-column set that never forces a column narrower than its
+   text. Each entry keeps a deliberate reading measure. */
+.specialties {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: 1fr;
+}
+
+.specialties__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: var(--measure-reading);
+}
+
+.specialties__title {
+  margin: 0;
+  font-size: var(--font-size-lead);
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.specialties__description {
+  margin: 0;
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 48rem) {
+  .specialties {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+    column-gap: var(--grid-gutter);
+  }
+}
+
+/* Technologies — the CMS group order and labels drive the layout. The label is
+   a typed marker (mono, uppercase) over a wrapped row of named tags, divided by
+   a hairline in the established Work idiom. Long ES/EN labels wrap and stay
+   fully visible: no truncation, ellipsis, or overflow clip. */
+.tech-groups {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: 1fr;
+}
+
+.tech-groups__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.tech-groups__label {
+  margin: 0;
+  padding-block-end: var(--space-2);
+  border-block-end: var(--rule-standard) solid var(--color-border-meaningful);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-utility);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+  hyphens: none;
+}
+
+@media (min-width: 48rem) {
+  .tech-groups {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    column-gap: var(--grid-gutter);
+  }
+}
+
+/* --------------------------------------------------------------------------
    Reduced motion — remove smooth scrolling and non-essential motion (spec §26).
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
