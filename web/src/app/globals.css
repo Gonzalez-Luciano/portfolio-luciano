@@ -179,6 +179,23 @@ body {
 }
 
 /* --------------------------------------------------------------------------
+   Localized route composition (spec §20). The page wraps the whole section
+   stack in one `.site-container`; Hero and About each carry their own nested
+   `.site-container` for the reading measure, so the nested instance drops the
+   duplicate gutter and width cap and every section's inline edges stay aligned.
+   The standalone structural-failure surface gets the same generous block rhythm
+   as the other route-state surfaces.
+   -------------------------------------------------------------------------- */
+.site-container .site-container {
+  max-width: none;
+  padding-inline: 0;
+}
+
+.content-state--structural {
+  padding-block: var(--space-9);
+}
+
+/* --------------------------------------------------------------------------
    Direct fragment navigation clears the sticky header (spec §25).
    -------------------------------------------------------------------------- */
 :target,
