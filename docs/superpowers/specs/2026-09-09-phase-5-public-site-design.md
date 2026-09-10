@@ -1176,9 +1176,12 @@ docs/content/approved-assets/cv-es.pdf
 docs/content/approved-assets/cv-en.pdf
 ```
 
-### 29.2 Exact empty-baseline set
+### 29.2 Exact empty-editorial-baseline set
 
-The command requires an empty Phase 4 editorial baseline across these tables:
+The Phase 4 migration deliberately creates one structural singleton row in
+`profiles` and one in `site_configurations`. The import therefore requires the
+following exact empty **editorial** baseline; it does not require those two
+tables to be literally rowless:
 
 ```text
 profiles
@@ -1203,9 +1206,23 @@ empty and their possible relationship rows. `users`, authentication/session
 tables, framework tables, migrations, cache, jobs, and unrelated operational
 records are explicitly outside the baseline check.
 
-Any row in the listed tables causes a clear failure before mutation. There is no
-`--force-overwrite`, `--sync`, `--reset`, update mode, environment-dependent
-branch, or partial import.
+`profiles` and `site_configurations` must each contain exactly the structural
+`singleton_key = "default"` row created by Phase 4, and no second row. Each row
+counts as editorially pristine only when every real Phase 4 professional,
+localized, and asset/media column is null or otherwise at its migration default,
+with `status = draft`, `is_visible = false`, and `published_at = null`. In
+particular, no name, localized copy, Technology-group label, private/public asset
+path, MIME, size, alt text, or other editorial value may already be present.
+The check is explicit against the actual Profile and SiteConfiguration schema;
+it is not a generic three-column publication-state check. The importer fills
+these existing structural rows and never creates replacement singleton rows.
+
+The other twelve listed tables must be literally empty. A non-pristine
+structural singleton, an additional singleton row, or any row in any of those
+twelve tables causes a clear failure before mutation. Rejection performs zero
+database and zero filesystem mutation. There is no `--force-overwrite`,
+`--sync`, `--reset`, update mode, environment-dependent branch, or partial
+import.
 
 ### 29.3 Preflight and mutation
 
@@ -1384,12 +1401,18 @@ through jsdom.
 
 PHPUnit covers:
 
-- successful import on the exact empty baseline;
+- successful import on a freshly migrated database containing only the two
+  pristine Phase 4 structural singletons;
 - explicit dataset consistency;
 - all created publishable entities draft, hidden, and unpublished;
 - correct approved photo and bilingual CV asset ingestion;
 - no users and no projects/experiences invented;
-- every listed baseline table rejecting a nonempty initial state;
+- Profile and Site pristine-default acceptance;
+- rejection without DB/filesystem mutation when either structural singleton has
+  any professional/localized value, asset metadata/path, non-default publication
+  state, or when either singleton table has an additional row;
+- each of the other twelve listed tables independently rejecting a nonempty
+  initial state without mutation;
 - second execution failing before mutation;
 - invalid/missing asset and invalid dataset failing during preflight;
 - DB failure rolling back records;
@@ -1468,7 +1491,7 @@ Phase 5 choices being submitted for human approval.
 |---|---|
 | LinkedIn and GitHub open in a new tab with safe `rel` | The approved Phase 2 localized prototype files contain `target="_blank" rel="me noopener noreferrer"` for those two links, and `docs/design/phase-2/VALIDATION_REPORT.md` records Contact/external-link validation. The localized new-tab announcement is a Phase 5 accessibility requirement approved during brainstorming, not claimed as pre-existing Phase 2 copy. |
 | Fixed approved photo and CV input paths | `docs/content/ASSET_INVENTORY.md` entries AST-PHOTO-PROFILE, AST-CV-ES, and AST-CV-EN and `docs/content/SOURCE_INVENTORY.md` name the three tracked files exactly. |
-| Fourteen production-baseline tables | The names exactly match the Phase 4 content and pivot tables created by `api/database/migrations/2026_09_02_000000` through `000003`. Treating the complete initial content graph, including deliberate empty Experience/Project collections, as the one-time baseline is a Phase 5 import-safety decision approved in this specification; users/authentication are not inferred into it. |
+| Fourteen production-baseline tables | The names exactly match the Phase 4 content and pivot tables created by `api/database/migrations/2026_09_02_000000` through `000003`. The same migration and `PhaseFourSchemaTest` require the pristine `default` Profile and SiteConfiguration structural rows, so the approved operational erratum treats those two rows as editorially empty only under the exact conditions in section 29.2; the other twelve tables remain literally empty. Users/authentication are not inferred into the baseline. |
 | Exact Technology group membership/order | `docs/api/PUBLIC_API_V1.md` formally guarantees exactly four entries in canonical order; `SiteResource` iterates `TechnologyCategory::cases()` directly; `PublicApiContractTest` asserts the exact JSON order. |
 | Primary navigation, section, and Menu/Close labels | The Phase 2 `SITEMAP.md`, localized prototype HTML, wireframes, and artifact validator contain these exact labels. |
 | Work Case field labels, `Actualidad`/`Present`, 404 copy, and new-tab suffix | These are technical UI-copy choices introduced and clearly enumerated by this Phase 5 specification. They are not represented as prior Phase 1 professional content or hidden Phase 2 decisions; human approval of this revised specification approves them. |
@@ -1519,9 +1542,11 @@ readiness gate in section 3.1 are satisfied and all of the following are true:
     screen-reader requirements have recorded evidence.
 11. The real Caddy/Next/Laravel media topology is verified without exposing an
     internal origin or adding an unapproved proxy.
-12. The initial import uses a deterministic reviewed dataset, rejects every
-    nonempty listed baseline, writes only draft/hidden/unpublished content, and
-    compensates only its own newly created files.
+12. The initial import uses a deterministic reviewed dataset, accepts only the
+    two pristine Phase 4 structural singletons plus twelve literally empty
+    editorial tables, rejects every deviation without mutation, writes only
+    draft/hidden/unpublished content, and compensates only its own newly created
+    files.
 13. No content, metrics, experience dates, employer, role, Technology label,
     Project, URL, asset, or professional claim is invented.
 14. Frontend/backend checks, production build, formatting, repository validation,
