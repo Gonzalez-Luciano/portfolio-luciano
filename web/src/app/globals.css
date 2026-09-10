@@ -26,10 +26,11 @@
   --foreground: var(--color-text-primary);
 
   /* Typography */
-  --font-family-sans: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI',
-    Roboto, Helvetica, Arial, sans-serif;
-  --font-family-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo,
-    Consolas, monospace;
+  --font-family-sans:
+    'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif;
+  --font-family-mono:
+    'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --line-height-body: 1.6;
   --measure-reading: 68ch;
   --font-size-display: clamp(3.5rem, 2rem + 6vw, 7rem);
@@ -485,6 +486,163 @@ a[href] {
 .theme-switcher button:focus-visible {
   outline: 3px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Hero (#top) + Professional introduction (#about) — spec §20/§21/§25 and the
+   approved Phase 2 wireframes ("Hero", "Professional introduction").
+
+   - Below 64rem: portrait-first stacked composition, single reading flow.
+   - 64rem and above: text/photo split.
+   - Null photo: the `.hero--no-photo` modifier removes the media column
+     entirely (there is no media element in the DOM at all) and keeps a
+     deliberate ~68ch reading measure at every Phase 2 range.
+   All colours reuse existing tokens; nothing here redefines the palette and
+   there is no animation.
+   -------------------------------------------------------------------------- */
+.hero {
+  padding-block: var(--space-9);
+}
+
+.hero__inner {
+  display: grid;
+  gap: var(--space-7);
+  align-items: start;
+}
+
+.hero__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: var(--measure-reading);
+}
+
+.hero__name {
+  margin: 0;
+  font-size: var(--font-size-display);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+.hero__headline {
+  margin: 0;
+  max-width: 22ch;
+  font-size: var(--font-size-subheading);
+  line-height: 1.15;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  text-wrap: balance;
+}
+
+.hero__summary {
+  margin: 0;
+  max-width: 46ch;
+  font-size: var(--font-size-lead);
+  color: var(--color-text-muted);
+}
+
+.hero__availability {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-utility);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.hero__availability::before {
+  content: '';
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-small);
+  background: var(--color-accent);
+  translate: 0 -0.05em;
+}
+
+.hero__cta {
+  align-self: flex-start;
+  margin-top: var(--space-2);
+  min-height: var(--target-minimum);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--space-5);
+  border-radius: var(--radius-small);
+  background: var(--color-accent);
+  color: var(--color-canvas);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.hero__cta:hover {
+  text-decoration: underline;
+}
+
+.hero__media {
+  order: -1;
+  position: relative;
+  width: 100%;
+  max-width: 20rem;
+  margin: 0;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: var(--radius-medium);
+  background: var(--color-accent);
+}
+
+.hero__photo {
+  object-fit: cover;
+}
+
+.hero--no-photo .hero__inner {
+  grid-template-columns: minmax(0, var(--measure-reading));
+}
+
+@media (min-width: 64rem) {
+  .hero__inner {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: center;
+    gap: var(--space-8);
+  }
+
+  .hero__media {
+    order: 0;
+    max-width: none;
+    justify-self: end;
+  }
+
+  .hero--no-photo .hero__inner {
+    grid-template-columns: minmax(0, var(--measure-reading));
+  }
+}
+
+.about {
+  padding-block: var(--space-7) var(--space-9);
+}
+
+.about__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.about__heading {
+  margin: 0;
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-subheading);
+  line-height: 1.15;
+  font-weight: 500;
+}
+
+.about__paragraph {
+  margin: 0;
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-lead);
+  color: var(--color-text-muted);
 }
 
 /* --------------------------------------------------------------------------
