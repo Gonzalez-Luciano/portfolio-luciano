@@ -23,13 +23,16 @@ type AboutSectionProps = {
   heading: string;
 };
 
+/**
+ * Split the introduction on blank lines into display paragraphs. The public
+ * contract guarantees a non-empty string, so an empty result is not a case we
+ * guard against with a fallback.
+ */
 function toParagraphs(introduction: string): string[] {
-  const blocks = introduction
+  return introduction
     .split(/\n{2,}/)
     .map((block) => block.trim())
     .filter((block) => block.length > 0);
-
-  return blocks.length > 0 ? blocks : [introduction];
 }
 
 export function AboutSection({introduction, heading}: AboutSectionProps) {

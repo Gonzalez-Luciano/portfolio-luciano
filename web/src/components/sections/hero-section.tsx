@@ -65,7 +65,7 @@ export function HeroSection({profile}: HeroSectionProps) {
               alt={photo.alt}
               fill
               priority
-              sizes="(min-width: 64rem) 36rem, (min-width: 48rem) 22rem, 88vw"
+              sizes="(min-width: 64rem) 30rem, 20rem"
             />
           </figure>
         ) : null}

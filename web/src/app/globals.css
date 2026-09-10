@@ -543,9 +543,6 @@ a[href] {
 }
 
 .hero__availability {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
   margin: 0;
   font-family: var(--font-family-mono);
   font-size: var(--font-size-utility);
@@ -554,32 +551,34 @@ a[href] {
   color: var(--color-text-muted);
 }
 
-.hero__availability::before {
-  content: '';
-  flex: none;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: var(--radius-small);
-  background: var(--color-accent);
-  translate: 0 -0.05em;
-}
-
+/* Mirrors the approved Phase 2 hero affordance `.text-action`
+   (docs/prototypes/phase-2/styles/hero.css): text with a bottom rule and the
+   accent "↓" glyph — not a solid-fill button. */
 .hero__cta {
   align-self: flex-start;
-  margin-top: var(--space-2);
-  min-height: var(--target-minimum);
   display: inline-flex;
   align-items: center;
-  padding-inline: var(--space-5);
-  border-radius: var(--radius-small);
-  background: var(--color-accent);
-  color: var(--color-canvas);
-  font-weight: 500;
+  min-height: var(--target-minimum);
+  border-block-end: var(--rule-emphasis) solid currentColor;
+  color: var(--color-text-primary);
+  font-weight: 600;
   text-decoration: none;
 }
 
+.hero__cta::after {
+  content: '↓';
+  margin-inline-start: var(--space-2);
+  color: var(--color-accent);
+}
+
 .hero__cta:hover {
-  text-decoration: underline;
+  color: var(--color-accent);
+}
+
+@media (forced-colors: active) {
+  .hero__cta::after {
+    content: '';
+  }
 }
 
 .hero__media {
@@ -613,10 +612,6 @@ a[href] {
     order: 0;
     max-width: none;
     justify-self: end;
-  }
-
-  .hero--no-photo .hero__inner {
-    grid-template-columns: minmax(0, var(--measure-reading));
   }
 }
 
