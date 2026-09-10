@@ -33,10 +33,10 @@ import {locales, routing} from '@/i18n/routing';
  * consolidated view model.
  */
 
-// Spec §14: the localized portfolio route renders dynamically at request time;
-// the production build must succeed while Laravel is unavailable and must not
-// execute the loader at build time.
-export const dynamic = 'force-dynamic';
+// Spec §14: the localized portfolio route renders dynamically at request time
+// and the production build must not execute the loader. `dynamic = 'force-dynamic'`
+// lives on the segment layout (`./layout.tsx`), which already makes this subtree
+// dynamic; it is not repeated here.
 
 type LocalePageProps = {
   params: Promise<{locale: string}>;
@@ -52,6 +52,8 @@ export async function generateMetadata({
   const {locale} = await params;
 
   if (!hasLocale(routing.locales, locale)) {
+    // LocalePage owns notFound() for unsupported locales; this metadata is
+    // discarded, we only need a safe non-throwing default here (spec §17).
     return {title: 'Portfolio unavailable'};
   }
 
