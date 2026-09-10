@@ -2,7 +2,6 @@ import {hasLocale} from 'next-intl';
 import {getTranslations, setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {LanguageSwitcher} from '@/components/language-switcher';
-import {ApiStatus} from '@/components/api-status';
 import {ThemeSwitcher} from '@/components/theme-switcher';
 import {locales, routing} from '@/i18n/routing';
 
@@ -42,7 +41,6 @@ export default async function LocalePage({params}: LocalePageProps) {
         lightLabel={t('lightTheme')}
         darkLabel={t('darkTheme')}
       />
-      <ApiStatus />
     </main>
   );
 }

@@ -26,7 +26,6 @@ vi.mock('next-intl/server', () => ({
         currentThemeLabel: 'Current theme',
         lightTheme: 'Light',
         darkTheme: 'Dark',
-        apiStatusSlot: 'API status placeholder',
       };
 
       return messages[key as keyof typeof messages];
@@ -73,6 +72,5 @@ describe('localized foundation page', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Current locale: en')).toBeInTheDocument();
     expect(screen.getByRole('region', {name: 'Theme'})).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Check API'})).toBeInTheDocument();
   });
 });
