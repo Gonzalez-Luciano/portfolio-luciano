@@ -172,7 +172,7 @@ describe('isProjectList', () => {
     expect(isProjectList([])).toBe(true);
   });
 
-  it('accepts a project with nullable media and links populated', () => {
+  it('accepts a project with nullable media and https links populated', () => {
     expect(
       isProjectList([
         {
@@ -186,6 +186,24 @@ describe('isProjectList', () => {
     ).toBe(true);
   });
 
+  it('accepts any non-null string url regardless of scheme (verbatim column contract)', () => {
+    expect(
+      isProjectList([
+        {
+          ...validProject,
+          demo_url: 'http://example.test/demo',
+          repository_url: 'example.test/repo',
+        },
+      ]),
+    ).toBe(true);
+  });
+
+  it('accepts null demo_url and repository_url', () => {
+    expect(
+      isProjectList([{ ...validProject, demo_url: null, repository_url: null }]),
+    ).toBe(true);
+  });
+
   const rejected: Case[] = [
     ['a non-boolean featured flag', [{ ...validProject, featured: 'yes' }]],
     ['a missing solution field', [withoutKey(validProject, 'solution')]],
@@ -194,12 +212,12 @@ describe('isProjectList', () => {
       [{ ...validProject, image: { url: '/storage/x.jpg' } }],
     ],
     [
-      'a demo url that is not https',
-      [{ ...validProject, demo_url: 'ftp://example.test/demo' }],
+      'a non-string demo url',
+      [{ ...validProject, demo_url: 42 }],
     ],
     [
-      'a repository url that is a bare host',
-      [{ ...validProject, repository_url: 'example.test/repo' }],
+      'a non-string repository url',
+      [{ ...validProject, repository_url: ['x'] }],
     ],
     [
       'a malformed nested technology',

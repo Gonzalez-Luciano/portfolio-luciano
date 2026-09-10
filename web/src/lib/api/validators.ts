@@ -205,8 +205,12 @@ function isProject(value: unknown): value is Project {
     isString(value.solution) &&
     isBoolean(value.featured) &&
     isNullable(value.image, isMediaWithAlt) &&
-    isNullable(value.demo_url, isHttpsUrl) &&
-    isNullable(value.repository_url, isHttpsUrl) &&
+    // `demo_url` / `repository_url` are emitted verbatim from their columns with
+    // no documented scheme guarantee (PUBLIC_API_V1 Projects field table); spec
+    // §10's HTTPS guarantee is scoped to professional links only. Validate the
+    // documented `string | null` shape and nothing more.
+    isNullable(value.demo_url, isString) &&
+    isNullable(value.repository_url, isString) &&
     isTechnologyList(value.technologies)
   );
 }
