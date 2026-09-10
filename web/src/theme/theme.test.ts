@@ -10,6 +10,7 @@ import {themeBootstrapSource} from './bootstrap';
 describe('theme primitives', () => {
   afterEach(() => {
     document.documentElement.removeAttribute('data-theme');
+    document.documentElement.removeAttribute('data-js');
     window.localStorage.clear();
     vi.unstubAllGlobals();
   });
@@ -52,5 +53,21 @@ describe('theme primitives', () => {
     new Function(themeBootstrapSource)();
 
     expect(document.documentElement.dataset.theme).toBe('light');
+  });
+
+  it('marks JavaScript as present without appearing in deterministic server markup', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({matches: false})),
+    );
+
+    // Server (pre-script) markup is deterministic: the marker is absent until
+    // the pre-paint script runs on the client.
+    expect(document.documentElement.dataset.js).toBeUndefined();
+
+    new Function(themeBootstrapSource)();
+
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(document.documentElement.dataset.js).toBe('ready');
   });
 });

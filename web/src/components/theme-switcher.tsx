@@ -54,7 +54,7 @@ export function ThemeSwitcher({
           ? currentThemeLabel
           : `${currentThemeLabel}: ${theme === 'light' ? lightLabel : darkLabel}`}
       </p>
-      <div className="theme-switcher__controls">
+      <div className="theme-switcher__controls js-only">
         <button
           type="button"
           aria-pressed={theme === 'light'}

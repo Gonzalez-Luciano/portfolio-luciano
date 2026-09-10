@@ -15,20 +15,19 @@ vi.mock('next-intl/server', () => ({
   setRequestLocale: vi.fn(),
   getTranslations:
     async ({locale}: {locale: string}) =>
-    (key: string, values: Record<string, string> = {}) => {
-      const messages = {
-        title: `${locale} technical foundation`,
-        currentLocale: `Current locale: ${values.locale}`,
-        languageSwitcherLabel: 'Language',
-        spanish: 'Spanish',
-        english: 'English',
-        themeLabel: 'Theme',
-        currentThemeLabel: 'Current theme',
-        lightTheme: 'Light',
-        darkTheme: 'Dark',
+    (key: string) => {
+      const messages: Record<string, string> = {
+        'sections.about': `${locale} professional introduction`,
+        'language.label': 'Select language',
+        'language.spanish': 'Español',
+        'language.english': 'English',
+        'theme.label': 'Theme',
+        'theme.current': 'Current theme',
+        'theme.light': 'Light',
+        'theme.dark': 'Dark',
       };
 
-      return messages[key as keyof typeof messages];
+      return messages[key] ?? key;
     },
 }));
 
@@ -56,7 +55,7 @@ describe('localized foundation page', () => {
     expect(notFound).toHaveBeenCalledOnce();
   });
 
-  it('keeps the Spanish and English technical message keys aligned', () => {
+  it('keeps the Spanish and English portfolio message keys aligned', () => {
     expect(getKeys(spanishMessages)).toEqual(getKeys(englishMessages));
   });
 
@@ -68,9 +67,11 @@ describe('localized foundation page', () => {
     );
 
     expect(
-      screen.getByRole('heading', {name: 'en technical foundation'}),
+      screen.getByRole('heading', {name: 'en professional introduction'}),
     ).toBeInTheDocument();
-    expect(screen.getByText('Current locale: en')).toBeInTheDocument();
     expect(screen.getByRole('region', {name: 'Theme'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', {name: 'Select language'}),
+    ).toBeInTheDocument();
   });
 });

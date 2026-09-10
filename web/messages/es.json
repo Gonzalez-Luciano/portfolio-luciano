@@ -1,19 +1,60 @@
 {
-  "Foundation": {
-    "title": "Base técnica localizada",
-    "currentLocale": "Idioma actual: {locale}",
-    "languageSwitcherLabel": "Seleccionar idioma",
-    "spanish": "Español",
-    "english": "English",
-    "themeLabel": "Tema",
-    "currentThemeLabel": "Tema actual",
-    "lightTheme": "Claro",
-    "darkTheme": "Oscuro",
-    "apiStatusSlot": "Espacio reservado para el estado de la API",
-    "apiStatusLabel": "Estado de la API",
-    "checkApi": "Comprobar API",
-    "checkingApi": "Comprobando la API...",
-    "apiAvailable": "API disponible: ok/{version}",
-    "apiUnavailable": "La API no está disponible."
+  "Portfolio": {
+    "nav": {
+      "primaryLabel": "Navegación principal",
+      "work": "Trabajo",
+      "expertise": "Especialización",
+      "projects": "Proyectos",
+      "approach": "Forma de trabajo",
+      "contact": "Contacto"
+    },
+    "menu": {
+      "title": "Navegación",
+      "open": "Menú",
+      "close": "Cerrar"
+    },
+    "sections": {
+      "about": "Presentación profesional",
+      "workCases": "Casos de trabajo",
+      "experience": "Experiencia",
+      "specialties": "Áreas de especialización",
+      "technologies": "Tecnologías",
+      "projects": "Proyectos",
+      "approach": "Forma de trabajo",
+      "contact": "Contacto y CV"
+    },
+    "fields": {
+      "currentExperienceEnd": "Actualidad",
+      "context": "Contexto",
+      "problem": "Problema",
+      "contribution": "Contribución",
+      "technicalApproach": "Enfoque técnico",
+      "outcome": "Resultado",
+      "solution": "Solución",
+      "opensNewTab": "Abre en una nueva pestaña"
+    },
+    "state": {
+      "neutralEmpty": "Contenido no disponible por el momento.",
+      "regionalFailure": "No pudimos cargar esta sección.",
+      "structuralFailure": "No pudimos cargar el contenido del portfolio.",
+      "retry": "Reintentar",
+      "retryPending": "Reintentando…"
+    },
+    "notFound": {
+      "title": "Página no encontrada",
+      "explanation": "La página solicitada no existe.",
+      "returnAction": "Volver al portfolio"
+    },
+    "language": {
+      "label": "Seleccionar idioma",
+      "spanish": "Español",
+      "english": "English"
+    },
+    "theme": {
+      "label": "Tema",
+      "current": "Tema actual",
+      "light": "Claro",
+      "dark": "Oscuro"
+    }
   }
 }

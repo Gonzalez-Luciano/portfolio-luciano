@@ -31,6 +31,21 @@ describe('ThemeSwitcher', () => {
     expect(screen.getByText('Current theme: Dark')).toBeInTheDocument();
   });
 
+  it('marks the interactive theme controls with the shared JS-only styling hook', () => {
+    document.documentElement.dataset.theme = 'light';
+
+    render(<ThemeSwitcher {...labels} />);
+
+    const controlWrapper = screen
+      .getByRole('button', {name: 'Light'})
+      .closest('.js-only');
+
+    expect(controlWrapper).not.toBeNull();
+    expect(controlWrapper).toContainElement(
+      screen.getByRole('button', {name: 'Dark'}),
+    );
+  });
+
   it('renders statically without reading the browser document', () => {
     vi.stubGlobal('document', undefined);
 

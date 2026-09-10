@@ -21,25 +21,26 @@ export default async function LocalePage({params}: LocalePageProps) {
   }
 
   setRequestLocale(locale);
-  const t = await getTranslations({locale, namespace: 'Foundation'});
+  const t = await getTranslations({locale, namespace: 'Portfolio'});
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-6 py-16">
       <header>
-        <h1 className="text-3xl font-semibold tracking-tight">{t('title')}</h1>
-        <p>{t('currentLocale', {locale})}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {t('sections.about')}
+        </h1>
       </header>
       <LanguageSwitcher
         currentLocale={locale}
-        label={t('languageSwitcherLabel')}
-        spanishLabel={t('spanish')}
-        englishLabel={t('english')}
+        label={t('language.label')}
+        spanishLabel={t('language.spanish')}
+        englishLabel={t('language.english')}
       />
       <ThemeSwitcher
-        label={t('themeLabel')}
-        currentThemeLabel={t('currentThemeLabel')}
-        lightLabel={t('lightTheme')}
-        darkLabel={t('darkTheme')}
+        label={t('theme.label')}
+        currentThemeLabel={t('theme.current')}
+        lightLabel={t('theme.light')}
+        darkLabel={t('theme.dark')}
       />
     </main>
   );

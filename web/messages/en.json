@@ -1,19 +1,60 @@
 {
-  "Foundation": {
-    "title": "Localized technical foundation",
-    "currentLocale": "Current locale: {locale}",
-    "languageSwitcherLabel": "Select language",
-    "spanish": "Español",
-    "english": "English",
-    "themeLabel": "Theme",
-    "currentThemeLabel": "Current theme",
-    "lightTheme": "Light",
-    "darkTheme": "Dark",
-    "apiStatusSlot": "API status placeholder",
-    "apiStatusLabel": "API status",
-    "checkApi": "Check API",
-    "checkingApi": "Checking API...",
-    "apiAvailable": "API available: ok/{version}",
-    "apiUnavailable": "API unavailable."
+  "Portfolio": {
+    "nav": {
+      "primaryLabel": "Primary navigation",
+      "work": "Work",
+      "expertise": "Expertise",
+      "projects": "Projects",
+      "approach": "Approach",
+      "contact": "Contact"
+    },
+    "menu": {
+      "title": "Navigation",
+      "open": "Menu",
+      "close": "Close"
+    },
+    "sections": {
+      "about": "Professional introduction",
+      "workCases": "Work cases",
+      "experience": "Experience",
+      "specialties": "Areas of specialization",
+      "technologies": "Technologies",
+      "projects": "Projects",
+      "approach": "Working approach",
+      "contact": "Contact and CV"
+    },
+    "fields": {
+      "currentExperienceEnd": "Present",
+      "context": "Context",
+      "problem": "Problem",
+      "contribution": "Contribution",
+      "technicalApproach": "Technical approach",
+      "outcome": "Outcome",
+      "solution": "Solution",
+      "opensNewTab": "Opens in a new tab"
+    },
+    "state": {
+      "neutralEmpty": "Content is not available at the moment.",
+      "regionalFailure": "We couldn't load this section.",
+      "structuralFailure": "We couldn't load the portfolio content.",
+      "retry": "Retry",
+      "retryPending": "Retrying…"
+    },
+    "notFound": {
+      "title": "Page not found",
+      "explanation": "The requested page does not exist.",
+      "returnAction": "Back to portfolio"
+    },
+    "language": {
+      "label": "Select language",
+      "spanish": "Español",
+      "english": "English"
+    },
+    "theme": {
+      "label": "Theme",
+      "current": "Current theme",
+      "light": "Light",
+      "dark": "Dark"
+    }
   }
 }
