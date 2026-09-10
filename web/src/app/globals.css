@@ -1030,6 +1030,248 @@ a[href] {
 }
 
 /* --------------------------------------------------------------------------
+   Projects (#projects) — spec §16 (explicit empty-message exception), §22, §25
+   and the approved Phase 2 "Projects" wireframe. Same rule-and-text idiom as
+   the Work / Expertise groups: no decorative cards, no animation, tokens
+   reused, both themes. Stacked below 48rem; a horizontal media/copy dossier at
+   48rem+ when an image is present and the copy still fits.
+   -------------------------------------------------------------------------- */
+.projects {
+  padding-block: var(--space-8);
+}
+
+.projects__heading {
+  margin: 0 0 var(--space-5);
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-subheading);
+  line-height: 1.15;
+  font-weight: 500;
+}
+
+/* The §16 exception: the CMS zero-project message stands alone — no card, no
+   Retry, no neutral-empty surface. */
+.projects__empty {
+  margin: 0;
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-lead);
+  color: var(--color-text-muted);
+}
+
+.projects__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+}
+
+.projects__list > .project + .project {
+  padding-top: var(--space-7);
+  border-top: var(--rule-standard) solid var(--color-border-meaningful);
+}
+
+.project {
+  display: grid;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.project__media {
+  position: relative;
+  width: 100%;
+  max-width: 22rem;
+  margin: 0;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--radius-medium);
+  background: var(--color-accent);
+}
+
+.project__image {
+  object-fit: cover;
+}
+
+.project__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.project__title {
+  margin: 0;
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-lead);
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.project__summary {
+  margin: 0;
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+}
+
+.project__fields {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.project__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.project__label {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-utility);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.project__value {
+  margin: 0;
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-body);
+}
+
+/* Demo / repository destinations — the Phase 2 text-with-rule affordance, never
+   a solid-fill button. Long URLs wrap rather than clip. */
+.project__actions {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+}
+
+.project__action {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-minimum);
+  min-width: var(--target-minimum);
+  border-block-end: var(--rule-emphasis) solid currentColor;
+  font-size: var(--font-size-utility);
+  font-family: var(--font-family-mono);
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+/* Emphasis only (spec §22): an inline-start accent rule and an indent. It never
+   reorders and is never a solid fill. */
+.project--featured {
+  border-inline-start: var(--rule-emphasis) solid var(--color-accent);
+  padding-inline-start: var(--space-5);
+}
+
+@media (min-width: 48rem) {
+  .project--with-media {
+    grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+    column-gap: var(--grid-gutter);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Working approach (#approach) + #work-principles — spec §22/§16/§20 and the
+   approved Phase 2 "Approach" wireframe (ordered reading beats). The list is a
+   real sequence, so `<ol>` carries the order; the leading-zero index is a
+   supporting marker, never the only meaning carrier (both themes).
+   -------------------------------------------------------------------------- */
+.approach {
+  padding-block: var(--space-8);
+}
+
+.approach__heading {
+  margin: 0 0 var(--space-5);
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-subheading);
+  line-height: 1.15;
+  font-weight: 500;
+}
+
+.principles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: principle;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.principles__item {
+  counter-increment: principle;
+  display: flex;
+  gap: var(--space-4);
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-lead);
+}
+
+.principles__item::before {
+  content: counter(principle, decimal-leading-zero);
+  flex: none;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-utility);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
+  padding-top: 0.35em;
+}
+
+/* --------------------------------------------------------------------------
+   Contact and CV (#contact) — spec §23/§16/§20 and the approved Phase 2
+   "Contact" wireframe. Intro at a reading measure; an actions row that WRAPS
+   without truncation, every action at least 44 x 44 CSS px, focus visible in
+   both themes. Text-with-rule affordance, never a solid-fill button.
+   -------------------------------------------------------------------------- */
+.contact {
+  padding-block: var(--space-8);
+}
+
+.contact__heading {
+  margin: 0 0 var(--space-5);
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-subheading);
+  line-height: 1.15;
+  font-weight: 500;
+}
+
+.contact__intro {
+  margin: 0 0 var(--space-5);
+  max-width: var(--measure-reading);
+  font-size: var(--font-size-lead);
+  color: var(--color-text-muted);
+}
+
+.contact__actions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-6);
+}
+
+.contact__action-item {
+  display: flex;
+}
+
+.contact__action {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-minimum);
+  min-width: var(--target-minimum);
+  padding-inline: var(--space-2);
+  border-block-end: var(--rule-emphasis) solid currentColor;
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------------------------
    Reduced motion — remove smooth scrolling and non-essential motion (spec §26).
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
