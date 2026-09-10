@@ -1,6 +1,6 @@
 # Phase 5 — Public site design
 
-**Status:** Written specification proposed for human approval
+**Status:** Human-approved specification; §29.2 operational erratum incorporated
 
 **Date:** 2026-09-09
 
@@ -945,10 +945,12 @@ Indexed Detail is progressive enhancement:
 - zero cases follows the group-empty policy.
 
 The desktop widget uses correct `tablist`, `tab`, `tabpanel`, `aria-selected`,
-`aria-controls`, and `aria-labelledby` relationships; roving tab focus; Up/Down
-and Home/End; and Enter/Space where activation is not automatic. Tab enters and
-leaves the widget without visiting every tab. No content is fetched client-side
-or absent from initial HTML.
+`aria-controls`, and `aria-labelledby` relationships with roving tab focus and
+automatic activation. Up/Down move focus and activate the previous/next tab;
+Home/End move focus and activate the first/last tab. Tab enters and leaves the
+widget without visiting every tab. Enter/Space are not required for activation
+because changing tabs has no network or rendering cost. No content is fetched
+client-side or absent from initial HTML.
 
 Indexed Detail owns its local `(min-width: 64rem)` reconciliation. Crossing
 below `64rem` removes desktop-only tab semantics/state from the rendered
@@ -1233,7 +1235,10 @@ Before any mutation, preflight verifies:
 - category and relationship references;
 - source asset existence;
 - allowed MIME and size through Phase 4 rules;
-- both PDF files and locale/language metadata;
+- both approved PDF files against the real Phase 4 extension, MIME, and size
+  policy, with the deterministic source mapping `es -> cv-es.pdf` and
+  `en -> cv-en.pdf`; PDF-internal `/Lang` metadata is inventory evidence, not
+  an import/publication validator;
 - the approved photograph format and validity;
 - every condition that existing services can validate without writing.
 
@@ -1358,7 +1363,9 @@ Vitest and Testing Library cover, at minimum:
 - `cache: "no-store"`;
 - six requests starting in parallel;
 - one failed/slow collection not changing healthy endpoint semantics;
-- request-scoped metadata/page deduplication and fresh work on a later request;
+- unit-level request-loader wiring: six parallel starts, the production export
+  using React `cache()`, page and metadata consuming that same export, and no
+  persistent cache implementation;
 - all success, Profile failure, Site failure, every individual collection
   failure, simultaneous collection failures, empty collections, and malformed
   resources;
@@ -1396,6 +1403,11 @@ Vitest and Testing Library cover, at minimum:
 Tests must not claim to prove native dialog modality/focus trapping, real scroll,
 fragment positioning, image optimization, browser zoom, or screen-reader output
 through jsdom.
+
+Separate isolated-stack runtime evidence must show that one real page request
+performs exactly six Laravel content acquisitions and that a second independent
+page request performs six fresh acquisitions. Unit/module mocks demonstrate
+wiring only and must not be represented as proof of React/Next request lifetime.
 
 ### 30.2 Backend
 
@@ -1491,6 +1503,7 @@ Phase 5 choices being submitted for human approval.
 |---|---|
 | LinkedIn and GitHub open in a new tab with safe `rel` | The approved Phase 2 localized prototype files contain `target="_blank" rel="me noopener noreferrer"` for those two links, and `docs/design/phase-2/VALIDATION_REPORT.md` records Contact/external-link validation. The localized new-tab announcement is a Phase 5 accessibility requirement approved during brainstorming, not claimed as pre-existing Phase 2 copy. |
 | Fixed approved photo and CV input paths | `docs/content/ASSET_INVENTORY.md` entries AST-PHOTO-PROFILE, AST-CV-ES, and AST-CV-EN and `docs/content/SOURCE_INVENTORY.md` name the three tracked files exactly. |
+| CV locale mapping and PDF validation | AST-CV-ES/SRC-001 and AST-CV-EN/SRC-002 assign the two approved files to ES and EN respectively. Phase 4 `AssetLifecycleService`/`PublicationValidator` require `.pdf`, detected `application/pdf`, size `1..5 MiB`, and complete owned-asset metadata. The inventories record the current files' `/Lang(es-AR)` and `/Lang(en-US)` values, but Phase 4 does not make those exact PDF-internal values an import or publication rule. |
 | Fourteen production-baseline tables | The names exactly match the Phase 4 content and pivot tables created by `api/database/migrations/2026_09_02_000000` through `000003`. The same migration and `PhaseFourSchemaTest` require the pristine `default` Profile and SiteConfiguration structural rows, so the approved operational erratum treats those two rows as editorially empty only under the exact conditions in section 29.2; the other twelve tables remain literally empty. Users/authentication are not inferred into the baseline. |
 | Exact Technology group membership/order | `docs/api/PUBLIC_API_V1.md` formally guarantees exactly four entries in canonical order; `SiteResource` iterates `TechnologyCategory::cases()` directly; `PublicApiContractTest` asserts the exact JSON order. |
 | Primary navigation, section, and Menu/Close labels | The Phase 2 `SITEMAP.md`, localized prototype HTML, wireframes, and artifact validator contain these exact labels. |

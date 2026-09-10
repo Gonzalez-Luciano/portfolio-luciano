@@ -232,7 +232,7 @@ git commit -m "feat(web): validate public portfolio contracts"
 
 - [ ] **Step 1: Write failing transport tests**
 
-Assert the exact URL `http://api/api/v1/es/profile`, `accept: application/json`, GET, `cache: 'no-store'`, a timeout signal, strict one-key `{data}` envelope, non-2xx→`http`, missing origin→`configuration`, malformed JSON/envelope/resource→`malformed`, fetch rejection and timeout abort→`network`, and no automatic second call. Also assert an unexpected validator exception is rethrown to App Router rather than normalized.
+Assert the exact URL `http://api/api/v1/es/profile`, `accept: application/json`, GET, `cache: 'no-store'`, and a timeout signal. A success envelope must contain valid `data`, must not also contain `error`, and must tolerate compatible unconsumed top-level fields such as `meta`; missing `data`, simultaneous `data`/`error`, malformed JSON/resource, and malformed error envelopes fail safely. Also cover non-2xx→`http`, missing origin→`configuration`, fetch rejection and timeout abort→`network`, no automatic second call, and an unexpected validator exception rethrown to App Router rather than normalized. This intentionally replaces the Phase 3 client's stricter exact-one-key assertion because Phase 4 guarantees mutual exclusion, not a permanently closed top-level envelope.
 
 ```ts
 expect(fetchImpl).toHaveBeenCalledTimes(1);
@@ -292,7 +292,7 @@ git commit -m "feat(web): fetch localized portfolio resources server-side"
 
 **Interfaces:**
 - Consumes: Task 2 `fetchProfile`, `fetchSite`, `fetchExperiences`, `fetchWorkCases`, `fetchProjects`, `fetchTechnologies`.
-- Produces: `loadPublicPortfolioUncached(locale, dependencies?): Promise<PublicPortfolioResults>`, testable `createRequestScopedPortfolioLoader(cacheFn)`, and production `loadPublicPortfolio = cache(loadPublicPortfolioUncached)`.
+- Produces: `loadPublicPortfolioUncached(locale, dependencies?): Promise<PublicPortfolioResults>` and production `loadPublicPortfolio = cache(loadPublicPortfolioUncached)`.
 
 - [ ] **Step 1: Write failing concurrency and independence tests**
 
@@ -305,9 +305,9 @@ expect(Object.values(fetchers).every((fn) => fn.mock.calls.length === 1)).toBe(t
 await expect(loading).resolves.toMatchObject({projects: {ok: false}});
 ```
 
-- [ ] **Step 2: Write request-scope wiring tests**
+- [ ] **Step 2: Write honest cache-wiring tests**
 
-Pass a deterministic request-local memoizer to `createRequestScopedPortfolioLoader` so two consumers in one simulated render receive the same coordinated promise, then create a new memoizer for the next simulated request and prove all six fetchers run again. Also assert the production export is wired through React `cache()` and the source does not import/use `unstable_cache` or maintain a module result map.
+Mock the `react` module boundary and assert the production export is created by passing `loadPublicPortfolioUncached` to React `cache()`. Assert the source does not import/use `unstable_cache`, maintain a module result map, or rely on a fake memoizer as evidence of the real Next lifecycle. These unit tests prove the six-way loader and production wiring only; Task 13 proves same-request sharing and next-request reacquisition in the installed runtime.
 
 - [ ] **Step 3: Run the loader test and confirm the red state**
 
@@ -317,7 +317,7 @@ Expected: FAIL because the coordinated loader does not exist.
 
 - [ ] **Step 4: Implement the loader**
 
-Use one `Promise.all` over the six nonthrowing known-result fetchers and map tuple positions explicitly into `PublicPortfolioResults`. `createRequestScopedPortfolioLoader` accepts only a React-cache-compatible wrapper for testability; production passes React `cache`. Do not use Next Data Cache, `unstable_cache`, a global result `Map`, or incidental fetch deduplication.
+Use one `Promise.all` over the six nonthrowing known-result fetchers and map tuple positions explicitly into `PublicPortfolioResults`. Export `loadPublicPortfolio = cache(loadPublicPortfolioUncached)` directly. Do not use Next Data Cache, `unstable_cache`, a global result `Map`, a test-only production abstraction, or incidental fetch deduplication.
 
 - [ ] **Step 5: Run focused and static checks**
 
@@ -328,7 +328,7 @@ docker compose run --rm --no-deps web pnpm test:run src/lib/api/load-public-port
 docker compose run --rm --no-deps web pnpm typecheck
 ```
 
-Expected: PASS, including six simultaneous starts, independent failures, same-render sharing, and later-request reacquisition.
+Expected: PASS for six simultaneous starts, independent failures, direct React-cache production wiring, and absence of persistent-cache machinery. Do not describe this unit result as proof of the real request lifecycle.
 
 - [ ] **Step 6: Commit the coordinated loader**
 
@@ -337,7 +337,7 @@ git add web/src/lib/api/load-public-portfolio.ts web/src/lib/api/load-public-por
 git commit -m "feat(web): coordinate request-scoped portfolio loading"
 ```
 
-**Completion criterion:** One locale acquisition returns six typed results without sequential waits; page and metadata can share it only for the current render/request, while a later request starts six fresh no-store reads.
+**Completion criterion:** One uncached locale acquisition returns six typed results without sequential waits, and the production export uses React `cache()` without persistent-cache machinery. Task 13 remains the required runtime proof that page/metadata share within one request and a later request starts six fresh no-store reads.
 
 ### Task 4: Implement shared navigation, locale, focus, Retry, and theme contracts
 
@@ -575,7 +575,7 @@ git commit -m "feat(web): render CMS profile and nullable hero photo"
 
 - [ ] **Step 1: Write SSR/progressive enhancement red tests**
 
-Use `renderToStaticMarkup` to assert every case and every required field exists before hydration in Laravel order. Cover zero, one, and multiple cases. For multiple desktop cases assert tablist/tab/panel IDs, selected state, roving tab index, Up/Down/Home/End and activation behavior; below 64rem assert roles are removed and every dossier is visible.
+Use `renderToStaticMarkup` to assert every case and every required field exists before hydration in Laravel order. Cover zero, one, and multiple cases. For multiple desktop cases assert tablist/tab/panel IDs, selected state, roving tab index, and automatic activation: Arrow Up/Down move focus and activate the previous/next tab; Home/End move focus and activate the first/last tab; Tab enters/exits normally; Enter/Space are not required. Below 64rem assert roles are removed and every dossier is visible.
 
 - [ ] **Step 2: Write Work-group matrix red tests**
 
@@ -597,7 +597,7 @@ Render Context/Problem/Contribution/Technical approach/Outcome and Technology na
 
 - [ ] **Step 5: Implement Indexed Detail as a narrow enhancement**
 
-Pass server-rendered dossier children through the Client Component. Keep all panels visible and comprehensible in initial/no-JS DOM. On local `(min-width: 64rem)` match with multiple cases, apply tab semantics and hide only inactive visual panels; crossing below removes roles/hiding and reveals all. Do not fetch, animate, share viewport state, or add motion hooks.
+Pass server-rendered dossier children through the Client Component. Keep all panels visible and comprehensible in initial/no-JS DOM. On local `(min-width: 64rem)` match with multiple cases, apply tab semantics, roving `tabindex`, automatic keyboard activation, and hide only inactive visual panels; crossing below removes roles/hiding and reveals all. Do not fetch, animate, share viewport state, or add motion hooks.
 
 - [ ] **Step 6: Add Work responsive/accessibility styles and rerun checks**
 
@@ -756,7 +756,7 @@ For structurally valid pages assert exactly five primary links in stable order i
 
 - [ ] **Step 3: Add metadata and loader-sharing tests**
 
-Assert exact ES/EN valid formula `${profile.name} — ${profile.headline}` plus `profile.short_summary`; Profile failure yields only `Portfolio no disponible`/`Portfolio unavailable`; Site-only failure retains valid Profile metadata. Call page and metadata within one mocked React render/request and assert one loader acquisition; reset request scope and assert a later render acquires again.
+Assert exact ES/EN valid formula `${profile.name} — ${profile.headline}` plus `profile.short_summary`; Profile failure yields only `Portfolio no disponible`/`Portfolio unavailable`; Site-only failure retains valid Profile metadata. Mock the Task 3 module and assert both page and metadata consume the same exported `loadPublicPortfolio` with the same locale. Do not claim that a mocked call count proves React's request-scoped lifecycle; the real one-request/next-request acquisition counts belong to Task 13.
 
 - [ ] **Step 4: Run the route tests and confirm the red state**
 
@@ -897,7 +897,7 @@ Use a data provider that inserts one valid row into each remaining table (creati
 
 - [ ] **Step 4: Write dataset/asset/transaction/compensation red tests**
 
-Cover missing photo, invalid photo bytes/MIME/size, invalid PDF header/EOF/MIME/size/language metadata, duplicate dataset keys/references, forced DB exception after at least one asset write, forced storage failure, preexisting file sentinel, no public copies/cache exposure, no users, and zero Experiences/Projects. On failures assert DB rollback and deletion of only exact private paths created by that attempt.
+Cover missing photo, invalid photo bytes/MIME/size, missing CV, invalid CV extension/detected MIME/size, swapped or inconsistent locale-to-approved-source mapping, duplicate dataset keys/references, forced DB exception after at least one asset write, forced storage failure, preexisting file sentinel, no public copies/cache exposure, no users, and zero Experiences/Projects. On failures assert DB rollback and deletion of only exact private paths created by that attempt. Do not turn PDF signature/EOF or internal `/Lang` values into new importer rules beyond the real Phase 4 owned-asset policy.
 
 - [ ] **Step 5: Run the command suite and confirm the red state**
 
@@ -915,7 +915,7 @@ Require exactly one Profile and Site row with `singleton_key='default'`. Compare
 
 - [ ] **Step 8: Implement complete nonmutating asset/dataset preflight**
 
-Validate stable-key/type uniqueness and relationship/category references. Verify source existence, real MIME, allowed size, image readability/dimensions, PDF signature/EOF, and exact `/Lang(es-AR)` or `/Lang(en-US)` metadata before DB/filesystem writes. Use Phase 4 size/MIME policy values; do not add a generic schema/content-sync framework.
+Validate stable-key/type uniqueness and relationship/category references. Verify source existence, image readability/dimensions, and each CV against the real Phase 4 policy: `.pdf` client/source extension, detected `application/pdf` MIME, and size `1..5 MiB`. Enforce the deterministic approved mapping `es -> docs/content/approved-assets/cv-es.pdf` and `en -> docs/content/approved-assets/cv-en.pdf`; do not inspect or require exact PDF-internal `/Lang` metadata. Planning verification on 2026-09-10 confirmed both current files are readable PDFs and pass those Phase 4 extension/MIME/size bounds. Do not add a generic schema/content-sync framework.
 
 - [ ] **Step 9: Implement transactional import and narrow compensation**
 
@@ -945,9 +945,9 @@ git commit -m "feat(api): add guarded initial content import"
 
 **Completion criterion:** A fresh migrated database imports once into the existing pristine singletons and empty graph; any prior editorial state rejects before mutation; all records remain draft/hidden/unpublished; storage compensation owns only files created by the failed attempt.
 
-### Task 13: Verify the real Caddy/Next/Laravel media topology
+### Task 13: Verify the real Caddy/Next/Laravel runtime topology
 
-**Objective:** Prove or disprove the preferred `next/image` + Phase 4 `/storage/...` route through the actual Compose topology before authorizing any media workaround.
+**Objective:** Prove or disprove both the preferred `next/image` + Phase 4 `/storage/...` route and React-cache request lifecycle through the actual Compose topology before authorizing any workaround.
 
 **Files:**
 - Create: `docs/testing/PHASE_5_VERIFICATION.md`
@@ -957,7 +957,7 @@ git commit -m "feat(api): add guarded initial content import"
 
 **Interfaces:**
 - Consumes: Tasks 6/9 image components, Task 12 importer, current `compose.yaml`, `infra/caddy/Caddyfile`, Phase 4 `/storage/*` ownership.
-- Produces: recorded API value, rendered image HTML, optimizer URL/status/content type, visible browser result, and internal-origin leak check.
+- Produces: recorded API value, rendered image HTML, optimizer URL/status/content type, visible browser result, internal-origin leak check, and real per-request Laravel acquisition counts.
 
 - [ ] **Step 1: Start a named isolated integration stack and verify its exact target**
 
@@ -988,24 +988,48 @@ Expected: both resources become visible using the normal Phase 4 validation/publ
 
 Through `http://localhost:8015`, record `/api/v1/es/profile` photo value, `/es` emitted `img`/`srcset` markup, the corresponding `/_next/image?...` request/status/content type, and the visible crop. Search page source/network URLs for `http://api`, Docker hostnames, and `INTERNAL_API_ORIGIN`; expect none. Repeat representative light/dark and narrow/wide crops.
 
-- [ ] **Step 4: Apply the mandatory incompatibility gate**
+- [ ] **Step 4: Prove request-scoped sharing and next-request reacquisition in the real runtime**
 
-If root-relative `/storage/...` works through the optimizer, record PASS and retain it. If the Phase 4 contract already supplies an approved public absolute origin and only a narrow `remotePatterns` entry is necessary, add only that exact origin and rerun. If neither approved route works, **STOP execution here**: record request/response evidence and elevate the incompatibility. Do not create a Next proxy/Route Handler, change the API, expose `api:80`, copy media locally, or open broad remote patterns.
+Use the API container's existing Apache access log on stdout as safe test evidence; add no application endpoint, BFF, production instrumentation, or response-body logging. Record a UTC start marker, request `http://localhost:8015/es?request-scope-probe=1` once with `Invoke-WebRequest`, then inspect `docker compose -p $mediaProject logs --no-log-prefix --since $probeStart api`. Filter only exact GET lines for the six localized content routes. Require exactly six acquisitions total and exactly one for each endpoint. Make a second independent request to `?request-scope-probe=2`, re-read logs from the same marker, and require exactly twelve acquisitions total and exactly two per endpoint. This runtime evidence—not the Task 3/10 unit and module mocks—proves page/metadata sharing within a request and six fresh no-store acquisitions on the next request.
 
-- [ ] **Step 5: Clean only the named isolated stack**
+```powershell
+$contentEndpoints = @('profile', 'site', 'experiences', 'work-cases', 'projects', 'technologies')
+$probePattern = '"GET /api/v1/es/(profile|site|experiences|work-cases|projects|technologies) HTTP/'
+$probeStart = (Get-Date).ToUniversalTime().ToString('o')
+Invoke-WebRequest -UseBasicParsing 'http://localhost:8015/es?request-scope-probe=1' | Out-Null
+$firstHits = docker compose -p $mediaProject logs --no-log-prefix --since $probeStart api | Select-String -Pattern $probePattern
+if ($firstHits.Count -ne 6) { throw "Expected 6 first-request acquisitions; found $($firstHits.Count)." }
+foreach ($endpoint in $contentEndpoints) {
+    if (($firstHits | Select-String -SimpleMatch "/api/v1/es/$endpoint ").Count -ne 1) { throw "Unexpected first-request count for $endpoint." }
+}
+Invoke-WebRequest -UseBasicParsing 'http://localhost:8015/es?request-scope-probe=2' | Out-Null
+$secondHits = docker compose -p $mediaProject logs --no-log-prefix --since $probeStart api | Select-String -Pattern $probePattern
+if ($secondHits.Count -ne 12) { throw "Expected 12 cumulative acquisitions; found $($secondHits.Count)." }
+foreach ($endpoint in $contentEndpoints) {
+    if (($secondHits | Select-String -SimpleMatch "/api/v1/es/$endpoint ").Count -ne 2) { throw "Unexpected two-request count for $endpoint." }
+}
+```
+
+If either count differs, preserve the filtered access-log evidence, perform only Step 6's isolated-stack cleanup, and then **STOP execution before Task 14**. Diagnose the installed Next/React lifecycle before changing architecture; do not add `unstable_cache`, persistent cache, a BFF, or productive instrumentation.
+
+- [ ] **Step 5: Apply the mandatory media incompatibility gate**
+
+If root-relative `/storage/...` works through the optimizer, record PASS and retain it. If the Phase 4 contract already supplies an approved public absolute origin and only a narrow `remotePatterns` entry is necessary, add only that exact origin and rerun. If neither approved route works, record request/response evidence, perform only Step 6's isolated-stack cleanup, and then **STOP execution before Task 14** to elevate the incompatibility. Do not create a Next proxy/Route Handler, change the API, expose `api:80`, copy media locally, or open broad remote patterns.
+
+- [ ] **Step 6: Clean only the named isolated stack**
 
 First run `docker compose -p $mediaProject ps -a` and confirm every container/volume belongs to `portfolio-phase5-media`; then run `docker compose -p $mediaProject down --volumes` and `Remove-Item Env:GATEWAY_PORT -ErrorAction SilentlyContinue`. Do not run a broad/default-project volume removal.
 
-- [ ] **Step 6: Commit successful evidence and any approved narrow fix**
+- [ ] **Step 7: Commit successful evidence and any approved narrow fix**
 
 ```powershell
 git add docs/testing/PHASE_5_VERIFICATION.md web/next.config.ts web/src/components/sections/hero-section.tsx web/src/components/sections/projects-section.tsx
-git commit -m "test: verify phase 5 public media topology"
+git commit -m "test: verify phase 5 runtime topology"
 ```
 
 Omit unchanged paths from `git add`. Do not commit a workaround after a STOP result.
 
-**Completion criterion:** The preferred media flow has real Compose/Caddy/optimizer/browser evidence with no private origin, or execution has stopped with a concrete incompatibility before any unapproved architecture change.
+**Completion criterion:** The preferred media flow has real Compose/Caddy/optimizer/browser evidence with no private origin and the installed runtime proves exactly six Laravel acquisitions per independent page request, or execution has stopped with concrete evidence before any unapproved architecture change.
 
 ### Task 14: Stabilize responsive, accessibility, hydration, and client-island integration
 
@@ -1091,6 +1115,8 @@ Only include files actually changed by evidence-backed fixes.
 **Interfaces:**
 - Consumes: every Task 1–14 deliverable, Phase 2 responsive spec, Phase 4 API/publication flow, approved editorial sources, and the spec §3.1/31/35 gates.
 - Produces: final command/browser evidence, documentation consistent with runtime, technical completion status, and a separate editorial-readiness verdict.
+
+**Human-evidence rule:** If the executor lacks a real browser, the required zoom/JavaScript-disabled mode, a real screen-reader/assistive-technology setup, or an authorized human Filament editorial review, stop that specific evidence step and request human execution. Continue independent technical verification where possible, but never fabricate, infer, or copy forward a PASS. Likewise, if human-approved Work Case copy, Technology-group labels, or the Experience release decision are unavailable, do not synthesize them: record **IMPLEMENTATION COMPLETE / EDITORIAL ACCEPTANCE BLOCKED** and do not mark Phase 5 accepted.
 
 - [ ] **Step 1: Document the implemented architecture and operator workflow**
 
@@ -1201,7 +1227,7 @@ Tasks 4 and 11 may be implemented in either order after Task 1 because they shar
 | 1. Six runtime-validated contracts | Tasks 1–2 |
 | 2. Six parallel no-store requests/coordinated SSR | Tasks 2–3, 10 |
 | 3. Structural/regional/empty/malformed/unexpected distinction | Tasks 4–5, 7–10 |
-| 4. Laravel-only temporal cache and next-request reacquisition | Tasks 2–3, 10, 15 |
+| 4. Laravel-only temporal cache and next-request reacquisition | Tasks 2–3, 10, 13 |
 | 5. Build without Laravel | Tasks 10, 14, 15 |
 | 6. Navigation/locale/hash/theme/dialog/no-JS | Tasks 4–5, 14–15 |
 | 7. Cases-first Work and progressive Indexed Detail | Task 7, Tasks 14–15 |
@@ -1220,8 +1246,8 @@ Tasks 4 and 11 may be implemented in either order after Task 1 because they shar
 
 1. **Media topology:** Task 13 may prove that relative `/storage/...` cannot be resolved by the Next optimizer from inside the current container topology. Stop before a proxy, API change, local copy, internal hostname, or broad `remotePatterns`; elevate evidence for a new human decision.
 2. **Editorial readiness:** the Work Case field gap and Technology labels currently block publication; Experience requires approved structured data or an explicit empty-release decision. Technical completion must not be reported as Phase 5 acceptance.
-3. **Native browser behavior:** `<dialog>`, fragment focus, no-JS, zoom, screen reader, and actual hydration console behavior require Task 15 real-browser evidence. A jsdom pass cannot waive this gate.
-4. **Request-scoped caching:** React `cache()` must remain render/request scoped under installed Next 16.2.12. If execution shows cross-request persistence or page/metadata duplicate acquisition, stop and diagnose the installed runtime; do not replace it with `unstable_cache`.
+3. **Native browser behavior:** `<dialog>`, fragment focus, no-JS, zoom, screen reader, and actual hydration console behavior require Task 15 real-browser evidence. A jsdom pass cannot waive this gate; missing executor capability requires explicit human handoff, never fabricated evidence.
+4. **Request-scoped caching:** React `cache()` must remain render/request scoped under installed Next 16.2.12. Task 3/10 unit tests prove wiring only; Task 13 must prove the lifecycle from real Apache access-log counts. If execution shows cross-request persistence or page/metadata duplicate acquisition, stop and diagnose the installed runtime; do not replace it with `unstable_cache`.
 5. **Import compensation:** if the existing asset service cannot expose enough ownership information to identify only files created by the current import, stop before deleting by namespace/glob or building a generic media transaction manager.
 6. **Spec/Phase 4 contract mismatch:** any newly observed public field, nullable rule, ordering, publication validator, or route mismatch must be elevated and reconciled with `docs/api/PUBLIC_API_V1.md`; do not invent a frontend alternate contract.
 
@@ -1232,6 +1258,11 @@ Tasks 4 and 11 may be implemented in either order after Task 1 because they shar
 - [x] Type/function names are consistent from validators through fetchers, loader, page, and sections.
 - [x] Producer-before-consumer dependencies are explicit; no task relies on an undefined prior interface.
 - [x] The approved pristine-singleton/twelve-empty-table erratum is reflected in dataset/import tests and acceptance.
+- [x] Success-envelope validation requires valid `data` and mutual exclusion with `error` while tolerating compatible unconsumed top-level fields; it is not stricter than Phase 4.
+- [x] PDF import validation reuses Phase 4 extension/MIME/size policy plus the approved locale-to-source mapping; observed `/Lang` metadata is not a new requirement.
+- [x] Unit tests prove loader/cache wiring, while Task 13 alone owns real same-request and next-request lifecycle evidence.
+- [x] Indexed Detail automatic activation is fully specified; no interaction decision is deferred to implementation.
+- [x] Manual browser/assistive-technology and editorial evidence has an explicit truthful human-handoff path.
 - [x] Work Case, Experience, Technology-label, and Project editorial gaps remain unresolved by code and are carried into the final gate.
 - [x] Server/client, cache, metadata, failure, anchor, breakpoint, no-JS, and media boundaries remain exactly those approved.
 - [x] No task adds Phase 6, 7, 8, 10, 11, deployment, server, or Cloudflare scope.
