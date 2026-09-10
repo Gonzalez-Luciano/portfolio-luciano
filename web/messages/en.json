@@ -55,6 +55,7 @@
       "current": "Current theme",
       "light": "Light",
       "dark": "Dark"
-    }
+    },
+    "skipToContent": "Skip to content"
   }
 }
