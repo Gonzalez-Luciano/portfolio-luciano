@@ -22,7 +22,7 @@ export type PrimaryDestination = {
  * Work, Expertise, Projects, Approach, Contact. This order is identical on
  * desktop, mobile, and the no-JavaScript fallback.
  */
-export const PRIMARY_DESTINATIONS: readonly PrimaryDestination[] = [
+export const PRIMARY_DESTINATIONS = [
   {id: 'work', labelKey: 'nav.work'},
   {id: 'expertise', labelKey: 'nav.expertise'},
   {id: 'projects', labelKey: 'nav.projects'},

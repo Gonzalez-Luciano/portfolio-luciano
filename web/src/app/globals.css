@@ -324,6 +324,33 @@ a[href] {
   }
 }
 
+/* --------------------------------------------------------------------------
+   `<noscript>` fallback nav — visible only below 64rem, where the JS-only
+   Menu trigger is unusable without JavaScript. At >= 64rem the real desktop
+   PrimaryNavigation (`.header-desktop-only`) already covers the same five
+   destinations, so the fallback is hidden there to avoid a duplicate,
+   unstyled second nav (spec §19/§25).
+   -------------------------------------------------------------------------- */
+.site-header__noscript-nav {
+  padding-block: var(--space-3);
+  border-top: var(--rule-standard) solid var(--color-border-meaningful);
+}
+
+.site-header__noscript-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+@media (min-width: 64rem) {
+  .site-header__noscript-nav {
+    display: none;
+  }
+}
+
 .primary-navigation__list {
   list-style: none;
   margin: 0;

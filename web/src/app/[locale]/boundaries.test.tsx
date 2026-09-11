@@ -74,7 +74,10 @@ describe('error.tsx', () => {
     );
 
     expect(
-      screen.getByText('No pudimos cargar el contenido del portfolio.'),
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'No pudimos cargar el contenido del portfolio.',
+      }),
     ).toBeInTheDocument();
     expect(screen.queryByText(/DB pool exhausted/)).toBeNull();
     expect(screen.queryByText(/10\.0\.0\.7/)).toBeNull();
@@ -92,7 +95,10 @@ describe('error.tsx', () => {
     );
 
     expect(
-      screen.getByText("We couldn't load the portfolio content."),
+      screen.getByRole('heading', {
+        level: 1,
+        name: "We couldn't load the portfolio content.",
+      }),
     ).toBeInTheDocument();
   });
 });

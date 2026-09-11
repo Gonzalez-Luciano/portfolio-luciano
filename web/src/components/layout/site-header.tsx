@@ -16,6 +16,14 @@ import {
  * the right one; the header never branches on a JS breakpoint. The Menu trigger
  * and interactive theme controls carry the JS-only dead-control hiding contract.
  *
+ * The `<noscript>` fallback nav is a SEPARATE concern from that JS-only
+ * contract: browsers always render `<noscript>` content when scripting is
+ * off, regardless of viewport, so `.site-header__noscript-nav` carries its own
+ * plain `@media (min-width: 64rem)` rule (globals.css) hiding it at desktop
+ * widths, where the real desktop `PrimaryNavigation` already covers the same
+ * five destinations. Below 64rem it stays visible without JS, standing in for
+ * the unusable JS-only Menu trigger/dialog.
+ *
  * `structural-failure` (spec §15.1): NO PrimaryNavigation, NO MobileNavigation,
  * NO `<noscript>` nav, NO identity link when the name is absent — but language
  * and theme controls stay.

@@ -116,6 +116,14 @@ describe('SiteHeader — valid variant', () => {
     expect(otherLocaleLink?.textContent).toBe('English');
   });
 
+  it('carries the CSS class that hides the no-script fallback at >= 64rem so it never duplicates the desktop bar (jsdom cannot evaluate the media query itself; a real browser applies it via this class)', () => {
+    const doc = serverDoc(<SiteHeader locale="es" labels={labels} />);
+
+    expect(doc.querySelector('noscript nav')?.className).toBe(
+      'site-header__noscript-nav',
+    );
+  });
+
   it('keeps the Menu trigger and the theme controls under the JS-only hiding contract while native anchors stay outside it', () => {
     const {container} = render(<SiteHeader locale="es" labels={labels} />);
     const doc = serverDoc(<SiteHeader locale="es" labels={labels} />);
