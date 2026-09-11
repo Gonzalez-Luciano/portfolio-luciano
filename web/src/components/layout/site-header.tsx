@@ -114,7 +114,10 @@ export function SiteHeader({
 
       {isValid ? (
         <noscript>
-          <nav aria-label={labels.navLabel} className="site-header__noscript-nav">
+          <nav
+            aria-label={labels.navLabel}
+            className="site-header__noscript-nav"
+          >
             <ul>
               {PRIMARY_DESTINATIONS.map((destination) => (
                 <li key={destination.id}>

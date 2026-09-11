@@ -24,10 +24,7 @@ export type ApiResult<T> = ApiSuccess<T> | ApiError;
  */
 
 export type TechnologyCategory =
-  | 'backend'
-  | 'data'
-  | 'integration'
-  | 'collaboration';
+  'backend' | 'data' | 'integration' | 'collaboration';
 
 /** A decorative media reference. `alt` is intentionally absent. */
 export type MediaIcon = {
@@ -146,10 +143,7 @@ export type EndpointName =
 
 /** Normalised, safe categories for a known endpoint failure (spec section 12). */
 export type EndpointFailureKind =
-  | 'configuration'
-  | 'network'
-  | 'http'
-  | 'malformed';
+  'configuration' | 'network' | 'http' | 'malformed';
 
 /**
  * A safe, diagnostic-only description of a failed endpoint acquisition. It
@@ -162,8 +156,7 @@ export type EndpointFailure = {
 };
 
 export type EndpointResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; failure: EndpointFailure };
+  {ok: true; data: T} | {ok: false; failure: EndpointFailure};
 
 /**
  * The coordinated loader result (spec section 13). Field names are the

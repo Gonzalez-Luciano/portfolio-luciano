@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import {describe, expect, it} from 'vitest';
 
 import {
   isExperienceList,
@@ -31,12 +31,12 @@ describe('isProfile', () => {
   });
 
   it('accepts a valid profile with a nullable photo populated', () => {
-    expect(isProfile({ ...validProfile, photo: validMediaWithAlt })).toBe(true);
+    expect(isProfile({...validProfile, photo: validMediaWithAlt})).toBe(true);
   });
 
   it('tolerates additional unconsumed backend fields', () => {
     expect(
-      isProfile({ ...validProfile, location: 'Test City', legacy_id: 7 }),
+      isProfile({...validProfile, location: 'Test City', legacy_id: 7}),
     ).toBe(true);
   });
 
@@ -44,14 +44,26 @@ describe('isProfile', () => {
     ['a non-object payload', 'not-an-object'],
     ['a null payload', null],
     ['an array payload', [validProfile]],
-    ['a missing required key', { ...withoutKey(validProfile, 'headline') }],
-    ['an explicit undefined required key', { ...validProfile, headline: undefined }],
-    ['a wrong primitive type', { ...validProfile, cta: 42 }],
-    ['a null value in a required string', { ...validProfile, short_summary: null }],
-    ['a photo missing its alt text', { ...validProfile, photo: { url: '/storage/x.jpg' } }],
+    ['a missing required key', {...withoutKey(validProfile, 'headline')}],
+    [
+      'an explicit undefined required key',
+      {...validProfile, headline: undefined},
+    ],
+    ['a wrong primitive type', {...validProfile, cta: 42}],
+    [
+      'a null value in a required string',
+      {...validProfile, short_summary: null},
+    ],
+    [
+      'a photo missing its alt text',
+      {...validProfile, photo: {url: '/storage/x.jpg'}},
+    ],
     [
       'a photo url that is not a root-relative storage path',
-      { ...validProfile, photo: { url: 'https://cdn.example.test/x.jpg', alt: 'x' } },
+      {
+        ...validProfile,
+        photo: {url: 'https://cdn.example.test/x.jpg', alt: 'x'},
+      },
     ],
   ];
 
@@ -66,23 +78,25 @@ describe('isTechnologyList', () => {
   });
 
   it('accepts a list with a null icon and a populated icon', () => {
-    expect(isTechnologyList([validTechnology, validTechnologyWithIcon])).toBe(true);
+    expect(isTechnologyList([validTechnology, validTechnologyWithIcon])).toBe(
+      true,
+    );
   });
 
   it('rejects one malformed item inside a collection', () => {
-    expect(isTechnologyList([validTechnology, { ...validTechnology, name: 3 }])).toBe(
-      false,
-    );
+    expect(
+      isTechnologyList([validTechnology, {...validTechnology, name: 3}]),
+    ).toBe(false);
   });
 
   const rejected: Case[] = [
     ['a non-array payload', validTechnology],
     ['a category outside the closed enum', [malformedTechnology]],
     ['a missing category', [withoutKey(validTechnology, 'category')]],
-    ['an icon that is a bare string', [{ ...validTechnology, icon: 'icon.svg' }]],
+    ['an icon that is a bare string', [{...validTechnology, icon: 'icon.svg'}]],
     [
       'an icon url that is not a storage path',
-      [{ ...validTechnology, icon: { url: 'icon.svg' } }],
+      [{...validTechnology, icon: {url: 'icon.svg'}}],
     ],
   ];
 
@@ -99,35 +113,48 @@ describe('isExperienceList', () => {
   it('accepts a current experience (end is null) with an organization', () => {
     expect(
       isExperienceList([
-        { ...validExperience, organization: 'Test Organization', end: null },
+        {...validExperience, organization: 'Test Organization', end: null},
       ]),
     ).toBe(true);
   });
 
   it('accepts a closed experience with a valid YYYY-MM end', () => {
-    expect(isExperienceList([{ ...validExperience, end: '2023-12' }])).toBe(true);
+    expect(isExperienceList([{...validExperience, end: '2023-12'}])).toBe(true);
   });
 
   it('accepts empty highlights and technologies arrays', () => {
     expect(
-      isExperienceList([{ ...validExperience, highlights: [], technologies: [] }]),
+      isExperienceList([
+        {...validExperience, highlights: [], technologies: []},
+      ]),
     ).toBe(true);
   });
 
   const rejected: Case[] = [
-    ['a missing organization key', [withoutKey(validExperience, 'organization')]],
-    ['a start month above 12', [{ ...validExperience, start: '2020-13' }]],
-    ['a start month of 00', [{ ...validExperience, start: '2020-00' }]],
-    ['a non-zero-padded start month', [{ ...validExperience, start: '2020-1' }]],
-    ['a free-text start value', [{ ...validExperience, start: 'January 2020' }]],
-    ['a malformed end month', [{ ...validExperience, end: '2020-99' }]],
-    ['a non-string highlight', [{ ...validExperience, highlights: ['ok', 5] }]],
+    [
+      'a missing organization key',
+      [withoutKey(validExperience, 'organization')],
+    ],
+    ['a start month above 12', [{...validExperience, start: '2020-13'}]],
+    ['a start month of 00', [{...validExperience, start: '2020-00'}]],
+    ['a non-zero-padded start month', [{...validExperience, start: '2020-1'}]],
+    ['a free-text start value', [{...validExperience, start: 'January 2020'}]],
+    ['a malformed end month', [{...validExperience, end: '2020-99'}]],
+    ['a non-string highlight', [{...validExperience, highlights: ['ok', 5]}]],
     [
       'a malformed nested technology',
-      [{ ...validExperience, technologies: [validTechnology, malformedTechnology] }],
+      [
+        {
+          ...validExperience,
+          technologies: [validTechnology, malformedTechnology],
+        },
+      ],
     ],
     ['a missing highlights key', [withoutKey(validExperience, 'highlights')]],
-    ['one malformed item among valid ones', [validExperience, { ...validExperience, role: 9 }]],
+    [
+      'one malformed item among valid ones',
+      [validExperience, {...validExperience, role: 9}],
+    ],
   ];
 
   it.each(rejected)('rejects %s', (_description, payload) => {
@@ -145,21 +172,27 @@ describe('isWorkCaseList', () => {
   });
 
   it('tolerates additional unconsumed fields on an item', () => {
-    expect(isWorkCaseList([{ ...validWorkCase, confidentiality_note: 'x' }])).toBe(
-      true,
-    );
+    expect(
+      isWorkCaseList([{...validWorkCase, confidentiality_note: 'x'}]),
+    ).toBe(true);
   });
 
   const rejected: Case[] = [
     ['a missing narrative field', [withoutKey(validWorkCase, 'outcome')]],
-    ['a null narrative field', [{ ...validWorkCase, problem: null }]],
-    ['a wrong primitive narrative field', [{ ...validWorkCase, contribution: 12 }]],
+    ['a null narrative field', [{...validWorkCase, problem: null}]],
+    [
+      'a wrong primitive narrative field',
+      [{...validWorkCase, contribution: 12}],
+    ],
     ['a missing technologies key', [withoutKey(validWorkCase, 'technologies')]],
     [
       'a malformed nested technology',
-      [{ ...validWorkCase, technologies: [malformedTechnology] }],
+      [{...validWorkCase, technologies: [malformedTechnology]}],
     ],
-    ['one malformed item among valid ones', [validWorkCase, { ...validWorkCase, title: 1 }]],
+    [
+      'one malformed item among valid ones',
+      [validWorkCase, {...validWorkCase, title: 1}],
+    ],
   ];
 
   it.each(rejected)('rejects %s', (_description, payload) => {
@@ -200,30 +233,27 @@ describe('isProjectList', () => {
 
   it('accepts null demo_url and repository_url', () => {
     expect(
-      isProjectList([{ ...validProject, demo_url: null, repository_url: null }]),
+      isProjectList([{...validProject, demo_url: null, repository_url: null}]),
     ).toBe(true);
   });
 
   const rejected: Case[] = [
-    ['a non-boolean featured flag', [{ ...validProject, featured: 'yes' }]],
+    ['a non-boolean featured flag', [{...validProject, featured: 'yes'}]],
     ['a missing solution field', [withoutKey(validProject, 'solution')]],
     [
       'an image missing its alt text',
-      [{ ...validProject, image: { url: '/storage/x.jpg' } }],
+      [{...validProject, image: {url: '/storage/x.jpg'}}],
     ],
-    [
-      'a non-string demo url',
-      [{ ...validProject, demo_url: 42 }],
-    ],
-    [
-      'a non-string repository url',
-      [{ ...validProject, repository_url: ['x'] }],
-    ],
+    ['a non-string demo url', [{...validProject, demo_url: 42}]],
+    ['a non-string repository url', [{...validProject, repository_url: ['x']}]],
     [
       'a malformed nested technology',
-      [{ ...validProject, technologies: [malformedTechnology] }],
+      [{...validProject, technologies: [malformedTechnology]}],
     ],
-    ['one malformed item among valid ones', [validProject, { ...validProject, key: 4 }]],
+    [
+      'one malformed item among valid ones',
+      [validProject, {...validProject, key: 4}],
+    ],
   ];
 
   it.each(rejected)('rejects %s', (_description, payload) => {
@@ -237,7 +267,7 @@ describe('isSiteConfiguration', () => {
   });
 
   it('accepts a null cv reference', () => {
-    expect(isSiteConfiguration({ ...validSite, cv: null })).toBe(true);
+    expect(isSiteConfiguration({...validSite, cv: null})).toBe(true);
   });
 
   it('accepts empty professional_links, expertise_areas and work_principles', () => {
@@ -252,32 +282,32 @@ describe('isSiteConfiguration', () => {
   });
 
   it('tolerates additional unconsumed fields', () => {
-    expect(isSiteConfiguration({ ...validSite, meta_title: 'x' })).toBe(true);
+    expect(isSiteConfiguration({...validSite, meta_title: 'x'})).toBe(true);
   });
 
   const rejected: Case[] = [
     ['a missing contact_intro', withoutKey(validSite, 'contact_intro')],
     [
       'technology groups in the wrong order',
-      { ...validSite, technology_groups: technologyGroupsWrongOrder },
+      {...validSite, technology_groups: technologyGroupsWrongOrder},
     ],
     [
       'technology groups with a duplicate key',
-      { ...validSite, technology_groups: technologyGroupsDuplicate },
+      {...validSite, technology_groups: technologyGroupsDuplicate},
     ],
     [
       'technology groups with a fifth entry',
-      { ...validSite, technology_groups: technologyGroupsExtraEntry },
+      {...validSite, technology_groups: technologyGroupsExtraEntry},
     ],
     [
       'technology groups missing a label',
       {
         ...validSite,
         technology_groups: [
-          { key: 'backend' },
-          { key: 'data', label: 'Test Data' },
-          { key: 'integration', label: 'Test Integration' },
-          { key: 'collaboration', label: 'Test Collaboration' },
+          {key: 'backend'},
+          {key: 'data', label: 'Test Data'},
+          {key: 'integration', label: 'Test Integration'},
+          {key: 'collaboration', label: 'Test Collaboration'},
         ],
       },
     ],
@@ -286,7 +316,7 @@ describe('isSiteConfiguration', () => {
       {
         ...validSite,
         professional_links: [
-          { key: 'website', label: 'Test', href: 'https://example.test' },
+          {key: 'website', label: 'Test', href: 'https://example.test'},
         ],
       },
     ],
@@ -295,7 +325,7 @@ describe('isSiteConfiguration', () => {
       {
         ...validSite,
         professional_links: [
-          { key: 'email', label: 'Test', href: 'https://example.test' },
+          {key: 'email', label: 'Test', href: 'https://example.test'},
         ],
       },
     ],
@@ -304,25 +334,25 @@ describe('isSiteConfiguration', () => {
       {
         ...validSite,
         professional_links: [
-          { key: 'linkedin', label: 'Test', href: 'example.test/in/x' },
+          {key: 'linkedin', label: 'Test', href: 'example.test/in/x'},
         ],
       },
     ],
     [
       'an expertise area missing its title',
-      { ...validSite, expertise_areas: [{ key: 'x', description: null }] },
+      {...validSite, expertise_areas: [{key: 'x', description: null}]},
     ],
     [
       'a work principle missing its statement',
-      { ...validSite, work_principles: [{ key: 'x' }] },
+      {...validSite, work_principles: [{key: 'x'}]},
     ],
     [
       'a cv reference whose url is not a /cv/ pdf path',
-      { ...validSite, cv: { url: '/storage/cv.pdf', label: 'Test CV' } },
+      {...validSite, cv: {url: '/storage/cv.pdf', label: 'Test CV'}},
     ],
     [
       'a cv reference missing its label',
-      { ...validSite, cv: { url: '/cv/runtime-test.pdf' } },
+      {...validSite, cv: {url: '/cv/runtime-test.pdf'}},
     ],
   ];
 

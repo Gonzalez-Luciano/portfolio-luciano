@@ -95,7 +95,10 @@ export function ContactSection({
             <ul className="contact__actions">
               {links.map((link) => (
                 <li key={link.key} className="contact__action-item">
-                  <ContactLink link={link} opensNewTabLabel={labels.opensNewTab} />
+                  <ContactLink
+                    link={link}
+                    opensNewTabLabel={labels.opensNewTab}
+                  />
                 </li>
               ))}
               {cv !== null ? (

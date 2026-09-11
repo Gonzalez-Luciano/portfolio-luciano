@@ -77,7 +77,11 @@ const SITE: SiteConfiguration = {
     {key: 'collaboration', label: 'Synthetic Collaboration Group'},
   ],
   professional_links: [
-    {key: 'linkedin', label: 'Synthetic LinkedIn', href: 'https://example.test/in/syn'},
+    {
+      key: 'linkedin',
+      label: 'Synthetic LinkedIn',
+      href: 'https://example.test/in/syn',
+    },
     {key: 'email', label: 'Synthetic Email', href: 'mailto:syn@example.test'},
   ],
   expertise_areas: [],
@@ -212,7 +216,9 @@ describe('[locale]/layout — shared-loader wiring', () => {
     );
 
     expectStructuralHeader(doc);
-    expect(doc.querySelector('#site-header-home')?.textContent).toBe(PROFILE.name);
+    expect(doc.querySelector('#site-header-home')?.textContent).toBe(
+      PROFILE.name,
+    );
     expect(doc.querySelector('.site-footer__identity')?.textContent).toBe(
       PROFILE.name,
     );

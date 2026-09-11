@@ -70,7 +70,9 @@ describe('requestPublicResource', () => {
 
   it('treats a success envelope without data as malformed', async () => {
     withOrigin();
-    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({meta: {page: 1}}));
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({meta: {page: 1}}));
 
     await expect(
       requestPublicResource('profile', 'es', isWidget, {fetchImpl}),
@@ -99,11 +101,11 @@ describe('requestPublicResource', () => {
 
   it('treats a 2xx error envelope as malformed', async () => {
     withOrigin();
-    const fetchImpl = vi
-      .fn()
-      .mockResolvedValue(
-        jsonResponse({error: {code: 'not_found', message: 'nope', details: {}}}),
-      );
+    const fetchImpl = vi.fn().mockResolvedValue(
+      jsonResponse({
+        error: {code: 'not_found', message: 'nope', details: {}},
+      }),
+    );
 
     await expect(
       requestPublicResource('site', 'es', isWidget, {fetchImpl}),
@@ -132,9 +134,7 @@ describe('requestPublicResource', () => {
 
   it('treats data that the validator rejects as malformed', async () => {
     withOrigin();
-    const fetchImpl = vi
-      .fn()
-      .mockResolvedValue(jsonResponse({data: {id: 42}}));
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({data: {id: 42}}));
 
     await expect(
       requestPublicResource('profile', 'es', isWidget, {fetchImpl}),
@@ -246,9 +246,7 @@ describe('requestPublicResource', () => {
 
   it('never issues a second request after a failure', async () => {
     withOrigin();
-    const fetchImpl = vi
-      .fn()
-      .mockResolvedValue(jsonResponse({data: {id: 42}}));
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({data: {id: 42}}));
 
     await requestPublicResource('profile', 'es', isWidget, {fetchImpl});
 

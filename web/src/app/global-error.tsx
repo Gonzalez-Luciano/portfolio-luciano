@@ -40,10 +40,16 @@ export default function GlobalError({reset}: GlobalErrorProps) {
             padding: '4rem 1.5rem',
           }}
         >
-          <p lang="es" style={{fontSize: '1.25rem', fontWeight: 600, margin: '0 0 0.5rem'}}>
+          <p
+            lang="es"
+            style={{fontSize: '1.25rem', fontWeight: 600, margin: '0 0 0.5rem'}}
+          >
             No pudimos cargar el portfolio.
           </p>
-          <p lang="en" style={{fontSize: '1.25rem', fontWeight: 600, margin: '0 0 1.5rem'}}>
+          <p
+            lang="en"
+            style={{fontSize: '1.25rem', fontWeight: 600, margin: '0 0 1.5rem'}}
+          >
             We couldn&apos;t load the portfolio.
           </p>
           <button

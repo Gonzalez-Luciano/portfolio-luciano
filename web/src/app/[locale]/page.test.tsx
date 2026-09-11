@@ -38,7 +38,8 @@ vi.mock('next/navigation', () => ({
 }));
 
 const {loadPublicPortfolio} = vi.hoisted(() => ({
-  loadPublicPortfolio: vi.fn<(locale: string) => Promise<PublicPortfolioResults>>(),
+  loadPublicPortfolio:
+    vi.fn<(locale: string) => Promise<PublicPortfolioResults>>(),
 }));
 
 vi.mock('@/lib/api/load-public-portfolio', () => ({loadPublicPortfolio}));
@@ -97,13 +98,23 @@ const SITE: SiteConfiguration = {
     {key: 'collaboration', label: 'Synthetic Collaboration Group'},
   ],
   professional_links: [
-    {key: 'linkedin', label: 'Synthetic LinkedIn', href: 'https://example.test/in/syn'},
+    {
+      key: 'linkedin',
+      label: 'Synthetic LinkedIn',
+      href: 'https://example.test/in/syn',
+    },
     {key: 'email', label: 'Synthetic Email', href: 'mailto:syn@example.test'},
   ],
   expertise_areas: [
-    {key: 'syn-area', title: 'Synthetic Area Title', description: 'Synthetic area description.'},
+    {
+      key: 'syn-area',
+      title: 'Synthetic Area Title',
+      description: 'Synthetic area description.',
+    },
   ],
-  work_principles: [{key: 'syn-principle', statement: 'Synthetic principle statement.'}],
+  work_principles: [
+    {key: 'syn-principle', statement: 'Synthetic principle statement.'},
+  ],
   cv: {url: '/cv/syn.pdf', label: 'Synthetic CV'},
 };
 
@@ -190,7 +201,13 @@ function orderOf(html: string, ...ids: string[]): number[] {
   return ids.map((id) => html.indexOf(`id="${id}"`));
 }
 
-const PRIMARY_ANCHORS = ['work', 'expertise', 'projects', 'approach', 'contact'];
+const PRIMARY_ANCHORS = [
+  'work',
+  'expertise',
+  'projects',
+  'approach',
+  'contact',
+];
 
 beforeEach(() => {
   loadPublicPortfolio.mockReset();
@@ -252,7 +269,11 @@ describe.each(['es', 'en'] as const)(
     it('orders Work Cases before Experience', async () => {
       const {container} = await renderPage(locale);
 
-      const [wc, exp] = orderOf(container.innerHTML, 'work-cases', 'experience');
+      const [wc, exp] = orderOf(
+        container.innerHTML,
+        'work-cases',
+        'experience',
+      );
       expect(wc).toBeGreaterThan(-1);
       expect(exp).toBeGreaterThan(-1);
       expect(wc).toBeLessThan(exp);
@@ -261,7 +282,9 @@ describe.each(['es', 'en'] as const)(
     it('renders real Projects content, not the Site empty message, and no structural-failure copy', async () => {
       const {container} = await renderPage(locale);
 
-      const projects = container.querySelector('section#projects') as HTMLElement;
+      const projects = container.querySelector(
+        'section#projects',
+      ) as HTMLElement;
       expect(within(projects).getByText(PROJECT.title)).toBeInTheDocument();
       expect(
         within(projects).queryByText(SITE.projects_empty_message),
@@ -280,10 +303,13 @@ describe.each(['es', 'en'] as const)(
 describe.each([
   ['profile', {profile: fail<Profile>('profile')}],
   ['site', {site: fail<SiteConfiguration>('site')}],
-  ['profile and site', {
-    profile: fail<Profile>('profile'),
-    site: fail<SiteConfiguration>('site'),
-  }],
+  [
+    'profile and site',
+    {
+      profile: fail<Profile>('profile'),
+      site: fail<SiteConfiguration>('site'),
+    },
+  ],
   ['malformed profile', {profile: fail<Profile>('profile', 'malformed')}],
 ] as const)('structural failure — %s failed', (_label, override) => {
   it('renders only the technical structural-failure surface, no professional landmarks', async () => {
@@ -355,11 +381,15 @@ describe('regional failure — one collection failed', () => {
   it('treats a malformed collection result as a regional failure', async () => {
     const {container} = await renderPage(
       'en',
-      makeResults({technologies: fail<Technology[]>('technologies', 'malformed')}),
+      makeResults({
+        technologies: fail<Technology[]>('technologies', 'malformed'),
+      }),
     );
 
     expect(screen.getAllByRole('heading', {level: 1})).toHaveLength(1);
-    const expertise = container.querySelector('section#expertise') as HTMLElement;
+    const expertise = container.querySelector(
+      'section#expertise',
+    ) as HTMLElement;
     expect(expertise.querySelector('section#technologies')).not.toBeNull();
     expect(
       within(expertise).getByRole('button', {name: copy('en').retry}),
@@ -399,9 +429,9 @@ describe('regional failure — simultaneous collection failures', () => {
       ),
     ).not.toBeNull();
     expect(
-      (container.querySelector('section#expertise') as HTMLElement).querySelector(
-        'section#technologies',
-      ),
+      (
+        container.querySelector('section#expertise') as HTMLElement
+      ).querySelector('section#technologies'),
     ).not.toBeNull();
   });
 });
@@ -441,14 +471,14 @@ describe('empty-state — every collection legitimately empty', () => {
     expect(within(projects).queryByText(neutral)).not.toBeInTheDocument();
 
     expect(
-      within(container.querySelector('section#approach') as HTMLElement).getByText(
-        neutral,
-      ),
+      within(
+        container.querySelector('section#approach') as HTMLElement,
+      ).getByText(neutral),
     ).toBeInTheDocument();
     expect(
-      within(container.querySelector('section#expertise') as HTMLElement).getByText(
-        neutral,
-      ),
+      within(
+        container.querySelector('section#expertise') as HTMLElement,
+      ).getByText(neutral),
     ).toBeInTheDocument();
 
     // Neutral empty groups carry no Retry control.
@@ -480,14 +510,18 @@ describe('generateMetadata — basic Profile boundary (spec §28)', () => {
       makeResults({profile: fail<Profile>('profile')}),
     );
 
-    const es = await generateMetadata({params: Promise.resolve({locale: 'es'})});
+    const es = await generateMetadata({
+      params: Promise.resolve({locale: 'es'}),
+    });
     expect(es).toEqual({title: 'Portfolio no disponible'});
     expect(es).not.toHaveProperty('description');
 
     loadPublicPortfolio.mockResolvedValue(
       makeResults({profile: fail<Profile>('profile', 'malformed')}),
     );
-    const en = await generateMetadata({params: Promise.resolve({locale: 'en'})});
+    const en = await generateMetadata({
+      params: Promise.resolve({locale: 'en'}),
+    });
     expect(en).toEqual({title: 'Portfolio unavailable'});
     expect(en).not.toHaveProperty('description');
   });

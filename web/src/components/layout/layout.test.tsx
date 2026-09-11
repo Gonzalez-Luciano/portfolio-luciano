@@ -14,8 +14,17 @@ const labels: SiteHeaderLabels = {
     contact: 'Contacto',
   },
   menu: {open: 'Menú', close: 'Cerrar', title: 'Navegación'},
-  language: {label: 'Seleccionar idioma', spanish: 'Español', english: 'English'},
-  theme: {label: 'Tema', current: 'Tema actual', light: 'Claro', dark: 'Oscuro'},
+  language: {
+    label: 'Seleccionar idioma',
+    spanish: 'Español',
+    english: 'English',
+  },
+  theme: {
+    label: 'Tema',
+    current: 'Tema actual',
+    light: 'Claro',
+    dark: 'Oscuro',
+  },
 };
 
 const expectedHrefs = PRIMARY_DESTINATIONS.map(
@@ -87,10 +96,9 @@ describe('SiteHeader — valid variant', () => {
   it('points the identity link at #top', () => {
     render(<SiteHeader locale="es" labels={labels} name="Luciano González" />);
 
-    expect(screen.getByRole('link', {name: 'Luciano González'})).toHaveAttribute(
-      'href',
-      '#top',
-    );
+    expect(
+      screen.getByRole('link', {name: 'Luciano González'}),
+    ).toHaveAttribute('href', '#top');
   });
 
   it('gives the no-script fallback a named nav with the five anchors and a real other-locale link', () => {
@@ -120,7 +128,9 @@ describe('SiteHeader — valid variant', () => {
     ).not.toBeNull();
 
     expect(
-      container.querySelector('#primary-navigation-desktop a')?.closest('.js-only'),
+      container
+        .querySelector('#primary-navigation-desktop a')
+        ?.closest('.js-only'),
     ).toBeNull();
     expect(doc.querySelector('noscript nav a')?.closest('.js-only')).toBeNull();
   });

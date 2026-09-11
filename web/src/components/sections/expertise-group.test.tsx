@@ -152,9 +152,14 @@ describe('ExpertiseGroup — specialties + technologies present', () => {
       makeArea('second', null),
       makeArea('third', 'Third description.'),
     ];
-    const {container} = renderGroup(areas, okTech([makeTech('svc', 'backend')]));
+    const {container} = renderGroup(
+      areas,
+      okTech([makeTech('svc', 'backend')]),
+    );
 
-    const region = container.querySelector('section#specialties') as HTMLElement;
+    const region = container.querySelector(
+      'section#specialties',
+    ) as HTMLElement;
     expect(region).not.toBeNull();
     expect(region).toHaveAttribute('aria-labelledby', 'specialties-heading');
     expect(
@@ -219,10 +224,7 @@ describe('ExpertiseGroup — specialties + technologies present', () => {
   });
 
   it('uses the Site group label verbatim and never injects a derived category word', () => {
-    const {container} = renderGroup(
-      [],
-      okTech([makeTech('svc', 'backend')]),
-    );
+    const {container} = renderGroup([], okTech([makeTech('svc', 'backend')]));
 
     const region = technologiesRegion(container);
     expect(within(region).getByText('QA Backend')).toBeInTheDocument();
@@ -239,11 +241,15 @@ describe('ExpertiseGroup — nullable fields', () => {
       okTech([]),
     );
 
-    const region = container.querySelector('section#specialties') as HTMLElement;
+    const region = container.querySelector(
+      'section#specialties',
+    ) as HTMLElement;
     const items = within(region).getAllByRole('heading', {level: 4});
     expect(items).toHaveLength(2);
     expect(region.querySelectorAll('p')).toHaveLength(1);
-    expect(within(region).getByText('Present description.')).toBeInTheDocument();
+    expect(
+      within(region).getByText('Present description.'),
+    ).toBeInTheDocument();
     // No placeholder text stands in for the missing description.
     expect(region.textContent).not.toContain('null');
   });
@@ -258,8 +264,12 @@ describe('ExpertiseGroup — nullable fields', () => {
     );
 
     const region = technologiesRegion(container);
-    expect(within(region).getByText('Synthetic plain tool')).toBeInTheDocument();
-    expect(within(region).getByText('Synthetic iconed tool')).toBeInTheDocument();
+    expect(
+      within(region).getByText('Synthetic plain tool'),
+    ).toBeInTheDocument();
+    expect(
+      within(region).getByText('Synthetic iconed tool'),
+    ).toBeInTheDocument();
     // Exactly one decorative image, and it is hidden from assistive tech.
     const images = region.querySelectorAll('img');
     expect(images).toHaveLength(1);
@@ -272,10 +282,7 @@ describe('ExpertiseGroup — group omission', () => {
   it('omits a group with zero matching technologies while rendering the others', () => {
     const {container} = renderGroup(
       [],
-      okTech([
-        makeTech('be', 'backend'),
-        makeTech('int', 'integration'),
-      ]),
+      okTech([makeTech('be', 'backend'), makeTech('int', 'integration')]),
     );
 
     const labels = within(technologiesRegion(container))
@@ -313,7 +320,9 @@ describe('ExpertiseGroup — successful empty subsections', () => {
     expect(container.querySelector('section#technologies')).toBeNull();
     expect(container.querySelector('#specialties-heading')).toBeNull();
     expect(container.querySelector('#technologies-heading')).toBeNull();
-    expect(screen.queryByRole('button', {name: 'Retry'})).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Retry'}),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -327,7 +336,9 @@ describe('ExpertiseGroup — regional failure', () => {
     expect(
       within(region).getByRole('heading', {level: 3, name: 'Technologies'}),
     ).toBeInTheDocument();
-    expect(within(region).getByText(LABELS.regionalFailure)).toBeInTheDocument();
+    expect(
+      within(region).getByText(LABELS.regionalFailure),
+    ).toBeInTheDocument();
     expect(
       within(region).getByRole('button', {name: 'Retry'}),
     ).toBeInTheDocument();

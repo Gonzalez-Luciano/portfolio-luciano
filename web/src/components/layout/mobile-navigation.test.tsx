@@ -1,6 +1,13 @@
 import {afterEach, beforeAll, describe, expect, it, vi} from 'vitest';
 import {createRef, type ComponentProps} from 'react';
-import {act, cleanup, fireEvent, render, screen, within} from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react';
 import {MobileNavigation} from './mobile-navigation';
 
 /**
@@ -42,7 +49,11 @@ const labels = {
     approach: 'Forma de trabajo',
     contact: 'Contacto',
   },
-  language: {label: 'Seleccionar idioma', spanish: 'Español', english: 'English'},
+  language: {
+    label: 'Seleccionar idioma',
+    spanish: 'Español',
+    english: 'English',
+  },
 } as const;
 
 type MediaListener = (event: MediaQueryListEvent) => void;
@@ -82,7 +93,9 @@ function dialogEl(): HTMLDialogElement | null {
 function renderMenu(
   overrides: Partial<ComponentProps<typeof MobileNavigation>> = {},
 ) {
-  return render(<MobileNavigation locale="es" labels={labels} {...overrides} />);
+  return render(
+    <MobileNavigation locale="es" labels={labels} {...overrides} />,
+  );
 }
 
 afterEach(() => {
@@ -104,7 +117,9 @@ describe('MobileNavigation', () => {
 
     expect(showModal).toHaveBeenCalledTimes(1);
     expect(dialogEl()?.hasAttribute('open')).toBe(true);
-    expect(screen.getByRole('dialog', {name: 'Navegación'})).toBeInTheDocument();
+    expect(
+      screen.getByRole('dialog', {name: 'Navegación'}),
+    ).toBeInTheDocument();
   });
 
   it('keeps the trigger under the JS-only dead-control hiding contract', () => {
@@ -164,7 +179,10 @@ describe('MobileNavigation', () => {
 
     const dialog = dialogEl();
     const englishLink = within(dialog!).getByRole('link', {name: 'English'});
-    const inertClick = new MouseEvent('click', {bubbles: true, cancelable: true});
+    const inertClick = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+    });
     inertClick.preventDefault();
     fireEvent(englishLink, inertClick);
 

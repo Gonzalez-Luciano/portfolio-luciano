@@ -102,7 +102,11 @@ describe('LanguageSwitcher', () => {
     const onNavigate = vi.fn();
 
     render(
-      <LanguageSwitcher currentLocale="es" onNavigate={onNavigate} {...labels} />,
+      <LanguageSwitcher
+        currentLocale="es"
+        onNavigate={onNavigate}
+        {...labels}
+      />,
     );
 
     const click = new MouseEvent('click', {bubbles: true, cancelable: true});

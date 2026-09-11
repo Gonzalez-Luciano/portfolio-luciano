@@ -101,9 +101,7 @@ describe('WorkGroup — structural anchor', () => {
     expect(heading).toHaveTextContent('Work');
     expect(heading).toHaveClass('visually-hidden');
 
-    expect(
-      screen.getByRole('region', {name: 'Work'}),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('region', {name: 'Work'})).toBeInTheDocument();
   });
 
   it('keeps #work present for every branch of the matrix', () => {
@@ -191,7 +189,9 @@ describe('WorkGroup — both collections with content', () => {
 
     expect(screen.getByText('Synthetic Organization')).toBeInTheDocument();
     expect(screen.getByText('Synthetic Role')).toBeInTheDocument();
-    expect(screen.getByText('Synthetic experience summary sentence.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Synthetic experience summary sentence.'),
+    ).toBeInTheDocument();
     expect(region).toHaveTextContent('March 2021');
     expect(region).toHaveTextContent('July 2023');
     expect(screen.getByText('Synthetic highlight one')).toBeInTheDocument();
@@ -241,16 +241,11 @@ describe('WorkGroup — successful empty subsections', () => {
     expect(container.querySelector('section#work-cases')).toBeNull();
     expect(container.querySelector('#work-cases-heading')).toBeNull();
     expect(container.querySelector('section#experience')).not.toBeNull();
-    expect(
-      screen.queryByText(LABELS.neutralEmpty),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(LABELS.neutralEmpty)).not.toBeInTheDocument();
   });
 
   it('omits the experience section entirely when it is a successful empty array', () => {
-    const {container} = renderGroup(
-      okCases([makeCase(1)]),
-      okExperiences([]),
-    );
+    const {container} = renderGroup(okCases([makeCase(1)]), okExperiences([]));
 
     expect(container.querySelector('section#experience')).toBeNull();
     expect(container.querySelector('#experience-heading')).toBeNull();
@@ -267,7 +262,9 @@ describe('WorkGroup — successful empty subsections', () => {
     expect(container.querySelector('#work-cases-heading')).toBeNull();
     expect(container.querySelector('#experience-heading')).toBeNull();
     // Neutral, not a failure: no Retry control anywhere in the group.
-    expect(screen.queryByRole('button', {name: 'Retry'})).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Retry'}),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -284,7 +281,9 @@ describe('WorkGroup — regional failures', () => {
     expect(
       within(region).getByRole('heading', {level: 3, name: 'Work cases'}),
     ).toBeInTheDocument();
-    expect(within(region).getByText(LABELS.regionalFailure)).toBeInTheDocument();
+    expect(
+      within(region).getByText(LABELS.regionalFailure),
+    ).toBeInTheDocument();
     expect(
       within(region).getByRole('button', {name: 'Retry'}),
     ).toBeInTheDocument();
@@ -304,14 +303,19 @@ describe('WorkGroup — regional failures', () => {
     expect(
       within(region).getByRole('heading', {level: 3, name: 'Experience'}),
     ).toBeInTheDocument();
-    expect(within(region).getByText(LABELS.regionalFailure)).toBeInTheDocument();
+    expect(
+      within(region).getByText(LABELS.regionalFailure),
+    ).toBeInTheDocument();
     expect(
       within(region).getByRole('button', {name: 'Retry'}),
     ).toBeInTheDocument();
   });
 
   it('renders both failed sections with Retry and no neutral copy when both fail', () => {
-    const {container} = renderGroup(failed('work-cases'), failed('experiences'));
+    const {container} = renderGroup(
+      failed('work-cases'),
+      failed('experiences'),
+    );
 
     expect(container.querySelector('section#work-cases')).not.toBeNull();
     expect(container.querySelector('section#experience')).not.toBeNull();

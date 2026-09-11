@@ -10,8 +10,7 @@ import {PRIMARY_DESTINATIONS} from '@/i18n/anchors';
  * delegation on a wrapping client element).
  */
 
-export type PrimaryDestinationId =
-  (typeof PRIMARY_DESTINATIONS)[number]['id'];
+export type PrimaryDestinationId = (typeof PRIMARY_DESTINATIONS)[number]['id'];
 
 export type PrimaryDestinationLabels = Record<PrimaryDestinationId, string>;
 
@@ -45,14 +44,8 @@ export function PrimaryNavigation({
       <ol className="primary-navigation__list">
         {PRIMARY_DESTINATIONS.map((destination, index) => (
           <li key={destination.id} className="primary-navigation__item">
-            <a
-              href={`#${destination.id}`}
-              className="primary-navigation__link"
-            >
-              <span
-                className="primary-navigation__index"
-                aria-hidden="true"
-              >
+            <a href={`#${destination.id}`} className="primary-navigation__link">
+              <span className="primary-navigation__index" aria-hidden="true">
                 {String(index + 1).padStart(2, '0')}
               </span>
               <span className="primary-navigation__label">

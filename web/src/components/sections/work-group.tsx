@@ -1,13 +1,9 @@
-import type {
-  Experience,
-  EndpointResult,
-  WorkCase,
-} from '@/lib/api/types';
-import {NeutralEmptyState, RegionalFailure} from '@/components/ui/content-state';
+import type {Experience, EndpointResult, WorkCase} from '@/lib/api/types';
 import {
-  WorkCasesSection,
-  type WorkCaseFieldLabels,
-} from './work-cases-section';
+  NeutralEmptyState,
+  RegionalFailure,
+} from '@/components/ui/content-state';
+import {WorkCasesSection, type WorkCaseFieldLabels} from './work-cases-section';
 import {ExperienceSection} from './experience-section';
 
 /**
@@ -122,15 +118,9 @@ function renderWorkCases({
         {labels.workCases}
       </h3>
       {workCases.ok ? (
-        <WorkCasesSection
-          workCases={workCases.data}
-          labels={labels.fields}
-        />
+        <WorkCasesSection workCases={workCases.data} labels={labels.fields} />
       ) : (
-        <RegionalFailure
-          message={labels.regionalFailure}
-          retry={retry}
-        />
+        <RegionalFailure message={labels.regionalFailure} retry={retry} />
       )}
     </section>
   );
@@ -141,10 +131,7 @@ function renderExperience({
   locale,
   labels,
   retry,
-}: Pick<
-  WorkGroupProps,
-  'experiences' | 'locale' | 'labels' | 'retry'
->) {
+}: Pick<WorkGroupProps, 'experiences' | 'locale' | 'labels' | 'retry'>) {
   if (experiences.ok && experiences.data.length === 0) {
     return null;
   }
@@ -166,10 +153,7 @@ function renderExperience({
           labels={{currentExperienceEnd: labels.currentExperienceEnd}}
         />
       ) : (
-        <RegionalFailure
-          message={labels.regionalFailure}
-          retry={retry}
-        />
+        <RegionalFailure message={labels.regionalFailure} retry={retry} />
       )}
     </section>
   );

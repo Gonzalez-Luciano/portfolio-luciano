@@ -2,11 +2,7 @@ import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {cleanup, render, screen, within} from '@testing-library/react';
-import type {
-  EndpointResult,
-  Project,
-  SiteConfiguration,
-} from '@/lib/api/types';
+import type {EndpointResult, Project, SiteConfiguration} from '@/lib/api/types';
 import {ProjectsSection, type ProjectsSectionLabels} from './projects-section';
 import {ApproachSection, type ApproachSectionLabels} from './approach-section';
 import {ContactSection, type ContactSectionLabels} from './contact-section';
@@ -148,15 +144,23 @@ describe('ProjectsSection — content', () => {
     );
 
     const region = projectsRegion(container);
-    expect(within(region).getByText('Synthetic summary sentence.')).toBeInTheDocument();
+    expect(
+      within(region).getByText('Synthetic summary sentence.'),
+    ).toBeInTheDocument();
     expect(within(region).getByText('Problem')).toBeInTheDocument();
-    expect(within(region).getByText('Synthetic problem sentence.')).toBeInTheDocument();
+    expect(
+      within(region).getByText('Synthetic problem sentence.'),
+    ).toBeInTheDocument();
     expect(within(region).getByText('Solution')).toBeInTheDocument();
-    expect(within(region).getByText('Synthetic solution sentence.')).toBeInTheDocument();
+    expect(
+      within(region).getByText('Synthetic solution sentence.'),
+    ).toBeInTheDocument();
   });
 
   it('omits the media frame entirely when image is null', () => {
-    const {container} = renderProjects(okProjects([makeProject({image: null})]));
+    const {container} = renderProjects(
+      okProjects([makeProject({image: null})]),
+    );
     const region = projectsRegion(container);
     expect(region.querySelector('img')).toBeNull();
     expect(region.querySelector('figure')).toBeNull();
@@ -235,7 +239,9 @@ describe('ProjectsSection — empty is the §16 explicit exception', () => {
     const {container} = renderProjects(okProjects([]));
     const region = projectsRegion(container);
 
-    expect(within(region).getByText(PROJECTS_EMPTY_MESSAGE)).toBeInTheDocument();
+    expect(
+      within(region).getByText(PROJECTS_EMPTY_MESSAGE),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: 'Retry'}),
     ).not.toBeInTheDocument();
@@ -409,7 +415,9 @@ describe('ContactSection — validity rule (spec §23 / §16)', () => {
   });
 
   it('renders normally with an intro alone (no neutral copy)', () => {
-    const {container} = renderContact({intro: 'Synthetic contact intro sentence.'});
+    const {container} = renderContact({
+      intro: 'Synthetic contact intro sentence.',
+    });
     expect(
       within(contactRegion(container)).getByText(
         'Synthetic contact intro sentence.',
@@ -421,16 +429,18 @@ describe('ContactSection — validity rule (spec §23 / §16)', () => {
   it('renders normally with links alone (no neutral copy)', () => {
     const {container} = renderContact({links: CONTACT_LINKS});
     expect(screen.queryByText(NEUTRAL_EMPTY)).not.toBeInTheDocument();
-    expect(
-      within(contactRegion(container)).getAllByRole('link'),
-    ).toHaveLength(3);
+    expect(within(contactRegion(container)).getAllByRole('link')).toHaveLength(
+      3,
+    );
   });
 
   it('renders normally with a cv alone (no neutral copy)', () => {
     const {container} = renderContact({cv: CONTACT_CV});
     expect(screen.queryByText(NEUTRAL_EMPTY)).not.toBeInTheDocument();
     expect(
-      within(contactRegion(container)).getByRole('link', {name: 'Synthetic CV'}),
+      within(contactRegion(container)).getByRole('link', {
+        name: 'Synthetic CV',
+      }),
     ).toBeInTheDocument();
   });
 
@@ -460,7 +470,9 @@ describe('ContactSection — validity rule (spec §23 / §16)', () => {
       cv: null,
     });
     expect(
-      within(contactRegion(container)).queryByRole('link', {name: 'Synthetic CV'}),
+      within(contactRegion(container)).queryByRole('link', {
+        name: 'Synthetic CV',
+      }),
     ).toBeNull();
   });
 });
@@ -489,7 +501,10 @@ describe('ContactSection — link new-tab matrix (spec §23)', () => {
     const region = contactRegion(container);
 
     const email = within(region).getByRole('link', {name: 'Synthetic Email'});
-    expect(email).toHaveAttribute('href', 'mailto:synthetic-person@example.test');
+    expect(email).toHaveAttribute(
+      'href',
+      'mailto:synthetic-person@example.test',
+    );
     expect(email).not.toHaveAttribute('target');
     expect(email.querySelector('.visually-hidden')).toBeNull();
 

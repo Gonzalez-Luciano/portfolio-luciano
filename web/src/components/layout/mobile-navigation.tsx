@@ -161,7 +161,10 @@ export function MobileNavigation({
 
   // Component-local desktop media listener. No global breakpoint store.
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    if (
+      typeof window === 'undefined' ||
+      typeof window.matchMedia !== 'function'
+    ) {
       return;
     }
 
@@ -233,10 +236,7 @@ export function MobileNavigation({
               activation; PrimaryNavigation stays a Server Component. The
               delegated click only augments real anchor activation (mouse and
               keyboard alike already dispatch click on <a>). */}
-          <div
-            className="mobile-navigation__links"
-            onClick={handleDialogClick}
-          >
+          <div className="mobile-navigation__links" onClick={handleDialogClick}>
             <PrimaryNavigation
               id="primary-navigation-dialog"
               navLabel={labels.navLabel}

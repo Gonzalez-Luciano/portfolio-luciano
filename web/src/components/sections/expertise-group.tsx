@@ -3,7 +3,10 @@ import type {
   SiteConfiguration,
   Technology,
 } from '@/lib/api/types';
-import {NeutralEmptyState, RegionalFailure} from '@/components/ui/content-state';
+import {
+  NeutralEmptyState,
+  RegionalFailure,
+} from '@/components/ui/content-state';
 import {TechnologyList} from './work-cases-section';
 
 /**
@@ -137,10 +140,7 @@ function renderTechnologies({
   technologies,
   labels,
   retry,
-}: Pick<
-  ExpertiseGroupProps,
-  'groups' | 'technologies' | 'labels' | 'retry'
->) {
+}: Pick<ExpertiseGroupProps, 'groups' | 'technologies' | 'labels' | 'retry'>) {
   if (technologies.ok && technologies.data.length === 0) {
     return null;
   }

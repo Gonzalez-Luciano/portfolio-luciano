@@ -156,7 +156,9 @@ describe('IndexedWorkCases — SSR completeness before hydration', () => {
 describe('IndexedWorkCases — desktop tab enhancement', () => {
   function renderDesktop(count: number) {
     const media = installMatchMedia(true);
-    const cases = Array.from({length: count}, (_, index) => makeCase(index + 1));
+    const cases = Array.from({length: count}, (_, index) =>
+      makeCase(index + 1),
+    );
     const utils = render(
       <IndexedWorkCases titles={cases.map((entry) => entry.title)}>
         {dossiers(cases)}
@@ -183,7 +185,9 @@ describe('IndexedWorkCases — desktop tab enhancement', () => {
       expect(tab).toHaveAttribute('id');
       expect(panel).toHaveAttribute('id');
       expect(tab.getAttribute('aria-controls')).toBe(panel.getAttribute('id'));
-      expect(panel.getAttribute('aria-labelledby')).toBe(tab.getAttribute('id'));
+      expect(panel.getAttribute('aria-labelledby')).toBe(
+        tab.getAttribute('id'),
+      );
       expect(panel).toHaveAttribute('tabindex', '0');
     });
 

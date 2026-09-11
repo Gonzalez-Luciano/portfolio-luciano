@@ -38,7 +38,12 @@ function deferred<T>(): Deferred<T> {
 }
 
 type FetcherMock<T> = ReturnType<
-  typeof vi.fn<(locale: Locale, options?: PublicRequestTestOptions) => Promise<EndpointResult<T>>>
+  typeof vi.fn<
+    (
+      locale: Locale,
+      options?: PublicRequestTestOptions,
+    ) => Promise<EndpointResult<T>>
+  >
 >;
 
 /**
@@ -115,7 +120,10 @@ describe('loadPublicPortfolioUncached', () => {
     const {fetchers} = buildFetchers();
 
     // Call WITHOUT awaiting: no deferred has been resolved yet.
-    void loadPublicPortfolioUncached('es', fetchers as unknown as PublicPortfolioFetchers);
+    void loadPublicPortfolioUncached(
+      'es',
+      fetchers as unknown as PublicPortfolioFetchers,
+    );
 
     for (const fetcher of Object.values(fetchers)) {
       expect(fetcher).toHaveBeenCalledTimes(1);
@@ -125,7 +133,10 @@ describe('loadPublicPortfolioUncached', () => {
   it('passes the locale through to every fetcher', () => {
     const {fetchers} = buildFetchers();
 
-    void loadPublicPortfolioUncached('en', fetchers as unknown as PublicPortfolioFetchers);
+    void loadPublicPortfolioUncached(
+      'en',
+      fetchers as unknown as PublicPortfolioFetchers,
+    );
 
     for (const fetcher of Object.values(fetchers)) {
       expect(fetcher).toHaveBeenCalledWith('en');
@@ -157,7 +168,10 @@ describe('loadPublicPortfolioUncached', () => {
       site: {ok: true, data: validSite},
       experiences: {ok: true, data: [validExperience]},
       workCases: {ok: true, data: [validWorkCase]},
-      projects: {ok: false, failure: {endpoint: 'projects', kind: 'http', status: 503}},
+      projects: {
+        ok: false,
+        failure: {endpoint: 'projects', kind: 'http', status: 503},
+      },
       technologies: {ok: true, data: [validTechnology]},
     });
   });
@@ -203,7 +217,14 @@ describe('loadPublicPortfolioUncached', () => {
       const result = await loadPublicPortfolioUncached('es');
 
       expect(Object.keys(result).sort()).toEqual(
-        ['experiences', 'profile', 'projects', 'site', 'technologies', 'workCases'].sort(),
+        [
+          'experiences',
+          'profile',
+          'projects',
+          'site',
+          'technologies',
+          'workCases',
+        ].sort(),
       );
       expect(result.profile).toEqual({
         ok: false,

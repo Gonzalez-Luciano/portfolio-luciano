@@ -62,14 +62,15 @@ export async function loadPublicPortfolioUncached(
   locale: Locale,
   dependencies: PublicPortfolioFetchers = defaultFetchers,
 ): Promise<PublicPortfolioResults> {
-  const [profile, site, experiences, workCases, projects, technologies] = await Promise.all([
-    dependencies.fetchProfile(locale),
-    dependencies.fetchSite(locale),
-    dependencies.fetchExperiences(locale),
-    dependencies.fetchWorkCases(locale),
-    dependencies.fetchProjects(locale),
-    dependencies.fetchTechnologies(locale),
-  ]);
+  const [profile, site, experiences, workCases, projects, technologies] =
+    await Promise.all([
+      dependencies.fetchProfile(locale),
+      dependencies.fetchSite(locale),
+      dependencies.fetchExperiences(locale),
+      dependencies.fetchWorkCases(locale),
+      dependencies.fetchProjects(locale),
+      dependencies.fetchTechnologies(locale),
+    ]);
 
   return {
     profile,

@@ -146,7 +146,9 @@ describe('public endpoint fetchers', () => {
     '$endpoint reports a malformed item as {ok:false,failure:{kind:"malformed",endpoint}}',
     async ({endpoint, fetcher, invalid}) => {
       vi.stubEnv('INTERNAL_API_ORIGIN', 'http://api');
-      const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({data: invalid}));
+      const fetchImpl = vi
+        .fn()
+        .mockResolvedValue(jsonResponse({data: invalid}));
 
       await expect(fetcher('es', {fetchImpl})).resolves.toEqual({
         ok: false,

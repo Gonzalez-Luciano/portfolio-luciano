@@ -28,7 +28,10 @@ vi.mock('next-intl/server', () => {
     getTranslations: async (namespace?: string) => (key: string) => {
       const dictionary = copy[notFoundHarness.locale];
       const withNamespace = namespace
-        ? (`${namespace}.${key}`.replace(/^Portfolio\./, '') as keyof typeof dictionary)
+        ? (`${namespace}.${key}`.replace(
+            /^Portfolio\./,
+            '',
+          ) as keyof typeof dictionary)
         : (key as keyof typeof dictionary);
 
       return dictionary[withNamespace] ?? key;
@@ -49,9 +52,9 @@ describe('loading.tsx', () => {
 
     expect(screen.queryAllByRole('heading')).toHaveLength(0);
     expect(container.textContent?.trim()).toBe('');
-    expect(container.querySelectorAll('[data-skeleton]').length).toBeGreaterThan(
-      2,
-    );
+    expect(
+      container.querySelectorAll('[data-skeleton]').length,
+    ).toBeGreaterThan(2);
   });
 });
 

@@ -66,8 +66,7 @@ function toFailure(
 ): {ok: false; failure: EndpointFailure} {
   return {
     ok: false,
-    failure:
-      status === undefined ? {endpoint, kind} : {endpoint, kind, status},
+    failure: status === undefined ? {endpoint, kind} : {endpoint, kind, status},
   };
 }
 

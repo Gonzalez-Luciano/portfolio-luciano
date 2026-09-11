@@ -33,7 +33,9 @@ type ExperienceSectionProps = {
 
 /** Format a validated `YYYY-MM` month for the route locale. */
 function formatMonth(value: string, locale: string): string {
-  const [year, month] = value.split('-').map((part) => Number.parseInt(part, 10));
+  const [year, month] = value
+    .split('-')
+    .map((part) => Number.parseInt(part, 10));
   const date = new Date(Date.UTC(year, month - 1, 1));
 
   return new Intl.DateTimeFormat(locale, {

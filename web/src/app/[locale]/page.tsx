@@ -68,7 +68,8 @@ export async function generateMetadata({
   }
 
   return {
-    title: locale === 'es' ? 'Portfolio no disponible' : 'Portfolio unavailable',
+    title:
+      locale === 'es' ? 'Portfolio no disponible' : 'Portfolio unavailable',
   };
 }
 
@@ -83,7 +84,10 @@ export default async function LocalePage({params}: LocalePageProps) {
   const t = await getTranslations({locale, namespace: 'Portfolio'});
   const results = await loadPublicPortfolio(locale);
 
-  const retry = {label: t('state.retry'), pendingLabel: t('state.retryPending')};
+  const retry = {
+    label: t('state.retry'),
+    pendingLabel: t('state.retryPending'),
+  };
 
   // Criticality (spec §15.1): Profile or Site failed/malformed => structural
   // failure. The header already renders its structural-failure variant from the
@@ -91,7 +95,10 @@ export default async function LocalePage({params}: LocalePageProps) {
   if (!results.profile.ok || !results.site.ok) {
     return (
       <div className="site-container">
-        <StructuralFailure message={t('state.structuralFailure')} retry={retry} />
+        <StructuralFailure
+          message={t('state.structuralFailure')}
+          retry={retry}
+        />
       </div>
     );
   }

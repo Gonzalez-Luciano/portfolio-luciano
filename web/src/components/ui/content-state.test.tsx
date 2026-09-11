@@ -65,9 +65,7 @@ describe('RegionalFailure', () => {
     // The host section always supplies the granular anchor + <h3> heading
     // (spec §15.2 / §20). RegionalFailure must not emit a competing heading.
     expect(container.querySelector('h1,h2,h3,h4,h5,h6')).toBeNull();
-    expect(
-      container.querySelector('.content-state__message'),
-    ).not.toBeNull();
+    expect(container.querySelector('.content-state__message')).not.toBeNull();
   });
 });
 

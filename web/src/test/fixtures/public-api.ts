@@ -76,20 +76,20 @@ export const validProject = {
 
 /** The four canonical technology groups, in the exact Phase 4 order. */
 export const validTechnologyGroups = [
-  { key: 'backend', label: 'Test Backend' },
-  { key: 'data', label: 'Test Data' },
-  { key: 'integration', label: 'Test Integration' },
-  { key: 'collaboration', label: 'Test Collaboration' },
+  {key: 'backend', label: 'Test Backend'},
+  {key: 'data', label: 'Test Data'},
+  {key: 'integration', label: 'Test Integration'},
+  {key: 'collaboration', label: 'Test Collaboration'},
 ] as const;
 
 export const validSite = {
   projects_empty_message: 'Test projects empty message.',
   contact_intro: 'Test contact intro.',
   technology_groups: [
-    { key: 'backend', label: 'Test Backend' },
-    { key: 'data', label: 'Test Data' },
-    { key: 'integration', label: 'Test Integration' },
-    { key: 'collaboration', label: 'Test Collaboration' },
+    {key: 'backend', label: 'Test Backend'},
+    {key: 'data', label: 'Test Data'},
+    {key: 'integration', label: 'Test Integration'},
+    {key: 'collaboration', label: 'Test Collaboration'},
   ],
   professional_links: [
     {
@@ -97,11 +97,19 @@ export const validSite = {
       label: 'Test LinkedIn',
       href: 'https://example.test/in/test-person',
     },
-    { key: 'github', label: 'Test GitHub', href: 'https://example.test/test-person' },
-    { key: 'email', label: 'Test Email', href: 'mailto:test-person@example.test' },
+    {
+      key: 'github',
+      label: 'Test GitHub',
+      href: 'https://example.test/test-person',
+    },
+    {
+      key: 'email',
+      label: 'Test Email',
+      href: 'mailto:test-person@example.test',
+    },
   ],
   expertise_areas: [
-    { key: 'runtime-test-area', title: 'Test Area', description: null },
+    {key: 'runtime-test-area', title: 'Test Area', description: null},
     {
       key: 'runtime-test-area-described',
       title: 'Test Area Described',
@@ -109,34 +117,34 @@ export const validSite = {
     },
   ],
   work_principles: [
-    { key: 'runtime-test-principle', statement: 'Test principle statement.' },
+    {key: 'runtime-test-principle', statement: 'Test principle statement.'},
   ],
-  cv: { url: '/cv/runtime-test.pdf', label: 'Test CV' },
+  cv: {url: '/cv/runtime-test.pdf', label: 'Test CV'},
 } as const;
 
 /** Technology groups in the wrong order (data before backend). */
 export const technologyGroupsWrongOrder = [
-  { key: 'data', label: 'Test Data' },
-  { key: 'backend', label: 'Test Backend' },
-  { key: 'integration', label: 'Test Integration' },
-  { key: 'collaboration', label: 'Test Collaboration' },
+  {key: 'data', label: 'Test Data'},
+  {key: 'backend', label: 'Test Backend'},
+  {key: 'integration', label: 'Test Integration'},
+  {key: 'collaboration', label: 'Test Collaboration'},
 ] as const;
 
 /** Technology groups with a duplicate key and a missing canonical key. */
 export const technologyGroupsDuplicate = [
-  { key: 'backend', label: 'Test Backend' },
-  { key: 'backend', label: 'Test Backend Again' },
-  { key: 'integration', label: 'Test Integration' },
-  { key: 'collaboration', label: 'Test Collaboration' },
+  {key: 'backend', label: 'Test Backend'},
+  {key: 'backend', label: 'Test Backend Again'},
+  {key: 'integration', label: 'Test Integration'},
+  {key: 'collaboration', label: 'Test Collaboration'},
 ] as const;
 
 /** Technology groups with a fifth, non-canonical entry appended. */
 export const technologyGroupsExtraEntry = [
-  { key: 'backend', label: 'Test Backend' },
-  { key: 'data', label: 'Test Data' },
-  { key: 'integration', label: 'Test Integration' },
-  { key: 'collaboration', label: 'Test Collaboration' },
-  { key: 'frontend', label: 'Test Frontend' },
+  {key: 'backend', label: 'Test Backend'},
+  {key: 'data', label: 'Test Data'},
+  {key: 'integration', label: 'Test Integration'},
+  {key: 'collaboration', label: 'Test Collaboration'},
+  {key: 'frontend', label: 'Test Frontend'},
 ] as const;
 
 /** A Technology whose category is outside the closed enum. */

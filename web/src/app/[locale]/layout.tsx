@@ -4,7 +4,10 @@ import {setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import '../globals.css';
 import {SiteFooter} from '@/components/layout/site-footer';
-import {SiteHeader, type SiteHeaderLabels} from '@/components/layout/site-header';
+import {
+  SiteHeader,
+  type SiteHeaderLabels,
+} from '@/components/layout/site-header';
 import {FragmentFocusManager} from '@/components/ui/fragment-focus-manager';
 import {loadPublicPortfolio} from '@/lib/api/load-public-portfolio';
 import {themeBootstrapSource} from '@/theme/bootstrap';
@@ -42,7 +45,9 @@ export default async function LocaleLayout({
   // single request, so this adds no Laravel read; Task 13 verifies the count.
   // It drives only the header/footer variant — the page still owns criticality.
   const results = await loadPublicPortfolio(locale);
-  const profileName = results.profile.ok ? results.profile.data.name : undefined;
+  const profileName = results.profile.ok
+    ? results.profile.data.name
+    : undefined;
   const headerVariant =
     results.profile.ok && results.site.ok ? 'valid' : 'structural-failure';
   const footerLinks = results.site.ok

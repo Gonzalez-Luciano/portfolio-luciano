@@ -47,7 +47,12 @@ export function fetchExperiences(
   locale: Locale,
   options?: PublicRequestTestOptions,
 ): Promise<EndpointResult<Experience[]>> {
-  return requestPublicResource('experiences', locale, isExperienceList, options);
+  return requestPublicResource(
+    'experiences',
+    locale,
+    isExperienceList,
+    options,
+  );
 }
 
 export function fetchWorkCases(
@@ -68,5 +73,10 @@ export function fetchTechnologies(
   locale: Locale,
   options?: PublicRequestTestOptions,
 ): Promise<EndpointResult<Technology[]>> {
-  return requestPublicResource('technologies', locale, isTechnologyList, options);
+  return requestPublicResource(
+    'technologies',
+    locale,
+    isTechnologyList,
+    options,
+  );
 }
