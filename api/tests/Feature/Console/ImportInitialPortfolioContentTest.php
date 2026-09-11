@@ -17,9 +17,11 @@ use App\Models\WorkCase;
 use App\Models\WorkPrinciple;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionClass;
 use Tests\TestCase;
 
 /**
@@ -329,6 +331,60 @@ final class ImportInitialPortfolioContentTest extends TestCase
         $content['experiences'] = [['key' => 'invented-experience']];
 
         $this->assertImportRejected($content);
+    }
+
+    public function test_the_importer_forces_draft_state_even_when_the_dataset_carries_published_markers(): void
+    {
+        $content = InitialPortfolioContent::data();
+        $publishedMarkers = ['status' => 'published', 'is_visible' => true, 'published_at' => '2026-01-01 00:00:00'];
+        $content['profile'] = array_merge($content['profile'], $publishedMarkers);
+        $content['site'] = array_merge($content['site'], $publishedMarkers);
+        $content['technologies'][0] = array_merge($content['technologies'][0], $publishedMarkers);
+        $content['work_principles'][0] = array_merge($content['work_principles'][0], $publishedMarkers);
+
+        app(InitialPortfolioImporter::class)($content);
+
+        $rows = [
+            Profile::query()->sole(),
+            SiteConfiguration::query()->sole(),
+            Technology::query()->where('key', $content['technologies'][0]['key'])->sole(),
+            WorkPrinciple::query()->where('key', $content['work_principles'][0]['key'])->sole(),
+        ];
+        foreach ($rows as $row) {
+            $this->assertSame(PublicationStatus::Draft, $row->status, $row::class.' must be imported as draft.');
+            $this->assertFalse((bool) $row->is_visible, $row::class.' must be imported hidden.');
+            $this->assertNull($row->published_at, $row::class.' must be imported unpublished.');
+        }
+
+        // Every collection row, not only the tampered ones.
+        foreach ([ProfessionalLink::class, Technology::class, ExpertiseArea::class, WorkCase::class, WorkPrinciple::class] as $model) {
+            foreach ($model::query()->get() as $row) {
+                $this->assertSame(PublicationStatus::Draft, $row->status);
+                $this->assertFalse((bool) $row->is_visible);
+                $this->assertNull($row->published_at);
+            }
+        }
+    }
+
+    public function test_the_editorial_column_constants_stay_in_sync_with_the_live_schema(): void
+    {
+        $reflection = new ReflectionClass(InitialPortfolioImporter::class);
+        /** @var list<string> $profileColumns */
+        $profileColumns = $reflection->getReflectionConstant('PROFILE_EDITORIAL_COLUMNS')->getValue();
+        /** @var list<string> $siteColumns */
+        $siteColumns = $reflection->getReflectionConstant('SITE_EDITORIAL_COLUMNS')->getValue();
+
+        $profileSchema = Schema::getColumnListing('profiles');
+        $siteSchema = Schema::getColumnListing('site_configurations');
+
+        $this->assertNotEmpty($profileColumns);
+        $this->assertNotEmpty($siteColumns);
+        foreach ($profileColumns as $column) {
+            $this->assertContains($column, $profileSchema, "profiles.{$column} must be a real column.");
+        }
+        foreach ($siteColumns as $column) {
+            $this->assertContains($column, $siteSchema, "site_configurations.{$column} must be a real column.");
+        }
     }
 
     public function test_a_failure_after_an_asset_write_rolls_back_and_deletes_only_this_attempts_files(): void

@@ -19,6 +19,7 @@ use App\Models\WorkPrinciple;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -79,6 +80,15 @@ final class InitialPortfolioImporter
         'technology_collaboration_label_es', 'technology_collaboration_label_en',
     ];
 
+    /**
+     * Publication-state columns the importer owns outright: whatever the Task 11
+     * dataset carries for these is discarded and re-stamped to
+     * draft / hidden / unpublished, without exception (spec §29.3).
+     *
+     * @var list<string>
+     */
+    private const PUBLICATION_STATE_KEYS = ['status', 'is_visible', 'published_at'];
+
     /** @var list<string> */
     private const PHOTO_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -112,6 +122,10 @@ final class InitialPortfolioImporter
                     $profile = Profile::query()->where('singleton_key', 'default')->firstOrFail();
                     $profile = $this->assets->replace($profile, $this->upload($sources['photo']));
                     $this->trackCreatedPath($profile->photo_private_path, $preexistingPrivateFiles, $createdPrivatePaths);
+                    // Alt text is written directly here (not via
+                    // AssetLifecycleService::updateAltText) so it stays inside this
+                    // import's single transaction + EditorialMutationContext and
+                    // avoids a redundant cache invalidation.
                     $profile->forceFill([
                         'photo_alt_es' => $content['assets']['photo_alt_es'],
                         'photo_alt_en' => $content['assets']['photo_alt_en'],
@@ -164,6 +178,18 @@ final class InitialPortfolioImporter
      */
     private function assertPristineSingleton(string $table, array $editorialColumns): void
     {
+        // Fail loudly if a future migration renamed or dropped an editorial
+        // column: a stale constant entry would otherwise silently pass the
+        // per-column null check below and weaken the pristine guarantee.
+        $unknownColumns = array_values(array_diff($editorialColumns, Schema::getColumnListing($table)));
+        if ($unknownColumns !== []) {
+            throw new \LogicException(sprintf(
+                'The initial-import editorial-column list for [%s] is out of sync with the schema; unknown column(s): %s.',
+                $table,
+                implode(', ', $unknownColumns),
+            ));
+        }
+
         $rows = DB::table($table)->get();
         if ($rows->count() !== 1) {
             throw new InitialImportPreflightException("The [{$table}] table must contain exactly the one Phase 4 structural singleton row, but it contains {$rows->count()}.");
@@ -334,42 +360,62 @@ final class InitialPortfolioImporter
     }
 
     /**
+     * The two structural singletons are filled in place; the importer — not the
+     * dataset — owns their publication state (spec §29.3).
+     *
      * @param  array<string, mixed>  $content
      */
     private function fillSingletons(array $content): void
     {
         Profile::query()->where('singleton_key', 'default')->firstOrFail()
-            ->forceFill(Arr::except($content['profile'], ['singleton_key']))
+            ->forceFill($this->draftAttributes(Arr::except($content['profile'], ['singleton_key'])))
             ->save();
 
         SiteConfiguration::query()->where('singleton_key', 'default')->firstOrFail()
-            ->forceFill(Arr::except($content['site'], ['singleton_key']))
+            ->forceFill($this->draftAttributes(Arr::except($content['site'], ['singleton_key'])))
             ->save();
     }
 
     /**
      * Every created publishable entity is draft / hidden / unpublished, without
-     * exception (spec §29.3); the dataset already stamps those markers.
+     * exception (spec §29.3). The importer re-stamps that state on every row
+     * rather than trusting the dataset's markers.
      *
      * @param  array<string, mixed>  $content
      */
     private function createCollections(array $content): void
     {
         foreach ($content['professional_links'] as $row) {
-            ProfessionalLink::query()->create($row);
+            ProfessionalLink::query()->create($this->draftAttributes($row));
         }
         foreach ($content['technologies'] as $row) {
-            Technology::query()->create($row);
+            Technology::query()->create($this->draftAttributes($row));
         }
         foreach ($content['expertise_areas'] as $row) {
-            ExpertiseArea::query()->create($row);
+            ExpertiseArea::query()->create($this->draftAttributes($row));
         }
         foreach ($content['work_cases'] as $row) {
-            WorkCase::query()->create($row);
+            WorkCase::query()->create($this->draftAttributes($row));
         }
         foreach ($content['work_principles'] as $row) {
-            WorkPrinciple::query()->create($row);
+            WorkPrinciple::query()->create($this->draftAttributes($row));
         }
+    }
+
+    /**
+     * Strip whatever publication state the dataset carried and re-stamp the
+     * mandatory draft-gap markers (spec §29.3).
+     *
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function draftAttributes(array $row): array
+    {
+        return Arr::except($row, self::PUBLICATION_STATE_KEYS) + [
+            'status' => PublicationStatus::Draft,
+            'is_visible' => false,
+            'published_at' => null,
+        ];
     }
 
     private function upload(string $absolutePath): UploadedFile
