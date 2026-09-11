@@ -15,15 +15,16 @@ stack unless noted. Dates are UTC.
 
 | Check | Command | Result |
 |---|---|---|
-| Frontend unit/integration | `docker compose run --rm --no-deps web pnpm test:run` | 290 passed (after Task 10); grew to the Task 14 figure recorded below |
+| Frontend unit/integration | `docker compose run --rm --no-deps web pnpm test:run` | grew task by task to **295 passed** after Task 14 (Task 10: 290) |
 | Frontend typecheck | `docker compose run --rm --no-deps web pnpm typecheck` | clean at every task commit |
 | Frontend lint | `docker compose run --rm --no-deps web pnpm lint` | clean at every task commit |
+| Frontend format | `docker compose run --rm --no-deps web pnpm format:check` | clean (Task 14 fixed 30 files that had never been formatted; converged after 2 passes) |
 | Frontend offline build | `INTERNAL_API_ORIGIN=http://unreachable.invalid … pnpm build` | PASS; `/[locale]` reported `ƒ (Dynamic)`; loader not executed at build |
-| Backend suite | `docker compose --profile test run --rm api-test php artisan test` | 506 passed (after Task 12) |
+| Backend suite | `docker compose --profile test run --rm api-test php artisan test` | grew to **506 passed (3094 assertions)** after Task 12's fix round |
 | Backend style | `docker compose run --rm --no-deps api ./vendor/bin/pint --test <files>` | clean for every Phase 5 file |
 
-The full Task 15 automated verification matrix is recorded in section 6 below
-(pending — Phase 5 execution STOPPED at Task 13, see section 3).
+The full Task 15 final automated verification matrix (re-run against the
+completed branch, all tasks included) is recorded in section 6.
 
 ---
 
@@ -228,60 +229,232 @@ were untouched throughout.
 
 ---
 
-## 3. Elevated incompatibility — media topology (awaiting human decision)
+## 3. Media-topology incompatibility — RESOLVED (human decision recorded)
 
 The approved Phase 5 media strategy (`next/image` + the Phase 4 root-relative
-`/storage/...` reference) is not resolvable by the Next image optimizer from
-inside the current Compose topology, because the optimizer runs in the `web`
-container and resolves a root-relative image `url` against its own origin
-(`web:3000`), which does not serve `/storage/*` and cannot route to Caddy or
-`api` for image bytes. Direct browser access to `/storage/...` through the
-gateway works (HTTP 200 `image/jpeg`).
+`/storage/...` reference) was not resolvable by the Next image optimizer from
+inside the Compose topology as originally implemented (§2.5). The incompatibility
+was elevated to the human, who approved **Option A**: give the Next optimizer a
+narrow, server-only internal resolution limited to `/storage/*`, with these
+exact constraints (verbatim from the approval): the Phase 4 public root-relative
+media contract stays intact; the internal origin is exclusively server-side —
+never `NEXT_PUBLIC_*`, never in HTML or the client bundle; `api:80` is not
+published to the host; `remotePatterns` is not arbitrarily broadened.
 
-Options that would require a new human decision (all currently forbidden by
-spec §27 / instructions §15 without approval):
+Implemented and independently re-verified as **PASS** — see §2.7 for the fix,
+the re-verification evidence, and the independent code review confirming every
+constraint is honored (`web/next.config.ts`'s `rewrites()` entry; commit
+`18746cd`, reviewed clean).
 
-- give the Next optimizer a narrow, non-leaking internal origin for
-  `/storage` resolution (e.g. a build/runtime config pointing image fetches at
-  `api`), without that origin reaching HTML;
-- a Caddy/topology change so the `web` origin itself serves `/storage/*`
-  (e.g. `web` proxying `/storage` to `api`), i.e. making the root-relative
-  reference genuinely same-origin from `web`'s perspective;
-- an approved public absolute media origin added to the Phase 4 contract plus a
-  single `remotePatterns` entry for exactly that origin;
-- rendering the hero/project photos with a plain `<img>` (no Next optimizer),
-  since `/storage/...` already resolves correctly for the browser.
-
-No option has been applied. Task 14 and the remainder of Task 15 are blocked on
-this decision.
+The three other options considered but not chosen (a Caddy/`web` proxy change,
+an approved public absolute origin + `remotePatterns`, or a plain `<img>`
+fallback) were not applied and remain available if a future contract change
+makes them preferable — no combination of them was implemented.
 
 ---
 
-## 4. Real-browser QA (Task 15 step 2–4) — NOT RUN
+## 4. Real-browser QA (Task 15 steps 2–4)
 
-Blocked: Phase 5 execution stopped at Task 13. Also requires real-browser /
-JS-disabled / screen-reader capability; to be executed by a human per the
-Task 15 human-evidence rule.
+Performed with `claude-in-chrome` (a real, extension-controlled Chrome
+instance) against the worktree's own isolated dev stack (`phase-5-public-site`
+Compose project, `http://localhost:8005`), migrated + guarded-imported +
+QA-fixture-published exactly as in Task 13 §2.1–2.3 (fresh photo UUID
+`fd9241cc-1267-4296-bb7b-2a3998c350e5`; only Profile + Site published, all six
+content collections legitimately empty).
 
-## 5. Editorial readiness (Task 15 step 5) — NOT EVALUATED
+**Capability limits of this automation session (not fabricated around; see
+§4.4):** no genuine viewport resize (`resize_window` reports success but
+`window.innerWidth` stays pinned to the OS display's 1920px regardless of the
+requested size — confirmed after 3 attempts including 390×844 and 800×600); no
+real browser zoom (the exposed tools explicitly do not support zoom keyboard
+shortcuts, and the `zoom` action is a screenshot crop, not a reflow); no way to
+disable JavaScript execution; no screen reader/assistive technology.
 
-Blocked by the Task 13 STOP. The known §29.5 / §3.1 editorial blockers remain
-outstanding regardless:
+### 4.1 What was verified (real browser, both locales, both themes)
+
+| Check | Result |
+|---|---|
+| Hero photo renders (the approved portrait, orange background) | ✅ ES/dark, ES/light, EN/dark, EN/light — all 4 combinations screenshotted, no broken-image icon |
+| Single `<h1>` = Profile name | ✅ both locales |
+| 5 primary nav destinations, stable order, numbered | ✅ `01 Work…05 Contact` / `01 Trabajo…05 Contacto` |
+| Skip link keyboard-visible on first Tab | ✅ "Saltar al contenido" / "Skip to content" appears with a clear focus ring, both themes |
+| Language switch (`/es` ↔ `/en`) | ✅ real full navigation, correct copy, no errors |
+| Theme toggle (Light/Dark) | ✅ instant, correct contrast both locales |
+| Empty-state matrix (real, not simulated) | ✅ `#work`/`#expertise`/`#approach` show the exact neutral copy "Contenido no disponible por el momento." with NO granular sub-anchors; `#projects` shows ONLY the exact `site.projects_empty_message` string (the §16 explicit exception — confirmed NOT neutral copy, NOT Retry); `#contact` shows the CMS `contact_intro` alone with no link/CV actions (intro-alone-renders-normally, per §16); footer shows only the Profile identity, no links |
+| Console diagnostics across all of the above | ✅ only the documented `cz-shortcut-listen="true"` ColorZilla extension false-positive (identical pattern to Task 13 §2.7's browser note — confirmed reproduced identically on both `/es` and `/en`, confirmed to be the ONLY server/client `<body>` attribute diff both times); **no other error or warning of any kind** |
+
+### 4.2 Anomaly investigated: native fragment scroll not observed in this session
+
+Clicking a primary-nav anchor (`href="#contact"` — a bare server-rendered
+`<a>` with zero JS interception, confirmed by reading
+`web/src/components/layout/primary-navigation.tsx`) correctly updated
+`location.hash` and `FragmentFocusManager` correctly moved
+`document.activeElement` to `<section id="contact">`, but the viewport did not
+visually scroll to it. Investigated before concluding anything:
+
+- a real trusted mouse-wheel scroll event moved the page normally immediately
+  afterward (rules out a CSS overflow trap, a stuck scroll-lock, or an open
+  `<dialog>` — confirmed zero open dialogs and empty inline styles on
+  `<body>`/`<html>`);
+- `prefers-reduced-motion` was confirmed `false`;
+- calling `element.scrollIntoView()` **directly** from the JS console also
+  silently did nothing, despite the target being unique, `display:block`,
+  `visibility:visible`, `position:static`, with no ancestor overflow trap.
+
+The application code never calls `preventDefault`, `scrollTo`, or any custom
+scroll logic on this path — `FragmentFocusManager` explicitly uses
+`focus({preventScroll:true})` specifically so it never scrolls (spec §24),
+and `PrimaryNavigation` renders a plain anchor with no `onClick`. Since a
+trusted wheel gesture scrolls the identical page normally, this reads as this
+specific remote/extension-controlled Chrome session suppressing
+non-gesture-driven programmatic scrolls — consistent with the same session's
+`resize_window` no-op — rather than a reproduction of an application defect.
+**Not treated as a confirmed finding; folded into §4.4's human-execution list**
+so a normal, non-automated browser can confirm native fragment positioning
+directly.
+
+### 4.3 Native mobile `<dialog>`, Indexed Detail cross-breakpoint, keyboard/no-JS/reduced-motion, screen reader
+
+Not verifiable in this session — see §4.4. These are separately proven,
+short of real-browser evidence, by:
+- automated ARIA/keyboard/roving-tabindex/automatic-activation tests
+  (Task 7 `indexed-work-cases.test.tsx`) and the full native-`<dialog>`
+  open/close/focus-restore/scroll-lock/breakpoint-crossing observable-DOM
+  test suite (Task 5 `mobile-navigation.test.tsx`);
+- the Task 14 hydration test's real `hydrateRoot` exercise of the same dialog
+  and tab interactions with zero console diagnostics;
+- explicit jsdom-limitation disclaimers already present in both test files,
+  naming exactly what only a real browser/AT can prove.
+
+### 4.4 Evidence requiring human execution (not fabricated)
+
+Per the Task 15 human-evidence rule, the following are recorded as requiring
+a human with a real, non-automated browser/device — not inferred, not copied
+forward as a PASS:
 
 ```
-Experience     -> no approved organization/role/start; import leaves experiences = []
-Work Cases     -> problem/contribution/technical_approach/outcome not approved (all null)
-Technology grp -> exact ES/EN labels not approved (all null; QA-only labels used for topology testing)
-Projects       -> deliberately empty until Phase 7
+- Mobile/narrow viewport breakpoints (320/360/390/768px / <64rem), including
+  the native mobile <dialog> (only rendered via CSS below 64rem) and the
+  <noscript> mobile navigation fallback.
+- Real 200% browser zoom reflow (no horizontal scroll/clipping/truncation).
+- Native fragment (#hash) scroll positioning in a normal browser (§4.2).
+- JavaScript-disabled mode (professional content + sequential Work dossiers
+  readable; dead Menu/theme controls absent; <noscript> nav functional).
+- A real screen reader/assistive-technology pass (name, version, browser,
+  exact navigation/dialog/tabs/CV flow, and result — no generic "PASS").
 ```
-
-## 6. Task 15 automated verification matrix — NOT RUN (blocked)
 
 ---
 
-## 7. Status
+## 5. Editorial readiness (Task 15 step 5) — IMPLEMENTATION COMPLETE / EDITORIAL ACCEPTANCE BLOCKED
 
-**Phase 5 execution: STOPPED at Task 13 (media-topology incompatibility).**
-Request-scoped cache lifecycle: verified PASS. Media optimizer path: verified
-FAIL through the real topology. Awaiting a human decision on the media
-strategy (section 3) before Task 14 can proceed.
+Verified via the guarded import's own dataset (`InitialPortfolioContent::data()`,
+Tasks 11–12) and the QA-fixture publication run (Task 13 §2.3, Task 15 §4):
+Profile and Site publish and serve correctly through the normal Phase 4 flow
+when their required fields are filled; every other required editorial input is
+still an approved-but-incomplete or not-yet-approved gap. Per spec §3.1, these
+four gates remain unresolved and are **not** filled by inference, and structural
+unavailability / neutral-empty UI is **not** used as acceptance evidence:
+
+```
+Experience      -> BLOCKED: no approved organization/role/start exists; import leaves experiences = []
+                   (an explicit human decision to accept an empty Experience release state has not been recorded either)
+Work Cases      -> BLOCKED: problem/contribution/technical_approach/outcome are not approved for any
+                   of the 4 cases (all null in the dataset); cannot be published as-is
+Technology grp  -> BLOCKED: exact approved ES/EN labels for backend/data/integration/collaboration
+                   do not exist (all null in the dataset; the "QA Backend" etc. labels used in Tasks 13/15
+                   are synthetic QA fixtures only, explicitly not approved production content)
+Projects        -> BY DESIGN, not a blocker: deliberately empty until Phase 7
+```
+
+**Verdict: IMPLEMENTATION COMPLETE / EDITORIAL ACCEPTANCE BLOCKED.** Phase 5's
+technical implementation, automated verification, and the real-browser evidence
+obtainable in this session are complete; the ROADMAP Phase 5 acceptance
+criteria/deliverables are **not** marked complete (§9/ROADMAP.md), because three
+of the four editorial gates above remain open. Only a human, through the normal
+Filament review/publication flow, can close them.
+
+---
+
+## 6. Task 15 final automated verification matrix
+
+Re-run against the complete branch (all 15 tasks), 2026-09-11:
+
+| Check | Command | Result |
+|---|---|---|
+| Repository/environment contract | `node infra/validation/validate-repository.mjs` | **Found and fixed a real defect** (stale `Foundation.apiUnavailable` key reference — see §6.1) — PASS after fix |
+| Compose config | `docker compose config` | exit 0 |
+| Frontend format | `pnpm format:check` | exit 0 |
+| Frontend lint | `pnpm lint` | exit 0 |
+| Frontend typecheck | `pnpm typecheck` | exit 0 |
+| Frontend tests | `pnpm test:run` | **295 passed**, 24 files |
+| Frontend offline build | `INTERNAL_API_ORIGIN=http://unreachable.invalid pnpm build` | exit 0, `/[locale]` = `ƒ (Dynamic)` |
+| Backend tests | `docker compose --profile test run --rm api-test php artisan test` | **506 passed (3094 assertions)** |
+| Backend style | `./vendor/bin/pint --test` | PASS, 200 files |
+| `git diff --check` (committed branch diff, `a09bba2...HEAD`) | — | clean, 0 issues |
+
+### 6.1 Defect found and fixed during Step 6
+
+`infra/validation/validate-repository.mjs:172` asserted a stale key,
+`spanishMessages.Foundation.apiUnavailable` — a Phase 3 `Foundation` message
+namespace + `ApiStatus` copy string. Task 2 legitimately deleted `ApiStatus`;
+Task 4 legitimately renamed the entire catalog `Foundation` → `Portfolio`. The
+repository validation script was never updated to match, so it crashed with a
+`TypeError` on every run against the Phase 5 branch. Fixed (same intent — a
+UTF-8 integrity guard on an accented Spanish string, just pointed at the
+current key): now asserts
+`spanishMessages.Portfolio.state.regionalFailure === 'No pudimos cargar esta sección.'`.
+Re-run: PASS. This is a one-line, non-behavioral fix to a validation script,
+not a change to any shipped Phase 5 code.
+
+`git diff --check` against the dirty **working tree** (not shown above) flags 3
+trailing-whitespace lines — confirmed to be exclusively in the pre-existing,
+never-staged `api/public/js/filament/**` vendor-JS drift produced by
+`composer install` re-publishing Filament's own build assets on every fresh
+`vendor/` volume. Not part of any Phase 5 commit; left untouched throughout
+execution.
+
+---
+
+## 7. Branch scope scan (Task 15 step 7)
+
+`git diff a09bba23733241bc14fb71ae38f838f6e200a70a...HEAD` (excluding the
+Filament vendor-JS drift) was searched for every forbidden pattern in the
+plan's Global Constraints and Task 15 step 7: `unstable_cache`,
+`revalidateTag`/`revalidatePath`, a `NEXT_PUBLIC_*` internal-API variable,
+`images.remotePatterns`, `api:80` exposure, Playwright/Cypress/axe-core,
+GSAP/ScrollTrigger/Framer Motion, analytics (`gtag`/Google Analytics),
+`robots.txt`/`sitemap.xml`/Open Graph/Twitter card/JSON-LD, a `/app/api/*`
+Route Handler, unchecked `as Profile`/`as SiteConfiguration`-style casts, and
+a hardcoded `/cv/luciano-gonzalez-*.pdf` literal.
+
+**Result: clean.** Every hit found is either (a) prose in this verification
+document or in `next.config.ts`'s own comment explaining what was
+*deliberately not done*, or (b) a NEGATIVE unit-test assertion proving the
+absence of the pattern (e.g. `load-public-portfolio.test.ts`:
+`expect(source).not.toMatch(/unstable_cache/)`; `contact-section` tests:
+"contains no /cv/luciano-gonzalez- literal"; `validators.ts`'s `isCvPath`
+comment gives an illustrative example of the route *shape*, not a literal used
+in logic). No actual usage of any forbidden pattern exists in the diff.
+
+---
+
+## 8. Status
+
+**Phase 5: technical implementation COMPLETE, independently reviewed, and
+verified** — every task (1–14) passed its task-scoped spec-compliance + code
+review (with fix rounds resolved), the Task 13 media-topology and
+request-scoped-cache gates both PASS (the media gate via a human-approved,
+independently-reviewed narrow exception), the Task 15 final automated matrix
+is clean, and the branch scope scan found no leakage from later phases or
+forbidden patterns.
+
+**Phase 5 editorial acceptance: BLOCKED** (§5) — Work Cases, Technology-group
+labels, and the Experience release decision remain open human decisions per
+spec §3.1. `ROADMAP.md` is updated only to the extent that evidence was
+actually earned (§9 of the plan; see the ROADMAP diff in this same commit).
+
+**Per the approved plan and the human's standing instruction: no merge, no
+push, no worktree deletion, and `superpowers:finishing-a-development-branch`
+is NOT invoked.** The branch is left ready for human review and the human's
+own manual test pass.

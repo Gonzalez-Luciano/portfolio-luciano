@@ -405,64 +405,85 @@ Construir una versión funcional, accesible y responsive antes de añadir la cap
 
 ## Tareas
 
+> **2026-09-11 — Estado de ejecución de Fase 5:** implementación técnica
+> completa (Tareas 1–14 del plan aprobado), revisada tarea por tarea y con
+> revisión final de rama, evidencia en
+> `docs/testing/PHASE_5_VERIFICATION.md`. Los ítems marcados abajo tienen
+> evidencia automatizada y/o de navegador real genuina. Los ítems de
+> accesibilidad que requieren viewport móvil real, zoom real al 200% o lector
+> de pantalla real permanecen sin marcar: el entorno de ejecución no pudo
+> producir esa evidencia específica (ver `PHASE_5_VERIFICATION.md` §4.4) y no
+> se marca sin evidencia real. La **aceptación editorial de Fase 5 permanece
+> bloqueada** (ver más abajo y `PHASE_5_VERIFICATION.md` §5): Casos de trabajo,
+> etiquetas de grupo de Tecnologías y la decisión de Experiencia siguen sin
+> aprobación humana. Los criterios de aceptación de esta fase (al pie de esta
+> sección) por lo tanto **no** se marcan como cumplidos.
+
 ### Base
 
-- [ ] Layout global.
-- [ ] Header.
-- [ ] Navegación.
-- [ ] Selector de idioma.
-- [ ] Selector de tema.
-- [ ] Footer.
-- [ ] Estados de carga.
-- [ ] Estados de error.
-- [ ] Página 404.
+- [x] Layout global.
+- [x] Header.
+- [x] Navegación.
+- [x] Selector de idioma.
+- [x] Selector de tema.
+- [x] Footer.
+- [x] Estados de carga.
+- [x] Estados de error.
+- [x] Página 404.
 
 ### Secciones
 
-- [ ] Hero.
-- [ ] Presentación.
-- [ ] Experiencia.
-- [ ] Casos de trabajo.
-- [ ] Especializaciones.
-- [ ] Proyectos.
-- [ ] Tecnologías.
-- [ ] Forma de trabajo.
-- [ ] Contacto.
-- [ ] Descarga de CV.
+- [x] Hero.
+- [x] Presentación.
+- [x] Experiencia.
+- [x] Casos de trabajo.
+- [x] Especializaciones.
+- [x] Proyectos.
+- [x] Tecnologías.
+- [x] Forma de trabajo.
+- [x] Contacto.
+- [x] Descarga de CV.
 
 ### Integración
 
-- [ ] Consumo de API.
-- [ ] Tipado de respuestas.
-- [ ] Manejo de errores.
-- [ ] Estrategia de caché.
-- [ ] Revalidación.
-- [ ] Fallback si la API no está disponible.
-- [ ] Optimización de imágenes.
-- [ ] Integración de fotografía.
-- [ ] Metadata inicial.
+- [x] Consumo de API.
+- [x] Tipado de respuestas.
+- [x] Manejo de errores.
+- [x] Estrategia de caché.
+- [x] Revalidación.
+- [x] Fallback si la API no está disponible.
+- [x] Optimización de imágenes.
+- [x] Integración de fotografía.
+- [x] Metadata inicial.
 
 ### Responsive y accesibilidad
 
-- [ ] Navegación por teclado.
-- [ ] Focus visible.
-- [ ] Contraste.
-- [ ] Jerarquía de encabezados.
-- [ ] Textos alternativos.
-- [ ] Lectura con zoom.
-- [ ] Menú móvil accesible.
-- [ ] Prueba con lector de pantalla.
-- [ ] Prueba sin animaciones.
+- [x] Navegación por teclado.
+- [x] Focus visible.
+- [ ] Contraste. — tokens validados en el prototipo de Fase 2; no se corrió una auditoría de contraste dedicada sobre el sitio implementado de Fase 5.
+- [x] Jerarquía de encabezados.
+- [x] Textos alternativos.
+- [ ] Lectura con zoom. — requiere zoom real de navegador al 200%; no disponible en esta sesión de automatización (`PHASE_5_VERIFICATION.md` §4.4).
+- [ ] Menú móvil accesible. — cobertura automatizada completa (jsdom); el diálogo nativo `<dialog>` en viewport móvil real no se pudo verificar en esta sesión (sin redimensionado de viewport real disponible).
+- [ ] Prueba con lector de pantalla. — requiere ejecución humana con un lector de pantalla real.
+- [ ] Prueba sin animaciones. — `prefers-reduced-motion` verificado por CSS/tests automatizados; falta confirmación en navegador real.
 
 ### Contenido final y siembra de producción
 
 - [ ] Revisar todo el contenido real aprobado (experiencia, casos de trabajo,
       proyectos, tecnologías, enlaces, CV) y confirmar qué está listo para
-      publicarse tal cual quedó definido en Fase 1/2.
-- [ ] Crear un seeder de producción (distinto del `PortfolioContentSeeder` de
+      publicarse tal cual quedó definido en Fase 1/2. — **bloqueado**: Casos de
+      trabajo (problem/contribution/technical_approach/outcome) y las
+      etiquetas de grupo de Tecnologías no tienen aprobación humana; la
+      decisión de Experiencia (datos aprobados u omisión explícita) tampoco
+      está registrada. Ver `docs/testing/PHASE_5_VERIFICATION.md` §5.
+- [x] Crear un seeder de producción (distinto del `PortfolioContentSeeder` de
       desarrollo, que deliberadamente deja Experience/Project/CV vacíos) que
       cargue ese contenido real aprobado, para ejecutarse una única vez al
-      desplegar en el servidor definitivo.
+      desplegar en el servidor definitivo. — `App\Domain\Content\InitialPortfolioContent`
+      + `InitialPortfolioImporter` + `php artisan portfolio:import-initial-content`
+      (Tareas 11–12), verificado end-to-end contra una base de datos migrada
+      real en tres entornos Docker aislados distintos.
 
 ## Entregables
 

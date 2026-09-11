@@ -23,7 +23,7 @@ Leer:
 
 ## Estructura del repositorio
 
-- `web/` — portfolio público React/Next.js.
+- `web/` — portfolio público React/Next.js. Desde Fase 5 es el sitio público real (no un shell base); ver `web/README.md` para su runtime de seis requests y comandos propios.
 - `api/` — Laravel API + administración.
 - `infra/` — Docker e infraestructura específica del portfolio.
 - `docs/` — documentación del producto, arquitectura y servidor.
@@ -117,6 +117,8 @@ Es seguro ejecutarlo más de una vez: usa `updateOrCreate` sobre claves/tipos pr
 
 El límite de autenticación/autorización de Filament sigue siendo exactamente el de Fase 3 (`users.is_admin` + `portfolio:bootstrap-admin`); Fase 4 agrega recursos y páginas administrables dentro de ese mismo panel, sin cambiar cómo se crea o autoriza un administrador.
 
+Fase 5 agrega un comando guardado de importación única, nunca automático y nunca parte de este bootstrap: `php artisan portfolio:import-initial-content`, sin flags ni modos. Solo se ejecuta contra una base de contenido editorial pristina (los dos singletons estructurales de Fase 4 sin ningún campo editorial y las doce tablas de contenido/pivote vacías); cualquier desviación, incluida una segunda ejecución después de un primer éxito, se rechaza sin tocar base de datos ni filesystem. El detalle completo de precondiciones, resultado y la secuencia de revisión/publicación en Filament que debe seguir está en `docs/DEPLOYMENT.md`; este repositorio no lo ejecuta contra producción, solo lo verifica en un stack Docker de integración aislado con datos sintéticos de QA.
+
 Para reiniciar sin borrar datos: `docker compose restart`. Para detener el entorno: `docker compose stop`. Los logs se consultan con `docker compose logs --tail=200 <servicio>`.
 
 ### Verificación local
@@ -133,7 +135,15 @@ docker compose run --rm --no-deps web pnpm build
 .\infra\validation\verify-hmr.ps1
 ```
 
-El build de Next debe poder ejecutarse con `gateway`, `api` y `mysql` detenidos. `api-test` usa únicamente `mysql-test` descartable. Después de una sesión de test se puede retirar exclusivamente ese contenedor con `docker compose --profile test rm -sf mysql-test`.
+El build de Next debe poder ejecutarse con `gateway`, `api` y `mysql` detenidos. Desde Fase 5, esto está garantizado por diseño: la ruta pública localizada renderiza dinámicamente en cada request y el build no ejecuta ningún fetch de contenido, por lo que también debe completar con `INTERNAL_API_ORIGIN` apuntando a un host inalcanzable:
+
+```powershell
+$env:INTERNAL_API_ORIGIN = 'http://unreachable.invalid'
+docker compose run --rm --no-deps --env INTERNAL_API_ORIGIN web pnpm build
+Remove-Item Env:INTERNAL_API_ORIGIN -ErrorAction SilentlyContinue
+```
+
+`api-test` usa únicamente `mysql-test` descartable. Después de una sesión de test se puede retirar exclusivamente ese contenedor con `docker compose --profile test rm -sf mysql-test`.
 
 `docker compose --profile test run --rm api-test` ya ejecuta `php artisan test` (el `command` del servicio); la forma explícita, útil para pasar opciones, es:
 

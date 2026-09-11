@@ -221,7 +221,7 @@ Usar Client Components únicamente donde la interacción lo requiera:
 
 Evitar hidratar contenido estático innecesariamente.
 
-La base de Fase 3 mantiene `/es` y `/en` prerenderizables. `next build` debe completar sin Laravel, Caddy ni MySQL en ejecución: la UI base no hace requests API obligatorios durante el build. Una demostración de conectividad ocurre en runtime por `/api/v1` o mediante smoke checks. El tema no se resuelve con `cookies()` del servidor: un bootstrap mínimo, estable y previo al paint aplica `data-theme` desde una preferencia explícita `light`/`dark` en `localStorage` o, si no existe, desde `prefers-color-scheme`. Cualquier supresión de warning de hidratación queda limitada al elemento raíz cuya mutación previa es intencional.
+La base de Fase 3 mantenía `/es` y `/en` prerenderizables porque la UI base todavía no hacía ningún fetch de contenido. Desde Fase 5, la ruta pública localizada hace fetch obligatorio a los seis endpoints públicos en cada request (ver sección "Fase 5 — Sitio público" más abajo) y por lo tanto renderiza dinámicamente (`dynamic = 'force-dynamic'` en `[locale]/layout.tsx`), no estáticamente. `next build` sigue completando sin Laravel, Caddy ni MySQL en ejecución — incluyendo con `INTERNAL_API_ORIGIN` inalcanzable — porque el build no ejecuta ese fetch; la única demostración real de contenido ocurre en runtime, con Laravel arriba. El tema no se resuelve con `cookies()` del servidor: un bootstrap mínimo, estable y previo al paint aplica `data-theme` desde una preferencia explícita `light`/`dark` en `localStorage` o, si no existe, desde `prefers-color-scheme`. Cualquier supresión de warning de hidratación queda limitada al elemento raíz cuya mutación previa es intencional.
 
 ---
 
@@ -473,6 +473,55 @@ Por diseño aprobado (spec sección 22), Fase 4 no implementa: el frontend públ
 
 ---
 
+## Fase 5 — Sitio público (implementado)
+
+Esta sección documenta lo que el código de `web/` realmente implementa como consumidor del contrato público de Fase 4, no una intención futura. El detalle exacto por comando/componente vive en `web/README.md`; esta sección cubre el transporte, los validadores, el loader coordinado, la compartición con alcance de request, la política de criticidad y los islands de cliente.
+
+### Transporte server-only
+
+`requestPublicResource<T>(endpoint, locale, validator, options?)` es la única función que hace `fetch` hacia el API interno. Nunca se importa desde un Client Component. Cada llamada es `GET`, `cache: 'no-store'`, `accept: application/json`, con un techo defensivo de ocho segundos vía `AbortSignal.timeout` y exactamente un intento (sin reintento ni backoff). Clasifica cualquier fallo operacional en cuatro categorías seguras y diagnósticas — `configuration` (falta `INTERNAL_API_ORIGIN`, ni se intenta el fetch), `network` (rechazo de fetch o timeout), `http` (respuesta no 2xx), `malformed` (JSON inválido, envelope inválido o rechazo del validador) — y nunca filtra el origen interno, el cuerpo de la respuesta ni el mensaje de error del API hacia el resultado. Un error de programador (por ejemplo un validador que lanza una excepción real) se propaga al error boundary de la ruta en vez de convertirse en un fallo operacional.
+
+### Contratos y validadores
+
+Los seis recursos públicos (`Profile`, `SiteConfiguration`, `Experience`, `WorkCase`, `Project`, `Technology`) y los tipos de soporte (`EndpointName`, `EndpointFailureKind`, `EndpointFailure`, `EndpointResult<T>`, `PublicPortfolioResults`) están tipados explícitamente. Un `unknown` recibido por red se convierte a uno de estos tipos únicamente después de pasar por un validador de runtime dedicado (`isProfile`, `isSiteConfiguration`, `isExperienceList`, `isWorkCaseList`, `isProjectList`, `isTechnologyList`); no existe un cast sin verificar entre el API y la UI.
+
+### Loader coordinado y compartición con alcance de request
+
+`loadPublicPortfolioUncached(locale)` arranca las seis lecturas (una por endpoint, mediante seis fetchers delgados) en paralelo con un único `Promise.all`, sin ningún `await` secuencial. `loadPublicPortfolio = cache(loadPublicPortfolioUncached)` usa el `cache()` de React con alcance de request — no `unstable_cache`, no Next Data Cache, no un mapa global de módulo. Laravel sigue siendo la única autoridad de caché temporal del contenido público (`PublicContentCache`, Fase 4); Next no agrega ISR, ventana de revalidación ni caché propia sobre estos seis endpoints.
+
+El layout localizado, la página y `generateMetadata()` llaman al mismo export `loadPublicPortfolio(locale)`. Esto produce, dentro de una sola request de página, exactamente **seis** adquisiciones de contenido en Laravel en total — una por endpoint, no dieciocho — porque los tres puntos de llamada comparten una única adquisición con alcance de request. Esta afirmación está verificada con evidencia real de access log de Apache en un stack Docker de integración aislado (Tarea 13, evidencia completa en `docs/testing/PHASE_5_VERIFICATION.md`; no solo con un test unitario de wiring); una segunda request, independiente, siempre vuelve a hacer las seis lecturas `no-store` desde cero, sin persistencia ni caché entre requests en el lado de Next.
+
+### Criticidad
+
+La página aplica la política de criticidad en un único punto, no en el loader ni en las secciones:
+
+- `Profile` **o** `Site` en fallo (cualquier tipo de fallo, incluido `malformed`) -> la página renderiza únicamente el shell de fallo estructural (error general localizado + Retry); no hay secciones profesionales, no hay las cinco anclas de navegación primaria y no hay contenido de respaldo hardcodeado. El layout renderiza en paralelo la variante de fallo estructural del header.
+- En cualquier otro caso, cada sección renderiza y aplica su **propia** política de vacío/fallo regional de forma independiente: una colección fallida (`Experience`, `Work Cases`, `Projects`, `Technologies`) muestra fallo regional + Retry mientras el resto de la página sigue normal; una colección exitosa pero vacía típicamente se omite (su heading/ancla no existen), salvo `Projects`, cuyo `[]` explícito muestra únicamente `site.projects_empty_message` — nunca copy neutro genérico, nunca Retry. Es la única excepción y viene dictada por el propio contenido administrado, no por una regla de UI inventada.
+
+### Islands de cliente
+
+No existe un framework de hidratación selectiva propio: cada isla es un Client Component ordinario, delgado, con estado local. `ThemeSwitcher` y `IndexedWorkCases`/`MobileNavigation` usan `useSyncExternalStore` sobre `matchMedia`/preferencia de tema sin ningún store global de breakpoint compartido entre componentes — cada uno suscribe su propio listener a la misma media query cuando corresponde. `MobileNavigation` usa el `<dialog>` nativo del navegador (`showModal`/`close`), sin librería de focus-trap. `FragmentFocusManager` mueve el foco a un ancla permitida tras la primera hidratación. Los controles solo-interactivos (disparador de Menú, botones de tema) quedan ocultos sin JavaScript mediante un marcador `data-js="ready"` que fija el bootstrap previo al paint; existe un `<noscript>` de navegación de respaldo para navegadores sin JavaScript.
+
+### Media
+
+`next/image` sigue consumiendo las referencias `/storage/...` root-relative del contrato público de Fase 4, sin cambios. `web/next.config.ts` agrega una única regla `rewrites()` server-only y estrecha (`/storage/:path*` -> `${INTERNAL_API_ORIGIN}/storage/:path*`) para que el propio self-fetch interno del optimizador de imágenes de Next resuelva la media a través del API; no cambia el contrato público, `images.remotePatterns` ni los puertos publicados al host, y nada interno llega al navegador ni al HTML. El tráfico real del navegador nunca pasa por esta regla porque Caddy ya enruta `/storage/*` directo a `api:80` sin tocar `web`.
+
+### Metadata
+
+`generateMetadata()` produce, con `Profile` válido, `title: "${name} — ${headline}"` y `description: short_summary`; con `Profile` fallido o malformado, solo un título de respaldo localizado. No hay canonical/alternates/Open Graph/Twitter/JSON-LD/sitemap/robots/analítica; eso es Fase 8.
+
+### Importación inicial guardada de contenido
+
+`App\Domain\Content\InitialPortfolioContent::data()` es la única representación determinística, a nivel de código, del contenido bilingüe aprobado de Fase 1 (Profile, Site, enlaces profesionales, tecnologías, áreas de expertise, work cases, principios de trabajo) más las tres rutas de asset aprobadas. Nunca parsea Markdown/PDF en runtime. `Experience` y `Project` son deliberadamente `[]`; las ocho etiquetas `technology_*_label_{es,en}` del Site y los campos `problem/contribution/technical_approach/outcome` de cada Work Case son deliberadamente `null` — son brechas editoriales humanas conocidas y aprobadas, no defectos de implementación (ver `docs/DEPLOYMENT.md`).
+
+`App\Domain\Content\InitialPortfolioImporter`, expuesto como `php artisan portfolio:import-initial-content`, es un comando guardado de un solo uso e idempotentemente rechazante: su precondición completa, su resultado exacto (siempre draft/oculto/sin publicar) y la secuencia humana de revisión/publicación que debe seguir están documentados en `docs/DEPLOYMENT.md`, que es la fuente de verdad de ese contrato de handoff.
+
+### Explícitamente fuera de alcance en Fase 5
+
+Por diseño aprobado (spec `2026-09-09-phase-5-public-site-design.md`), Fase 5 no implementa: animación (Fase 6), Projects nuevos (Fase 7), SEO/Open Graph/analítica avanzada (Fase 8), E2E con navegador real (Fase 10), CI/release (Fase 11), ni ningún cambio de despliegue/Cloudflare/operación de servidor. La implementación de Fase 5 está completa y verificada de forma independiente; eso es distinto de la aceptación editorial (spec §3.1), que permanece bloqueada mientras el Work Case, las etiquetas de Technology y la decisión sobre Experience no tengan aprobación humana — ver `docs/DEPLOYMENT.md`.
+
+---
+
 ## Internacionalización
 
 Idiomas:
@@ -631,6 +680,13 @@ administrador. El comando interactivo `portfolio:bootstrap-admin` crea una
 sola cuenta administradora y nunca acepta ni muestra contraseñas por argumentos,
 variables o logs.
 
+Desde Fase 5, `api` y `api-test` también montan `./docs:/var/www/docs:ro`
+(solo lectura) para que el comando guardado de importación inicial
+(`portfolio:import-initial-content`) pueda leer las tres fuentes de asset
+aprobadas (`docs/content/approved-assets/{professional-photo.jpg,cv-es.pdf,
+cv-en.pdf}`) sin copiarlas nunca a `web/public` ni a un volumen público. No
+agrega puertos al host ni cambia lo que ya se publica.
+
 Los volúmenes persistentes del desarrollo son `mysql_data`, `api_public_media`
 y (desde Fase 4) `api_private_media`; `web_node_modules` y `api_vendor` son
 cachés reproducibles de dependencias. `api_private_media` respalda
@@ -757,6 +813,7 @@ Actualizar este documento si cambia:
 - Puerto asignado al portfolio.
 - Servicios Docker internos.
 - Tecnología principal de animación.
+- Contrato del sitio público (transporte, validadores, loader, criticidad) o del comando de importación inicial guardada.
 
 Actualizar `SERVER_ARCHITECTURE.md` si cambia:
 

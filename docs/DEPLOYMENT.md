@@ -88,6 +88,7 @@ Caddy usa su comportamiento normal de `Host` y forwarded headers. Operaciones de
 - MySQL no pertenece a la red frontal y no publica `3306` al host.
 - Ningún servicio usa `network_mode: host` salvo una futura decisión operacional documentada.
 - Redes, volúmenes y credenciales no se comparten con otros proyectos.
+- Desde Fase 5, `web` resuelve la media `/storage/...` del optimizador de imágenes de Next mediante una regla `rewrites()` server-only hacia `INTERNAL_API_ORIGIN` (`api:80`), sobre la misma red interna ya usada para las seis lecturas de contenido público. No agrega un puerto nuevo, no cambia `images.remotePatterns` y el tráfico real del navegador nunca la usa: Caddy sigue enrutando `/storage/*` directo a `api`.
 
 ## Persistencia relevante
 
@@ -142,6 +143,34 @@ php artisan db:seed --class=PortfolioContentSeeder
 
 El seeder es idempotente (`updateOrCreate` sobre claves/tipos propios aprobados), nunca publica ni hace visible nada, nunca crea `Project`, `CvDocument`, usuarios o secretos, y nunca sube ni copia un archivo a ningún disco. Ejecutarlo dos veces no duplica filas ni borra contenido no relacionado.
 
+### Importación inicial guardada de contenido (Fase 5, un solo uso)
+
+`php artisan portfolio:import-initial-content` (sin flags, opciones ni modos) es un comando guardado de **un solo uso** que, a diferencia del seeder anterior, no es repetible: está diseñado para ejecutarse exactamente una vez contra una base de contenido editorial recién migrada, y rechaza cualquier ejecución posterior. Este documento describe su contrato; no lo ejecuta, y no afirma que se haya ejecutado contra datos de producción — solo se ha verificado en un stack Docker de integración aislado (Tarea 13, evidencia completa en `docs/testing/PHASE_5_VERIFICATION.md`) con datos sintéticos de QA.
+
+**Precondición (preflight, completamente no mutante, corre antes de cualquier escritura):**
+
+- Exactamente los dos singletons estructurales pristinos de Fase 4: `profiles.default` y `site_configurations.default`, cada uno con `status=draft`, `is_visible=false`, `published_at=null` y **todas** sus columnas editoriales/de asset reales en `null`.
+- Las doce tablas de contenido/pivote restantes literalmente vacías: `experiences`, `experience_highlights`, `work_cases`, `projects`, `technologies`, `expertise_areas`, `work_principles`, `professional_links`, `cv_documents`, `experience_technology`, `technology_work_case`, `project_technology`.
+
+Cualquier desviación — un singleton no pristino, una fila extra de singleton, o cualquier fila en las doce tablas — rechaza el comando con un mensaje seguro y **no produce ningún cambio en base de datos ni en filesystem**. Esto se cumple también en cada reejecución posterior a un primer éxito, incluso después de que un administrador haya publicado o editado contenido: el comando no vuelve a encontrar la línea base pristina y se rechaza igual, por diseño. No es un seed repetible; es una compuerta de una sola apertura.
+
+**Resultado en éxito:** los dos singletons existentes se llenan por `id` (nunca se reemplazan), se crean las colecciones del dataset aprobado, y la foto aprobada más ambos CVs aprobados se adjuntan mediante el mismo `AssetLifecycleService::replace()` que usa Filament. Cada registro creado/actualizado queda `status=draft`, `is_visible=false`, `published_at=null` sin excepción — el comando re-estampa este estado sin importar lo que el dataset traiga. La foto y los CV importados quedan en el mismo estado de ownership privado de Fase 4 (`photo_public_path` permanece `null`; la ruta de descarga de CV permanece no disponible) hasta que un humano publique a través del flujo normal de Filament.
+
+**Compensación de filesystem:** si un paso posterior falla, la transacción hace rollback y el comando borra únicamente las rutas de storage privado que él mismo creó durante ese intento concreto — nunca un archivo preexistente, nunca nada en el disco público. Es una compensación pequeña y específica de este comando, no un framework genérico de transacciones de media.
+
+**Entrada de assets, de solo lectura:** las tres fuentes de asset aprobadas (`docs/content/approved-assets/{professional-photo.jpg,cv-es.pdf,cv-en.pdf}`) se leen desde el propio repositorio, expuesto al contenedor API mediante un mount de Compose de solo lectura, `./docs:/var/www/docs:ro`, presente tanto en `api` como en `api-test`. Estos archivos nunca se copian a `web/public` ni a un volumen público; son entrada versionada y read-only, no un dato persistente que operaciones deba respaldar por separado.
+
+**Secuencia humana requerida después de un import exitoso** (ningún paso de esta secuencia se ejecuta automáticamente por Fase 5):
+
+1. Ejecutar el import una sola vez.
+2. Revisar el contenido en borrador y ambos assets en Filament.
+3. Completar los campos que todavía requieren aprobación humana (ver la brecha editorial documentada abajo).
+4. Publicar a través de las acciones normales de publicación de Fase 4.
+5. Fase 4 invalida su propia caché.
+6. El API pública empieza a servir el contenido.
+
+**Brecha editorial conocida, no resuelta por este comando:** no existe todavía organización/rol/fecha de inicio aprobados para ninguna `Experience` (queda `[]` tras el import); cada `WorkCase` solo tiene título y un párrafo de contexto aprobados, así que `problem/contribution/technical_approach/outcome` quedan `null` y ese caso no puede publicarse todavía; las ocho etiquetas `technology_*_label_{es,en}` del Site tampoco están aprobadas, así que el Site tampoco puede publicarse todavía; `Project` permanece deliberadamente vacío hasta Fase 7. Estas son decisiones editoriales humanas pendientes, no defectos de implementación, y bloquean la aceptación editorial de Fase 5 (spec §3.1) de forma independiente de que la implementación esté técnicamente completa.
+
 ## Variables y secretos
 
 El repositorio proporciona archivos de ejemplo con placeholders y documentación de ownership. Los valores reales permanecen fuera de Git.
@@ -174,6 +203,8 @@ La documentación de handoff debe permitir a operaciones identificar:
 - señales de readiness/health y dependencias de arranque.
 
 Fase 3 no crea targets de producción especulativos ni un Compose final del servidor. Las definiciones de desarrollo deben evitar supuestos exclusivos de Windows y mantener límites claros que operaciones pueda adaptar después del preflight real.
+
+Desde Fase 5, la ruta pública localizada renderiza dinámicamente en cada request (hace fetch obligatorio a los seis endpoints públicos por request) en vez de prerenderizarse en build. El build de `web` sigue sin depender de Laravel: completa igual con `gateway`/`api`/`mysql` detenidos o con `INTERNAL_API_ORIGIN` apuntando a un host inalcanzable, porque no ejecuta ningún fetch de contenido durante el build. Esto es relevante para operaciones porque significa que el build de imagen de producción de `web` nunca requiere que el API de producción esté disponible.
 
 La validación local de aceptación usó Caddy `2.11.4-alpine`, Node `24.18.0`,
 pnpm `11.20.0`, Next `16.2.12`, React `19.2.4`, PHP `8.5.8`, Laravel

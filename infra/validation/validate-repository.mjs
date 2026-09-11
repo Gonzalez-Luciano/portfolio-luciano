@@ -169,9 +169,9 @@ assert.match(readme, /no instalar un segundo Docker Engine/);
 
 const spanishMessages = JSON.parse(read('web/messages/es.json'));
 assert.equal(
-  spanishMessages.Foundation.apiUnavailable,
-  'La API no está disponible.',
-  'Spanish API availability copy must remain UTF-8',
+  spanishMessages.Portfolio.state.regionalFailure,
+  'No pudimos cargar esta sección.',
+  'Spanish portfolio copy must remain UTF-8',
 );
 
 const environment = read('docs/ENVIRONMENT.md');
