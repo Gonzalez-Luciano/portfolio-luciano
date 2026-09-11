@@ -147,20 +147,75 @@ Evidence, all through `http://localhost:8015` (Caddy → {web:3000, api:80}):
    (`data-nimg` count = 1; its optimizer URL 400s).
 
 Conclusion: the preferred root-relative `next/image` + `/storage/...` route
-does **not** work through the real Caddy / Next / Laravel topology. Spec §27
-option 2 (an approved public absolute origin + a narrow `remotePatterns` entry)
-does not apply: the Phase 4 public API contract emits `photo.url` only as a
-root-relative `/storage/...` string and defines no approved public absolute
-media origin, and the optimizer inside `web` could not reach such an origin in
-this topology regardless. Spec §27 / instructions §15 forbid the remaining
-options (a Next proxy / Route Handler, exposing `api:80` to `web`, copying
-media into `web/public`, broadening `remotePatterns`, changing the API
-contract).
+does **not** work through the real Caddy / Next / Laravel topology without a
+targeted fix. Spec §27 option 2 (an approved public absolute origin + a narrow
+`remotePatterns` entry) does not apply: the Phase 4 public API contract emits
+`photo.url` only as a root-relative `/storage/...` string and defines no
+approved public absolute media origin, and the optimizer inside `web` could
+not reach such an origin in this topology regardless.
 
 **Per Task 13 Step 5 and instructions §15, Phase 5 execution STOPPED before
-Task 14.** The isolated stack was cleaned (section 2.6). No workaround was
-implemented or committed. This incompatibility is elevated for a human
-decision — see section 3.
+Task 14** and the incompatibility was elevated. The human approved a fix (a
+narrow, server-only Next.js `rewrites()` rule limited to `/storage/*`,
+resolving toward the API over the existing internal Docker network — see
+section 2.7) with explicit constraints: the public root-relative media
+contract stays unchanged, the internal origin is server-side only (never
+`NEXT_PUBLIC_*`, never in HTML or the client bundle), `api:80` stays
+unpublished to the host, and `remotePatterns` is not broadened. This is
+distinct from, and narrower than, the forbidden options (a BFF/Route Handler
+with app logic, an exposed `api:80`, a local media copy, or a broad
+`remotePatterns`).
+
+### 2.7 Approved fix and re-verification — **PASS**
+
+`web/next.config.ts` gained an `async rewrites()` entry:
+`source: '/storage/:path*'` → `destination: '${INTERNAL_API_ORIGIN}/storage/:path*'`.
+This is Next's built-in declarative reverse-proxy config, evaluated and
+executed entirely inside the Next server process; it intercepts the
+optimizer's own internal self-fetch (which arrives at the Next server exactly
+like any other incoming request) before it 404s, and forwards it server-side
+to `api:80` over the network `web` already uses for the six content fetches.
+It does not add a Route Handler, an endpoint, or any aggregation logic; it
+does not touch `images.remotePatterns` (the `src` passed to `next/image`
+remains root-relative); it does not publish a new host port; the destination
+origin (`INTERNAL_API_ORIGIN`) is read only inside `next.config.ts`, a
+server-side build/runtime file, and is never exposed as `NEXT_PUBLIC_*`. Real
+browser requests are unaffected — Caddy already routes `/storage/*` straight
+to `api:80` without touching `web`.
+
+Re-verification, fresh isolated-stack respin (`portfolio-phase5-media`,
+`GATEWAY_PORT=8015`), same import + QA-publish sequence, new photo UUID
+`3f5c94e5-a437-4502-94f4-53f9e99b1442`:
+
+| Check | Result |
+|---|---|
+| `GET /storage/profiles/<uuid>.jpg` (gateway) | 200, `image/jpeg`, 175561 bytes (unaffected, as expected) |
+| `GET /_next/image?url=%2Fstorage%2F…&w=640&q=75` (gateway) | **200**, `image/jpeg`, 44089 bytes, verified `file` magic: `JPEG image data, progressive, 640x853` |
+| `GET /_next/image?…&w=1200&q=75` | 200, `image/jpeg`, 156937 bytes |
+| `GET /_next/image?…&w=32&q=75` | 200, `image/jpeg`, 707 bytes |
+| `/es` HTML internal-origin leak scan | none (`http://api`, `INTERNAL_API_ORIGIN`, container name, `api:80`, `host.docker*`) |
+| Real browser (Chrome, via `claude-in-chrome`), `http://localhost:8015/es`, dark theme (system) | Hero photo renders correctly — approved portrait, orange background, no broken-image icon |
+| Real browser, light theme (explicit toggle) | Hero photo renders correctly, text contrast good |
+
+The mandatory media incompatibility gate is now **PASS** with the approved
+fix applied. Execution resumed from Task 14.
+
+**Browser note (not a Phase 5 defect):** the Next.js dev-mode error overlay
+reported one hydration attribute mismatch on `<body>`:
+`cz-shortcut-listen="true"` present only on the client side. This attribute is
+injected by the ColorZilla browser extension installed in the automation
+Chrome profile, not by any Phase 5 code — Next's own hydration-error message
+explicitly names "a browser extension … which messes with the HTML before
+React loaded" as a cause, and `cz-shortcut-listen` is ColorZilla's documented
+signature attribute. The rendered `className` on `<body>` matched the source
+(`"flex min-h-screen flex-col"`) exactly; only the extension-injected
+attribute differed. Recorded here for truthfulness; Task 14's automated
+hydration test does not run inside a real browser and is unaffected by
+browser extensions. Task 15's real-browser console check should note the same
+extension caveat if it recurs, or re-test with the extension disabled.
+
+Isolated stack cleaned again after re-verification (down --volumes, ownership
+confirmed, zero residual).
 
 ### 2.6 Isolated-stack cleanup
 
