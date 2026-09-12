@@ -42,12 +42,17 @@ import spanishMessages from '../../../messages/es.json';
  *
  * while exercising the documented client interactions: theme toggle, Indexed
  * Detail tab selection (desktop, 3 Work Cases), the mobile dialog's
- * open/close/locale-selection lifecycle, and a mocked `(min-width: 64rem)`
- * breakpoint transition in both directions.
+ * open/close/locale-selection lifecycle, and a single mocked desktop-breakpoint
+ * media query transition in both directions. Indexed Detail's real query is
+ * `(min-width: 64rem)` and the header/mobile-dialog switch's real query is
+ * `(min-width: 80rem)` (see mobile-navigation.tsx) — this harness shares one
+ * mocked `MediaQueryList` across both for simplicity, so the simulated
+ * crossing exercises both components' listeners at once rather than proving
+ * they fire at their real, independent thresholds.
  *
  * jsdom ceiling (explicitly NOT asserted here, per spec §30.1 — Task 15
  * real-browser QA owns these): native `<dialog>` modality / real focus
- * trapping, real scroll or fragment positioning, the real 64rem media query,
+ * trapping, real scroll or fragment positioning, the real media queries,
  * real Next.js image-optimizer network behavior, browser zoom, and
  * screen-reader output. jsdom's stub `HTMLDialogElement` is polyfilled just
  * enough (same pattern as `mobile-navigation.test.tsx`) to observe the `open`
@@ -174,10 +179,12 @@ beforeAll(() => {
 });
 
 // --------------------------------------------------------------------------
-// Mocked `(min-width: 64rem)` media query — shared by IndexedWorkCases and
-// MobileNavigation, exactly as one real `MediaQueryList` instance per query
-// string would be in a browser. `emit` dispatches a `change` event to every
-// listener registered by either component.
+// One mocked desktop-breakpoint media query, shared by IndexedWorkCases
+// (real query `(min-width: 64rem)`) and MobileNavigation (real query
+// `(min-width: 80rem)`) — a simplification of the two independent real
+// `MediaQueryList` instances a browser would give each component. `emit`
+// dispatches a `change` event to every listener registered by either
+// component.
 // --------------------------------------------------------------------------
 
 const DESKTOP_QUERY = '(min-width: 64rem)';
@@ -526,15 +533,17 @@ describe('hydration — full interaction exercise (es, light, desktop-first)', (
     expectClean();
 
     // ---- theme toggle ----
+    // Single toggle button: its accessible name is the CURRENT theme (light,
+    // at mount), and activating it flips both the applied theme and the name.
     const themeSection = screen.getByRole('region', {
       name: t.theme.label,
     }) as HTMLElement;
-    const darkButton = within(themeSection).getByRole('button', {
-      name: t.theme.dark,
+    const themeButton = within(themeSection).getByRole('button', {
+      name: t.theme.light,
     });
-    fireEvent.click(darkButton);
+    fireEvent.click(themeButton);
     expect(document.documentElement.dataset.theme).toBe('dark');
-    expect(darkButton).toHaveAttribute('aria-pressed', 'true');
+    expect(themeButton).toHaveAttribute('aria-pressed', 'true');
     expectClean();
 
     // ---- mobile dialog: open, locale-switch selection closes it ----
@@ -545,7 +554,7 @@ describe('hydration — full interaction exercise (es, light, desktop-first)', (
     expectClean();
 
     const dialog = document.querySelector('dialog') as HTMLElement;
-    const englishLink = within(dialog).getByRole('link', {name: 'English'});
+    const englishLink = within(dialog).getByRole('link', {name: 'EN'});
     // jsdom does not implement real cross-path navigation; a plain click would
     // log a "Not implemented: navigation" console error unrelated to hydration.
     // Prevent the default the same way `mobile-navigation.test.tsx` does, so
@@ -633,9 +642,11 @@ describe.each([
       const themeSection = screen.getByRole('region', {
         name: t.theme.label,
       }) as HTMLElement;
-      const otherThemeLabel = theme === 'light' ? t.theme.dark : t.theme.light;
+      // The single toggle button's accessible name reflects the CURRENT theme.
+      const currentThemeLabel =
+        theme === 'light' ? t.theme.light : t.theme.dark;
       const toggle = within(themeSection).getByRole('button', {
-        name: otherThemeLabel,
+        name: currentThemeLabel,
       });
       fireEvent.click(toggle);
       expect(document.documentElement.dataset.theme).toBe(

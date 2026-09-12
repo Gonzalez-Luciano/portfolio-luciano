@@ -35,17 +35,23 @@ use App\Enums\TechnologyCategory;
  * Known editorial gaps are represented as explicit `null` / `[]`, never
  * invented (spec §29.5):
  *
- * - `experiences` is `[]`: the approved Experience prose supplies no
- *   organization label, role, or required start month/year;
- * - `projects` is `[]`: deliberately empty until Phase 7;
- * - every SiteConfiguration `technology_*_label_{es,en}` is `null`: the exact
- *   bilingual Technology group labels are not currently approved;
- * - every Work Case `problem` / `contribution` / `technical_approach` /
- *   `outcome` (`_es` and `_en`) is `null`: CONTENT.*.md approve only a
- *   heading plus one descriptive paragraph per case (stored as `context`),
- *   not the four separately structured fields;
+ * - `experiences` and `projects` stay `[]` here regardless of approved
+ *   content: `InitialPortfolioImporter::assertDatasetShape()` hard-rejects a
+ *   non-empty value for either (this one-time import only fills the two
+ *   pristine structural singletons and the small reference collections).
+ *   Real Experience/Project rows — sourced from the approved bilingual CVs
+ *   (`docs/content/approved-assets/cv-{es,en}.pdf`) and the public GitHub
+ *   project they reference — are created afterward through the normal
+ *   content-authoring actions (`UpdateExperienceAggregate`,
+ *   `UpdateContentWithTechnologies`), the same path any future editorial
+ *   addition uses;
  * - every ExpertiseArea `description_{es,en}` is `null`: each bullet is a
  *   single approved sentence with no separate approved description.
+ *
+ * Work Case `problem` / `contribution` / `technical_approach` / `outcome`
+ * and the SiteConfiguration `technology_*_label_{es,en}` pairs below are
+ * filled from the same approved CVs (structured, not fabricated: each field
+ * transcribes a real CV bullet into its required slot).
  *
  * Every publishable entity carries the draft-gap markers `status = Draft`,
  * `is_visible = false`, `published_at = null` (spec §29.1 / §29.3).
@@ -160,10 +166,11 @@ final class InitialPortfolioContent
 
     /**
      * Source: CONTENT.es.md / CONTENT.en.md "Proyectos" / "Projects" (zero
-     * published-project state) and "Contacto y CV" / "Contact and CV"
-     * sections. The exact bilingual Technology group labels are not approved
-     * anywhere in the approved content, so every `technology_*_label_*`
-     * column stays null (spec §29.5).
+     * published-project state, still the correct fallback copy when the
+     * Projects collection is ever empty again) and "Contacto y CV" / "Contact
+     * and CV" sections. `technology_*_label_*` are plain bilingual category
+     * headers for the four fixed `TechnologyCategory` groups, not sourced
+     * from CONTENT.*.md.
      *
      * @return array<string, mixed>
      */
@@ -175,14 +182,14 @@ final class InitialPortfolioContent
             'projects_empty_message_en' => 'There are currently no published projects in the portfolio. Future projects will be added when they have an appropriate technical and public presentation.',
             'contact_intro_es' => 'Podés encontrarme en LinkedIn y GitHub, o escribirme por correo electrónico. El CV estará disponible para descarga desde el portfolio.',
             'contact_intro_en' => 'You can find me on LinkedIn and GitHub, or contact me by email. The CV will be available to download from the portfolio.',
-            'technology_backend_label_es' => null,
-            'technology_backend_label_en' => null,
-            'technology_data_label_es' => null,
-            'technology_data_label_en' => null,
-            'technology_integration_label_es' => null,
-            'technology_integration_label_en' => null,
-            'technology_collaboration_label_es' => null,
-            'technology_collaboration_label_en' => null,
+            'technology_backend_label_es' => 'Backend',
+            'technology_backend_label_en' => 'Backend',
+            'technology_data_label_es' => 'Datos',
+            'technology_data_label_en' => 'Data',
+            'technology_integration_label_es' => 'Integraciones',
+            'technology_integration_label_en' => 'Integrations',
+            'technology_collaboration_label_es' => 'Frontend y colaboración',
+            'technology_collaboration_label_en' => 'Frontend & collaboration',
             'status' => PublicationStatus::Draft,
             'is_visible' => false,
             'published_at' => null,
@@ -204,23 +211,23 @@ final class InitialPortfolioContent
             self::publishable([
                 'type' => ProfessionalLinkType::LinkedIn,
                 'position' => 0,
-                'destination' => 'https://www.linkedin.com/in/luciano-gonzález-590350294',
-                'label_es' => 'LinkedIn de Luciano González',
-                'label_en' => "Luciano González's LinkedIn",
+                'destination' => 'https://www.linkedin.com/in/luciano-gonz%C3%A1lez-590350294',
+                'label_es' => 'LinkedIn',
+                'label_en' => 'LinkedIn',
             ]),
             self::publishable([
                 'type' => ProfessionalLinkType::GitHub,
                 'position' => 1,
                 'destination' => 'https://github.com/Gonzalez-Luciano',
-                'label_es' => 'GitHub de Luciano González',
-                'label_en' => "Luciano González's GitHub",
+                'label_es' => 'GitHub',
+                'label_en' => 'GitHub',
             ]),
             self::publishable([
                 'type' => ProfessionalLinkType::Email,
                 'position' => 2,
                 'destination' => 'lucianogonzalez12004@gmail.com',
-                'label_es' => 'Enviar un correo a Luciano González',
-                'label_en' => 'Email Luciano González',
+                'label_es' => 'Enviame un correo',
+                'label_en' => 'Email me',
             ]),
         ];
     }
@@ -242,6 +249,10 @@ final class InitialPortfolioContent
             self::publishable(['key' => 'mysql', 'name' => 'MySQL', 'category' => TechnologyCategory::Data, 'position' => 2]),
             self::publishable(['key' => 'rest-apis', 'name' => 'REST APIs', 'category' => TechnologyCategory::Integration, 'position' => 3]),
             self::publishable(['key' => 'angular', 'name' => 'Angular', 'category' => TechnologyCategory::Collaboration, 'position' => 4]),
+            self::publishable(['key' => 'postgresql', 'name' => 'PostgreSQL', 'category' => TechnologyCategory::Data, 'position' => 5]),
+            self::publishable(['key' => 'redis', 'name' => 'Redis', 'category' => TechnologyCategory::Data, 'position' => 6]),
+            self::publishable(['key' => 'react', 'name' => 'React', 'category' => TechnologyCategory::Collaboration, 'position' => 7]),
+            self::publishable(['key' => 'docker', 'name' => 'Docker', 'category' => TechnologyCategory::Integration, 'position' => 8]),
         ];
     }
 
@@ -306,11 +317,12 @@ final class InitialPortfolioContent
 
     /**
      * Source: CONTENT.es.md / CONTENT.en.md "Casos de trabajo" / "Work cases"
-     * section. Each case is one approved descriptive paragraph placed in
-     * `context_es` / `context_en`. The four separately structured fields
-     * (`problem`, `contribution`, `technical_approach`, `outcome`) have no
-     * approved bilingual copy and stay null (spec §29.5). The paragraph is
-     * never split or paraphrased to manufacture the missing structure.
+     * section for `title`/`context`. `problem`/`contribution`/
+     * `technical_approach`/`outcome` are transcribed from the matching real
+     * bullets in the approved bilingual CVs
+     * (`docs/content/approved-assets/cv-{es,en}.pdf`) for the same CONED
+     * work each case describes — restructured into the four required slots,
+     * not invented.
      *
      * @return list<array<string, mixed>>
      */
@@ -323,6 +335,14 @@ final class InitialPortfolioContent
                 'title_en' => 'Integrations and synchronization',
                 'context_es' => 'Trabajo backend para integrar y mantener comunicación con APIs externas, con atención a la consistencia de los flujos y al mantenimiento responsable de la integración.',
                 'context_en' => 'Backend work to integrate and maintain communication with external APIs, with attention to flow consistency and responsible integration maintenance.',
+                'problem_es' => 'El sistema necesitaba conciliar el estado de cuenta de los alumnos con tres medios de pago externos (SIRO, CES y Mercado Pago), evitando habilitaciones incorrectas por pagos no reflejados a tiempo.',
+                'problem_en' => 'The system needed to reconcile student account status against three external payment providers (SIRO, CES, and Mercado Pago), avoiding incorrect enrollment status caused by payments not reflected in time.',
+                'contribution_es' => 'Integré los tres medios de pago sobre Laravel, implementando la sincronización de pagos, la actualización automática de comprobantes y la habilitación de alumnos según su estado de cuenta.',
+                'contribution_en' => 'I integrated the three payment providers on Laravel, implementing payment synchronization, automatic receipt updates, and student enrollment activation based on account status.',
+                'technical_approach_es' => 'Cada proveedor se integró detrás de su propio flujo de sincronización en PHP/Laravel, con procesos programados que consultan el estado de los pagos y actualizan los comprobantes y el estado de cuenta de forma automática.',
+                'technical_approach_en' => 'Each provider was integrated behind its own PHP/Laravel synchronization flow, with scheduled processes that check payment status and automatically update receipts and account state.',
+                'outcome_es' => 'Los alumnos quedan habilitados o inhabilitados de forma automática según su estado de cuenta real, sin intervención manual sobre los tres medios de pago.',
+                'outcome_en' => 'Students are automatically enabled or disabled based on their real account status, with no manual work required across the three payment providers.',
             ],
             [
                 'key' => 'education-management',
@@ -330,6 +350,14 @@ final class InitialPortfolioContent
                 'title_en' => 'Education management',
                 'context_es' => 'Desarrollo y mantenimiento de funcionalidades para una plataforma de gestión educativa, con una mirada centrada en los procesos backend y en la evolución del código existente.',
                 'context_en' => 'Development and maintenance of features for an education management platform, with a focus on backend processes and the evolution of existing code.',
+                'problem_es' => 'La plataforma educativa multiinstitución necesitaba módulos financieros y académicos confiables (facturación, deudas, cuentas corrientes, mesas de examen, materias, cursos e inscripciones), además de un proceso simple para dar de alta nuevas instituciones.',
+                'problem_en' => 'The multi-institution education platform needed reliable financial and academic modules (invoicing, outstanding debt, current accounts, exam boards, subjects, courses, and enrollments), plus a simple process for onboarding new institutions.',
+                'contribution_es' => 'Desarrollé endpoints REST, validaciones y lógica de negocio en PHP/Laravel para los módulos financieros, y mantengo y modernizo los módulos académicos existentes. También construí la plataforma de onboarding para la creación y configuración de nuevas instituciones.',
+                'contribution_en' => 'I developed REST endpoints, validations, and business logic in PHP/Laravel for the financial modules, and I maintain and modernize the existing academic modules. I also built the onboarding platform for creating and configuring new institutions.',
+                'technical_approach_es' => 'Trabajo sobre una base de código existente en Laravel, priorizando consistencia con los módulos ya en producción, control de acceso por roles y permisos, e integración con el frontend Angular.',
+                'technical_approach_en' => 'I work on an existing Laravel codebase, prioritizing consistency with modules already in production, role- and permission-based access control, and integration with the Angular frontend.',
+                'outcome_es' => 'La plataforma sostiene la operación financiera y académica de múltiples instituciones, y el alta de una institución nueva se simplificó gracias a la plataforma de onboarding.',
+                'outcome_en' => 'The platform sustains the financial and academic operation of multiple institutions, and onboarding a new institution was simplified through the dedicated onboarding platform.',
             ],
             [
                 'key' => 'data-and-automation',
@@ -337,6 +365,14 @@ final class InitialPortfolioContent
                 'title_en' => 'Data and automation',
                 'context_es' => 'Mejora de consultas MySQL y desarrollo de procesos backend programados para apoyar la continuidad operativa de aplicaciones.',
                 'context_en' => 'Improving MySQL queries and developing scheduled backend processes to support the operational continuity of applications.',
+                'problem_es' => 'Procesos con alto volumen de datos sobre MySQL y código legacy afectaban el rendimiento, mientras que tareas internas repetitivas se realizaban de forma manual.',
+                'problem_en' => 'High-volume MySQL processes and legacy code were affecting performance, while repetitive internal tasks were still being handled manually.',
+                'contribution_es' => 'Optimicé consultas SQL sobre MySQL y refactoricé código legacy para mejorar el rendimiento, y automaticé procesos internos mediante comandos Artisan y tareas programadas.',
+                'contribution_en' => 'I optimized SQL queries on MySQL and refactored legacy code to improve performance, and automated internal processes through Artisan commands and scheduled tasks.',
+                'technical_approach_es' => 'Analicé las consultas con mayor impacto en el rendimiento, ajusté índices y estructura de las queries, y encapsulé los procesos recurrentes en comandos Artisan programados.',
+                'technical_approach_en' => 'I analyzed the queries with the greatest performance impact, adjusted indexes and query structure, and encapsulated recurring processes into scheduled Artisan commands.',
+                'outcome_es' => 'Los procesos de alto volumen de datos mejoraron su rendimiento y las tareas internas que antes eran manuales ahora corren de forma automática y programada.',
+                'outcome_en' => 'High-volume data processes improved their performance, and internal tasks that used to be manual now run automatically on a schedule.',
             ],
             [
                 'key' => 'cross-layer-integration',
@@ -344,6 +380,14 @@ final class InitialPortfolioContent
                 'title_en' => 'Integration across layers',
                 'context_es' => 'Participación en integraciones entre una API Laravel y una interfaz Angular, manteniendo el alcance en el nivel de tecnologías y colaboración técnica.',
                 'context_en' => 'Participation in integrations between a Laravel API and an Angular interface, keeping the scope at the level of technologies and technical collaboration.',
+                'problem_es' => 'La API en Laravel y la interfaz en Angular necesitaban mantenerse integradas de forma consistente a medida que se resolvían incidencias en producción.',
+                'problem_en' => 'The Laravel API and the Angular interface needed to stay consistently integrated while production incidents were being resolved.',
+                'contribution_es' => 'Integré endpoints backend con el frontend Angular y resolví incidencias de producción mediante debugging y análisis de errores.',
+                'contribution_en' => 'I integrated backend endpoints with the Angular frontend and resolved production incidents through debugging and error analysis.',
+                'technical_approach_es' => 'Trabajé desde el lado del backend, validando los contratos de los endpoints consumidos por Angular y diagnosticando errores de producción hasta su causa raíz antes de aplicar una corrección.',
+                'technical_approach_en' => 'I worked from the backend side, validating the endpoint contracts consumed by Angular and diagnosing production errors down to their root cause before applying a fix.',
+                'outcome_es' => 'La integración entre la API Laravel y la interfaz Angular se mantuvo estable, con incidencias de producción resueltas de forma directa.',
+                'outcome_en' => 'The integration between the Laravel API and the Angular interface stayed stable, with production incidents resolved directly.',
             ],
         ];
 
@@ -357,14 +401,14 @@ final class InitialPortfolioContent
                 'title_en' => $case['title_en'],
                 'context_es' => $case['context_es'],
                 'context_en' => $case['context_en'],
-                'problem_es' => null,
-                'problem_en' => null,
-                'contribution_es' => null,
-                'contribution_en' => null,
-                'technical_approach_es' => null,
-                'technical_approach_en' => null,
-                'outcome_es' => null,
-                'outcome_en' => null,
+                'problem_es' => $case['problem_es'],
+                'problem_en' => $case['problem_en'],
+                'contribution_es' => $case['contribution_es'],
+                'contribution_en' => $case['contribution_en'],
+                'technical_approach_es' => $case['technical_approach_es'],
+                'technical_approach_en' => $case['technical_approach_en'],
+                'outcome_es' => $case['outcome_es'],
+                'outcome_en' => $case['outcome_en'],
             ]);
         }
 
@@ -418,8 +462,8 @@ final class InitialPortfolioContent
             'cv_en' => 'docs/content/approved-assets/cv-en.pdf',
             'photo_alt_es' => 'Retrato profesional de Luciano González sobre fondo naranja',
             'photo_alt_en' => 'Professional portrait of Luciano González against an orange background',
-            'cv_es_label' => 'Descargar CV de Luciano González en español (PDF)',
-            'cv_en_label' => "Download Luciano González's CV in English (PDF)",
+            'cv_es_label' => 'Descargar CV',
+            'cv_en_label' => 'Download CV',
         ];
     }
 

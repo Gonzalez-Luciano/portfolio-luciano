@@ -17,21 +17,25 @@ import {
 } from './primary-navigation';
 
 /**
- * Native `<dialog>` coordinator for the below-64rem menu (design spec §19).
+ * Native `<dialog>` coordinator for the below-80rem menu (design spec §19).
  *
  * It coordinates ONLY: showModal/close, open state, an accessible dialog name,
  * initial focus inside the dialog, native Escape (`cancel`) closure, an explicit
  * Close control, closure on destination/locale selection, focus restoration to
  * the trigger, body-scroll lock/restore, unmount cleanup, and a component-local
- * `(min-width: 64rem)` listener that closes the dialog and moves focus to the
+ * `(min-width: 80rem)` listener that closes the dialog and moves focus to the
  * visible identity link when the viewport crosses into desktop.
+ *
+ * This threshold MUST stay matched to `.header-desktop-only` /
+ * `.header-mobile-only` in globals.css — it is the same mobile-vs-desktop
+ * header layout switch, just read from JS so the dialog can react to it.
  *
  * It does NOT implement a manual focus trap or `inert` — native
  * `<dialog>.showModal()` owns modality. No dialog/focus-trap dependency is used.
  * jsdom cannot prove native modality; Task 15 real-browser QA owns that.
  */
 
-const DESKTOP_QUERY = '(min-width: 64rem)';
+const DESKTOP_QUERY = '(min-width: 80rem)';
 
 type MobileNavigationLabels = {
   /** `Portfolio.menu.open` */

@@ -37,13 +37,13 @@ use Illuminate\Support\Arr;
  * - it never invents employers, clients, dates, metrics, or technologies
  *   beyond what the approved content sources state.
  *
- * Experience/ExperienceHighlight are deliberately NOT seeded: the approved
- * content (CONTENT.es.md / CONTENT.en.md "Experiencia"/"Experience") and the
- * confidentiality matrix (PUB-002, PUB-003, ...) never approve a specific
- * employer, role title, or start/end date, while the `experiences` table
- * requires a non-null start_year/start_month. Inventing a date to satisfy
- * that constraint is prohibited, so this seeder leaves that table empty
- * rather than fabricate timeline facts.
+ * Experience/ExperienceHighlight are deliberately NOT seeded: `data()`
+ * carries an empty `experiences` slice by construction (the importer's own
+ * preflight rejects a non-empty one), so this seeder has nothing to consume
+ * for that table regardless of what the approved CVs state. Real Experience
+ * rows are created through the normal content-authoring actions
+ * (`UpdateExperienceAggregate`), not through this seeder or the initial
+ * import.
  *
  * Run explicitly, never from DatabaseSeeder::run():
  *   php artisan db:seed --class=PortfolioContentSeeder

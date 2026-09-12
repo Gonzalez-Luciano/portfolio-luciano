@@ -47,12 +47,11 @@
     },
     "language": {
       "label": "Seleccionar idioma",
-      "spanish": "Español",
-      "english": "English"
+      "spanish": "ES",
+      "english": "EN"
     },
     "theme": {
       "label": "Tema",
-      "current": "Tema actual",
       "light": "Claro",
       "dark": "Oscuro"
     },

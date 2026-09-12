@@ -16,12 +16,11 @@ const labels: SiteHeaderLabels = {
   menu: {open: 'Menú', close: 'Cerrar', title: 'Navegación'},
   language: {
     label: 'Seleccionar idioma',
-    spanish: 'Español',
-    english: 'English',
+    spanish: 'ES',
+    english: 'EN',
   },
   theme: {
     label: 'Tema',
-    current: 'Tema actual',
     light: 'Claro',
     dark: 'Oscuro',
   },
@@ -113,10 +112,10 @@ describe('SiteHeader — valid variant', () => {
     );
 
     expect(otherLocaleLink).toBeTruthy();
-    expect(otherLocaleLink?.textContent).toBe('English');
+    expect(otherLocaleLink?.textContent).toBe('EN');
   });
 
-  it('carries the CSS class that hides the no-script fallback at >= 64rem so it never duplicates the desktop bar (jsdom cannot evaluate the media query itself; a real browser applies it via this class)', () => {
+  it('carries the CSS class that hides the no-script fallback at >= 80rem so it never duplicates the desktop bar (jsdom cannot evaluate the media query itself; a real browser applies it via this class)', () => {
     const doc = serverDoc(<SiteHeader locale="es" labels={labels} />);
 
     expect(doc.querySelector('noscript nav')?.className).toBe(

@@ -75,7 +75,6 @@ export default async function LocaleLayout({
     },
     theme: {
       label: portfolio.theme.label,
-      current: portfolio.theme.current,
       light: portfolio.theme.light,
       dark: portfolio.theme.dark,
     },

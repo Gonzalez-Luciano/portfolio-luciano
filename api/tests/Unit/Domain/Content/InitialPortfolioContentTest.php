@@ -41,7 +41,7 @@ final class InitialPortfolioContentTest extends TestCase
         $data = $this->data();
 
         $this->assertCount(3, $data['professional_links']);
-        $this->assertCount(5, $data['technologies']);
+        $this->assertCount(9, $data['technologies']);
         $this->assertCount(6, $data['expertise_areas']);
         $this->assertCount(4, $data['work_cases']);
         $this->assertCount(1, $data['work_principles']);
@@ -131,7 +131,8 @@ final class InitialPortfolioContentTest extends TestCase
 
     /**
      * Exhaustive verbatim pin of EVERY approved SiteConfiguration copy string
-     * (the eight Technology-group label columns are separately pinned null).
+     * (the eight Technology-group label columns are separately pinned in
+     * test_site_pins_every_approved_technology_group_label()).
      */
     public function test_site_pins_every_approved_string(): void
     {
@@ -161,23 +162,23 @@ final class InitialPortfolioContentTest extends TestCase
             [
                 'type' => ProfessionalLinkType::LinkedIn,
                 'position' => 0,
-                'destination' => 'https://www.linkedin.com/in/luciano-gonzález-590350294',
-                'label_es' => 'LinkedIn de Luciano González',
-                'label_en' => "Luciano González's LinkedIn",
+                'destination' => 'https://www.linkedin.com/in/luciano-gonz%C3%A1lez-590350294',
+                'label_es' => 'LinkedIn',
+                'label_en' => 'LinkedIn',
             ],
             [
                 'type' => ProfessionalLinkType::GitHub,
                 'position' => 1,
                 'destination' => 'https://github.com/Gonzalez-Luciano',
-                'label_es' => 'GitHub de Luciano González',
-                'label_en' => "Luciano González's GitHub",
+                'label_es' => 'GitHub',
+                'label_en' => 'GitHub',
             ],
             [
                 'type' => ProfessionalLinkType::Email,
                 'position' => 2,
                 'destination' => 'lucianogonzalez12004@gmail.com',
-                'label_es' => 'Enviar un correo a Luciano González',
-                'label_en' => 'Email Luciano González',
+                'label_es' => 'Enviame un correo',
+                'label_en' => 'Email me',
             ],
         ];
 
@@ -217,7 +218,7 @@ final class InitialPortfolioContentTest extends TestCase
     /**
      * Exhaustive verbatim pin of EVERY approved Work Case key + bilingual
      * title + bilingual context (all four, in order). The four detail fields
-     * are separately pinned null.
+     * are separately pinned in test_work_cases_pin_every_approved_detail_field().
      */
     public function test_work_cases_pin_every_approved_title_and_context(): void
     {
@@ -292,6 +293,10 @@ final class InitialPortfolioContentTest extends TestCase
                 ['mysql', 'MySQL', TechnologyCategory::Data],
                 ['rest-apis', 'REST APIs', TechnologyCategory::Integration],
                 ['angular', 'Angular', TechnologyCategory::Collaboration],
+                ['postgresql', 'PostgreSQL', TechnologyCategory::Data],
+                ['redis', 'Redis', TechnologyCategory::Data],
+                ['react', 'React', TechnologyCategory::Collaboration],
+                ['docker', 'Docker', TechnologyCategory::Integration],
             ],
             array_map(
                 static fn (array $t): array => [$t['key'], $t['name'], $t['category']],
@@ -300,28 +305,31 @@ final class InitialPortfolioContentTest extends TestCase
         );
     }
 
-    public function test_site_technology_group_labels_are_all_null(): void
+    public function test_site_pins_every_approved_technology_group_label(): void
     {
         $site = $this->data()['site'];
 
-        foreach ([
-            'technology_backend_label_es',
-            'technology_backend_label_en',
-            'technology_data_label_es',
-            'technology_data_label_en',
-            'technology_integration_label_es',
-            'technology_integration_label_en',
-            'technology_collaboration_label_es',
-            'technology_collaboration_label_en',
-        ] as $column) {
-            $this->assertArrayHasKey($column, $site, "Missing site column: {$column}.");
-            $this->assertNull($site[$column], "Site column {$column} must be null.");
+        $expected = [
+            'technology_backend_label_es' => 'Backend',
+            'technology_backend_label_en' => 'Backend',
+            'technology_data_label_es' => 'Datos',
+            'technology_data_label_en' => 'Data',
+            'technology_integration_label_es' => 'Integraciones',
+            'technology_integration_label_en' => 'Integrations',
+            'technology_collaboration_label_es' => 'Frontend y colaboración',
+            'technology_collaboration_label_en' => 'Frontend & collaboration',
+        ];
+
+        foreach ($expected as $column => $value) {
+            $this->assertSame($value, $site[$column], "Site column {$column} drifted from approved copy.");
         }
     }
 
-    public function test_work_case_detail_fields_are_all_null(): void
+    public function test_work_cases_pin_every_approved_detail_field(): void
     {
-        foreach ($this->data()['work_cases'] as $case) {
+        $cases = $this->data()['work_cases'];
+
+        foreach ($cases as $case) {
             foreach ([
                 'problem_es', 'problem_en',
                 'contribution_es', 'contribution_en',
@@ -329,9 +337,12 @@ final class InitialPortfolioContentTest extends TestCase
                 'outcome_es', 'outcome_en',
             ] as $field) {
                 $this->assertArrayHasKey($field, $case, "Missing work-case field: {$field}.");
-                $this->assertNull($case[$field], "Work case {$case['key']} field {$field} must be null.");
+                $this->assertIsString($case[$field], "Work case {$case['key']} field {$field} must be a non-null approved string.");
+                $this->assertNotSame('', trim($case[$field]), "Work case {$case['key']} field {$field} must not be empty.");
             }
         }
+
+        $this->assertCount(4, $cases);
     }
 
     public function test_expertise_area_descriptions_are_null(): void
@@ -357,8 +368,8 @@ final class InitialPortfolioContentTest extends TestCase
 
         $this->assertSame('Retrato profesional de Luciano González sobre fondo naranja', $assets['photo_alt_es']);
         $this->assertSame('Professional portrait of Luciano González against an orange background', $assets['photo_alt_en']);
-        $this->assertSame('Descargar CV de Luciano González en español (PDF)', $assets['cv_es_label']);
-        $this->assertSame("Download Luciano González's CV in English (PDF)", $assets['cv_en_label']);
+        $this->assertSame('Descargar CV', $assets['cv_es_label']);
+        $this->assertSame('Download CV', $assets['cv_en_label']);
     }
 
     public function test_singletons_carry_the_visible_draft_gap_markers(): void

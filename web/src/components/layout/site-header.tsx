@@ -19,9 +19,9 @@ import {
  * The `<noscript>` fallback nav is a SEPARATE concern from that JS-only
  * contract: browsers always render `<noscript>` content when scripting is
  * off, regardless of viewport, so `.site-header__noscript-nav` carries its own
- * plain `@media (min-width: 64rem)` rule (globals.css) hiding it at desktop
+ * plain `@media (min-width: 80rem)` rule (globals.css) hiding it at desktop
  * widths, where the real desktop `PrimaryNavigation` already covers the same
- * five destinations. Below 64rem it stays visible without JS, standing in for
+ * five destinations. Below 80rem it stays visible without JS, standing in for
  * the unusable JS-only Menu trigger/dialog.
  *
  * `structural-failure` (spec §15.1): NO PrimaryNavigation, NO MobileNavigation,
@@ -34,7 +34,7 @@ export type SiteHeaderLabels = {
   destinations: PrimaryDestinationLabels;
   menu: {open: string; close: string; title: string};
   language: {label: string; spanish: string; english: string};
-  theme: {label: string; current: string; light: string; dark: string};
+  theme: {label: string; light: string; dark: string};
 };
 
 type SiteHeaderProps = {
@@ -68,7 +68,6 @@ export function SiteHeader({
   const themeSwitcher = (
     <ThemeSwitcher
       label={labels.theme.label}
-      currentThemeLabel={labels.theme.current}
       lightLabel={labels.theme.light}
       darkLabel={labels.theme.dark}
     />

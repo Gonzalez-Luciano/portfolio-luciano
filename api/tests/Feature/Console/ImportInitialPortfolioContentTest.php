@@ -119,15 +119,14 @@ final class ImportInitialPortfolioContentTest extends TestCase
         $site = SiteConfiguration::query()->sole();
         $this->assertNotNull($site->projects_empty_message_es);
         $this->assertNotNull($site->contact_intro_en);
-        // Technology group labels stay in the draft-null state (spec §29.5).
-        $this->assertNull($site->technology_backend_label_es);
-        $this->assertNull($site->technology_collaboration_label_en);
+        $this->assertSame('Backend', $site->technology_backend_label_es);
+        $this->assertSame('Frontend & collaboration', $site->technology_collaboration_label_en);
         $this->assertSame(PublicationStatus::Draft, $site->status);
         $this->assertFalse($site->is_visible);
         $this->assertNull($site->published_at);
 
         $this->assertSame(3, ProfessionalLink::query()->count());
-        $this->assertSame(5, Technology::query()->count());
+        $this->assertSame(9, Technology::query()->count());
         $this->assertSame(6, ExpertiseArea::query()->count());
         $this->assertSame(4, WorkCase::query()->count());
         $this->assertSame(1, WorkPrinciple::query()->count());
@@ -153,9 +152,9 @@ final class ImportInitialPortfolioContentTest extends TestCase
         }
         $spanish = $cvs->firstWhere('locale', SupportedLocale::Spanish);
         $english = $cvs->firstWhere('locale', SupportedLocale::English);
-        $this->assertSame('Descargar CV de Luciano González en español (PDF)', $spanish->label);
+        $this->assertSame('Descargar CV', $spanish->label);
         $this->assertSame(49861, $spanish->size);
-        $this->assertSame("Download Luciano González's CV in English (PDF)", $english->label);
+        $this->assertSame('Download CV', $english->label);
         $this->assertSame(47061, $english->size);
 
         // Nothing invented for Experience / Projects / pivots; no users; no public copies.

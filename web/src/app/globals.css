@@ -271,7 +271,7 @@ a[href] {
 }
 
 /* --------------------------------------------------------------------------
-   Sticky header + desktop/mobile switch at 64rem — CSS only, no JS (spec §25).
+   Sticky header + desktop/mobile switch at 80rem — CSS only, no JS (spec §25).
    -------------------------------------------------------------------------- */
 .site-header {
   position: sticky;
@@ -312,7 +312,17 @@ a[href] {
   align-items: center;
 }
 
-@media (min-width: 64rem) {
+/* The full inline desktop bar (identity + five nav links + language switcher
+   + theme control) needs more room than the 64rem tier gives it once real
+   ES/EN content is measured — at 64rem-79.99rem widths (e.g. ~1036px) it wraps
+   and visually breaks. Promoted to the next step on the project's standard
+   48rem/64rem/80rem scale (see :root above); below 80rem the mobile
+   hamburger cluster (`.header-mobile-only`) carries the same five
+   destinations instead. `MobileNavigation`'s own `(min-width: 80rem)` listener
+   (mobile-navigation.tsx) must stay matched to this value — it is the same
+   "mobile chrome vs desktop chrome" threshold, just read from JS instead of
+   CSS. */
+@media (min-width: 80rem) {
   .header-desktop-only {
     display: flex;
     align-items: center;
@@ -325,11 +335,12 @@ a[href] {
 }
 
 /* --------------------------------------------------------------------------
-   `<noscript>` fallback nav — visible only below 64rem, where the JS-only
-   Menu trigger is unusable without JavaScript. At >= 64rem the real desktop
+   `<noscript>` fallback nav — visible only below 80rem, where the JS-only
+   Menu trigger is unusable without JavaScript. At >= 80rem the real desktop
    PrimaryNavigation (`.header-desktop-only`) already covers the same five
    destinations, so the fallback is hidden there to avoid a duplicate,
-   unstyled second nav (spec §19/§25).
+   unstyled second nav (spec §19/§25). This threshold MUST match
+   `.header-desktop-only`'s above — they are a matched pair.
    -------------------------------------------------------------------------- */
 .site-header__noscript-nav {
   padding-block: var(--space-3);
@@ -345,7 +356,7 @@ a[href] {
   gap: var(--space-4);
 }
 
-@media (min-width: 64rem) {
+@media (min-width: 80rem) {
   .site-header__noscript-nav {
     display: none;
   }
@@ -528,6 +539,54 @@ a[href] {
 }
 
 .theme-switcher button:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Language switcher — compact "ES | EN" pair. The active locale is never
+   marked by colour alone: it also gains extra weight and an inline
+   accent underline, the same non-colour-plus-colour convention used by
+   `.indexed-work-cases__tab[aria-selected='true']` (weight + accent bar).
+   -------------------------------------------------------------------------- */
+.language-switcher__list {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.language-switcher__item + .language-switcher__item {
+  margin-inline-start: var(--space-3);
+  padding-inline-start: var(--space-3);
+  border-inline-start: var(--rule-standard) solid var(--color-border-meaningful);
+}
+
+.language-switcher__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-minimum);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-utility);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--color-text-muted);
+  border-block-end: var(--rule-emphasis) solid transparent;
+}
+
+.language-switcher__link:hover {
+  color: var(--color-text-primary);
+}
+
+.language-switcher__link[aria-current='page'] {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  border-block-end-color: var(--color-accent);
+}
+
+.language-switcher__link:focus-visible {
   outline: 3px solid var(--color-accent);
   outline-offset: 2px;
 }

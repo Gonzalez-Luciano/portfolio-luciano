@@ -51,8 +51,8 @@ const labels = {
   },
   language: {
     label: 'Seleccionar idioma',
-    spanish: 'Español',
-    english: 'English',
+    spanish: 'ES',
+    english: 'EN',
   },
 } as const;
 
@@ -62,7 +62,7 @@ function installMatchMedia(initialMatches = false) {
   const listeners = new Set<MediaListener>();
   const mql = {
     matches: initialMatches,
-    media: '(min-width: 64rem)',
+    media: '(min-width: 80rem)',
     addEventListener: (_type: 'change', listener: MediaListener) =>
       listeners.add(listener),
     removeEventListener: (_type: 'change', listener: MediaListener) =>
@@ -178,7 +178,7 @@ describe('MobileNavigation', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Menú'}));
 
     const dialog = dialogEl();
-    const englishLink = within(dialog!).getByRole('link', {name: 'English'});
+    const englishLink = within(dialog!).getByRole('link', {name: 'EN'});
     const inertClick = new MouseEvent('click', {
       bubbles: true,
       cancelable: true,

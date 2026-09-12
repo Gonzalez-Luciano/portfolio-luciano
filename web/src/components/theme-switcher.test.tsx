@@ -5,7 +5,6 @@ import {ThemeSwitcher} from './theme-switcher';
 
 const labels = {
   label: 'Theme',
-  currentThemeLabel: 'Current theme',
   lightLabel: 'Light',
   darkLabel: 'Dark',
 };
@@ -18,32 +17,44 @@ describe('ThemeSwitcher', () => {
     window.localStorage.clear();
   });
 
-  it('initializes from the theme already applied to the root element', () => {
+  it('renders a single toggle button reflecting the theme already applied to the root element', () => {
     document.documentElement.dataset.theme = 'dark';
     window.localStorage.setItem('portfolio_theme', 'light');
 
     render(<ThemeSwitcher {...labels} />);
 
+    expect(screen.getAllByRole('button')).toHaveLength(1);
     expect(screen.getByRole('button', {name: 'Dark'})).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    expect(screen.getByText('Current theme: Dark')).toBeInTheDocument();
   });
 
-  it('marks the interactive theme controls with the shared JS-only styling hook', () => {
+  it('never renders a "current theme" status text', () => {
+    document.documentElement.dataset.theme = 'dark';
+
+    render(<ThemeSwitcher {...labels} />);
+
+    expect(screen.queryByText(/current theme/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tema actual/i)).not.toBeInTheDocument();
+  });
+
+  it('exposes the region name from the label prop', () => {
     document.documentElement.dataset.theme = 'light';
 
     render(<ThemeSwitcher {...labels} />);
 
-    const controlWrapper = screen
-      .getByRole('button', {name: 'Light'})
-      .closest('.js-only');
+    expect(screen.getByRole('region', {name: 'Theme'})).toBeInTheDocument();
+  });
 
-    expect(controlWrapper).not.toBeNull();
-    expect(controlWrapper).toContainElement(
-      screen.getByRole('button', {name: 'Dark'}),
-    );
+  it('marks the toggle button with the shared JS-only styling hook', () => {
+    document.documentElement.dataset.theme = 'light';
+
+    render(<ThemeSwitcher {...labels} />);
+
+    expect(
+      screen.getByRole('button', {name: 'Light'}).closest('.js-only'),
+    ).not.toBeNull();
   });
 
   it('renders statically without reading the browser document', () => {
@@ -54,11 +65,11 @@ describe('ThemeSwitcher', () => {
     ).not.toThrow();
   });
 
-  it('persists an explicit selection and keeps it after the control is recreated', () => {
+  it('toggles the theme on click, persists it, and keeps it after the control is recreated', () => {
     document.documentElement.dataset.theme = 'light';
     const {unmount} = render(<ThemeSwitcher {...labels} />);
 
-    fireEvent.click(screen.getByRole('button', {name: 'Dark'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Light'}));
 
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(window.localStorage.getItem('portfolio_theme')).toBe('dark');
@@ -69,6 +80,21 @@ describe('ThemeSwitcher', () => {
     expect(screen.getByRole('button', {name: 'Dark'})).toHaveAttribute(
       'aria-pressed',
       'true',
+    );
+  });
+
+  it('toggles back to light on a second click', () => {
+    document.documentElement.dataset.theme = 'light';
+    render(<ThemeSwitcher {...labels} />);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Light'}));
+    expect(document.documentElement.dataset.theme).toBe('dark');
+
+    fireEvent.click(screen.getByRole('button', {name: 'Dark'}));
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(screen.getByRole('button', {name: 'Light'})).toHaveAttribute(
+      'aria-pressed',
+      'false',
     );
   });
 });

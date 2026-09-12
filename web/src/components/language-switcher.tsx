@@ -1,6 +1,5 @@
 'use client';
 
-import {useEffect, useState} from 'react';
 import {localeHref} from '@/i18n/anchors';
 import {localeCookieName, type Locale} from '@/i18n/routing';
 
@@ -32,20 +31,6 @@ export function LanguageSwitcher({
 }: LanguageSwitcherProps) {
   const labels = {spanishLabel, englishLabel};
 
-  // Read the live URL hash on the client only. Starting empty keeps the first
-  // client render identical to the server markup (no hydration mismatch); the
-  // effect then syncs the real hash and tracks later `hashchange` events.
-  const [currentHash, setCurrentHash] = useState('');
-
-  useEffect(() => {
-    const syncHash = () => setCurrentHash(window.location.hash);
-
-    syncHash();
-    window.addEventListener('hashchange', syncHash);
-
-    return () => window.removeEventListener('hashchange', syncHash);
-  }, []);
-
   function persistExplicitLocale(locale: Locale) {
     // eslint-disable-next-line react-hooks/immutability -- this explicit click is the only locale-persistence boundary.
     document.cookie = `${localeCookieName}=${locale}; Path=/; Max-Age=${oneYearInSeconds}; SameSite=Lax`;
@@ -59,13 +44,14 @@ export function LanguageSwitcher({
   }
 
   return (
-    <nav aria-label={label}>
-      <ul className="flex gap-3">
+    <nav aria-label={label} className="language-switcher">
+      <ul className="language-switcher__list">
         {languageOptions.map(({locale, labelKey}) => (
-          <li key={locale}>
+          <li key={locale} className="language-switcher__item">
             <a
-              href={localeHref(locale, currentHash)}
+              href={localeHref(locale)}
               aria-current={locale === currentLocale ? 'page' : undefined}
+              className="language-switcher__link"
               onClick={() => handleActivate(locale)}
             >
               {labels[labelKey]}

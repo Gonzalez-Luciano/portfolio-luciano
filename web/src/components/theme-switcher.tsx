@@ -5,7 +5,6 @@ import {applyTheme, themeStorageKey, type Theme} from '@/theme/theme';
 
 type ThemeSwitcherProps = {
   label: string;
-  currentThemeLabel: string;
   lightLabel: string;
   darkLabel: string;
 };
@@ -24,7 +23,6 @@ function getServerTheme(): Theme | null {
 
 export function ThemeSwitcher({
   label,
-  currentThemeLabel,
   lightLabel,
   darkLabel,
 }: ThemeSwitcherProps) {
@@ -34,9 +32,11 @@ export function ThemeSwitcher({
     getServerTheme,
   );
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
-  const theme = selectedTheme ?? appliedTheme;
+  const theme = selectedTheme ?? appliedTheme ?? 'light';
+  const isDark = theme === 'dark';
 
-  function selectTheme(nextTheme: Theme) {
+  function toggleTheme() {
+    const nextTheme: Theme = isDark ? 'light' : 'dark';
     applyTheme(nextTheme, document.documentElement);
     setSelectedTheme(nextTheme);
 
@@ -49,25 +49,9 @@ export function ThemeSwitcher({
 
   return (
     <section className="theme-switcher" aria-label={label}>
-      <p aria-live="polite">
-        {theme === null
-          ? currentThemeLabel
-          : `${currentThemeLabel}: ${theme === 'light' ? lightLabel : darkLabel}`}
-      </p>
       <div className="theme-switcher__controls js-only">
-        <button
-          type="button"
-          aria-pressed={theme === 'light'}
-          onClick={() => selectTheme('light')}
-        >
-          {lightLabel}
-        </button>
-        <button
-          type="button"
-          aria-pressed={theme === 'dark'}
-          onClick={() => selectTheme('dark')}
-        >
-          {darkLabel}
+        <button type="button" aria-pressed={isDark} onClick={toggleTheme}>
+          {isDark ? darkLabel : lightLabel}
         </button>
       </div>
     </section>
