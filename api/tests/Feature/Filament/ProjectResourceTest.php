@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Filament;
 
+use App\Domain\Content\Actions\PublishContent;
 use App\Domain\Content\Actions\ReplaceOwnedAsset;
 use App\Enums\PublicationStatus;
 use App\Filament\Resources\Projects\Pages\CreateProject;
@@ -237,6 +238,31 @@ final class ProjectResourceTest extends TestCase
             ])
             ->call('save')
             ->assertHasNoFormErrors();
+
+        $project->refresh();
+        $this->assertNotNull($project->image_private_path);
+        $this->assertSame('Imagen sintética', $project->image_alt_es);
+        $this->assertSame('Synthetic image', $project->image_alt_en);
+        Storage::disk('local')->assertExists($project->image_private_path);
+    }
+
+    public function test_uploading_a_first_image_with_alt_text_on_a_published_project_saves_both(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+
+        $project = Project::factory()->create($this->completeAttributes());
+        app(PublishContent::class)($project);
+        $this->authenticateAdmin();
+
+        Livewire::test(EditProject::class, ['record' => $project->getKey()])
+            ->fillForm([
+                'image' => $this->png('cover.png'),
+                'image_alt_es' => 'Imagen sintética',
+                'image_alt_en' => 'Synthetic image',
+            ])
+            ->call('save')
+            ->assertNotified('Saved');
 
         $project->refresh();
         $this->assertNotNull($project->image_private_path);

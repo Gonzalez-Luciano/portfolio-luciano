@@ -181,16 +181,9 @@ final class EditProfile extends Page implements HasForms
             return;
         }
 
-        if ($photo instanceof UploadedFile) {
-            try {
-                $updated = app(ReplaceOwnedAsset::class)($updated, $photo);
-            } catch (\Throwable $exception) {
-                EditorialActions::notifyAssetFailure('Save', $exception);
-
-                return;
-            }
-        }
-
+        // Alt text is saved before the photo: publication rules only require it
+        // once a photo exists, so a published profile can never be left with a
+        // new photo but no alt text (which would make the replace fail).
         if ($altEs !== $updated->photo_alt_es || $altEn !== $updated->photo_alt_en) {
             try {
                 $updated = app(UpdateOwnedAssetAltText::class)($updated, $altEs, $altEn);
@@ -200,6 +193,16 @@ final class EditProfile extends Page implements HasForms
                     ->title('Save failed')
                     ->body($exception->getMessage())
                     ->send();
+
+                return;
+            }
+        }
+
+        if ($photo instanceof UploadedFile) {
+            try {
+                $updated = app(ReplaceOwnedAsset::class)($updated, $photo);
+            } catch (\Throwable $exception) {
+                EditorialActions::notifyAssetFailure('Save', $exception);
 
                 return;
             }

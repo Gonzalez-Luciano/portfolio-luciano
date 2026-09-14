@@ -184,21 +184,24 @@ class EditProject extends EditRecord
             throw new Halt;
         }
 
-        if ($photo instanceof UploadedFile) {
-            try {
-                $updated = app(ReplaceOwnedAsset::class)($updated, $photo);
-            } catch (\Throwable $exception) {
-                EditorialActions::notifyAssetFailure('Save', $exception);
-
-                throw new Halt;
-            }
-        }
-
+        // Alt text is saved before the image: publication rules only require it
+        // once an image exists, so a published project can never be left with a
+        // new image but no alt text (which would make the replace fail).
         if ($altEs !== $updated->image_alt_es || $altEn !== $updated->image_alt_en) {
             try {
                 $updated = app(UpdateOwnedAssetAltText::class)($updated, $altEs, $altEn);
             } catch (\Throwable $exception) {
                 Notification::make()->danger()->title('Save failed')->body($exception->getMessage())->send();
+
+                throw new Halt;
+            }
+        }
+
+        if ($photo instanceof UploadedFile) {
+            try {
+                $updated = app(ReplaceOwnedAsset::class)($updated, $photo);
+            } catch (\Throwable $exception) {
+                EditorialActions::notifyAssetFailure('Save', $exception);
 
                 throw new Halt;
             }

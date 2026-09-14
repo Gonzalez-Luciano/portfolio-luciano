@@ -191,6 +191,32 @@ final class EditorialActionTest extends TestCase
         $this->assertSame(PublicationStatus::Published, $profile->status);
     }
 
+    public function test_uploading_a_first_photo_with_alt_text_on_a_published_profile_saves_both(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+
+        $this->completeProfileFieldsExceptName();
+        Profile::query()->where('singleton_key', 'default')->update(['name' => 'Synthetic Portfolio Engineer']);
+        app(PublishContent::class)(Profile::query()->where('singleton_key', 'default')->first());
+        $this->authenticateAdmin();
+
+        Livewire::test(EditProfile::class)
+            ->fillForm([
+                'photo' => $this->png('profile.png'),
+                'photo_alt_es' => 'Retrato sintético',
+                'photo_alt_en' => 'Synthetic portrait',
+            ])
+            ->call('save')
+            ->assertNotified('Saved');
+
+        $profile = Profile::query()->where('singleton_key', 'default')->first();
+        $this->assertNotNull($profile->photo_private_path);
+        $this->assertSame('Retrato sintético', $profile->photo_alt_es);
+        $this->assertSame('Synthetic portrait', $profile->photo_alt_en);
+        Storage::disk('local')->assertExists($profile->photo_private_path);
+    }
+
     public function test_editing_photo_alt_text_on_a_published_visible_profile_invalidates_the_public_cache(): void
     {
         Storage::fake('local');
