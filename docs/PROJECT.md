@@ -161,7 +161,7 @@ Por lo tanto:
 - La calidad tiene prioridad sobre la cantidad.
 - Los proyectos incompletos deben poder quedar en borrador.
 
-Las demos públicas se alojarán en el mismo servidor físico que el portfolio, usando Docker y subdominios independientes.
+Las demos públicas se alojarán en el mismo VPS que el portfolio, usando Docker y subdominios independientes.
 
 Ejemplo conceptual:
 
@@ -252,8 +252,9 @@ El propio portfolio debe demostrar buenas prácticas mediante:
 - Seguridad.
 - Accesibilidad.
 - Rendimiento.
-- Despliegue self-hosted.
-- Cloudflare Tunnel.
+- Releases versionadas con imágenes en GHCR.
+- Despliegue en VPS propio administrado.
+- Cloudflare como proxy y Caddy como reverse proxy.
 
 La arquitectura debe existir por una razón real y no para inflar el stack.
 
@@ -261,9 +262,9 @@ La arquitectura debe existir por una razón real y no para inflar el stack.
 
 ## Infraestructura de producción
 
-El portfolio es una aplicación dentro de un servidor Linux doméstico controlado por Luciano.
+El portfolio es una aplicación dentro de un VPS Linux de OVHcloud administrado por Luciano.
 
-Ese servidor también alojará otros proyectos independientes.
+Ese servidor también aloja otros proyectos independientes.
 
 Principios:
 
@@ -271,8 +272,8 @@ Principios:
 - Cada proyecto usa su propio Docker Compose.
 - Cada proyecto tiene redes y volúmenes aislados.
 - Cada proyecto expone únicamente un puerto HTTP de entrada sobre loopback del host.
-- Un único servicio `cloudflared` a nivel del servidor publica los proyectos mediante dominios/subdominios.
-- No se requiere abrir puertos HTTP/HTTPS públicos en el router.
+- Un Caddy global del host publica los proyectos por hostname detrás de Cloudflare DNS proxied.
+- Cloudflare es la única entrada HTTP/HTTPS pública; el firewall del VPS solo admite `80`/`443` desde rangos de Cloudflare.
 - Las bases de datos no se publican a Internet.
 - El dominio se administra mediante Cloudflare DNS.
 - El portfolio no depende de una plataforma externa de hosting de aplicaciones.

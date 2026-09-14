@@ -117,17 +117,19 @@ Current project direction:
 
 ### Infrastructure
 
-- Linux physical server controlled by Luciano.
+- Linux VPS on OVHcloud, administered by Luciano.
 - Multiple independent Dockerized projects on the same host.
 - Docker / Docker Compose.
-- One shared host-level `cloudflared` service for the server.
+- Public ingress: Cloudflare proxied DNS (SSL/TLS `Full (strict)`) -> host-level global Caddy on `:80`/`:443` -> per-project loopback port.
+- No Cloudflare Tunnel and no `cloudflared` in the current architecture.
 - One public hostname/subdomain per project.
 - Each project exposes only one loopback HTTP entrypoint to the host.
-- The portfolio initially owns `127.0.0.1:8000`.
+- The portfolio owns `127.0.0.1:8000`.
+- The portfolio keeps its own internal Caddy gateway; it is not the host-level global Caddy.
 - MySQL remains private inside the portfolio Docker networks.
-- GitHub Actions is initially used for CI validation; deployment is a separate concern.
+- GitHub Actions is used for CI and for the release workflow that publishes images to GHCR; it never deploys.
 
-Production compute and persistent data remain on Luciano's own server unless Luciano explicitly changes the architecture.
+Production compute and persistent data remain on the OVHcloud VPS administered by Luciano unless Luciano explicitly changes the architecture.
 
 Do not add a framework, library, state manager, animation library, database, or infrastructure service without a concrete need.
 
@@ -279,9 +281,9 @@ For React / Next.js work:
 ---
 
 
-## Shared home-server production rules
+## Shared VPS production rules
 
-The portfolio is one application among multiple independent projects hosted on the same Linux computer.
+The portfolio is one application among multiple independent projects hosted on the same OVHcloud Linux VPS.
 
 The shared server topology is defined in `docs/SERVER_ARCHITECTURE.md`.
 
@@ -289,63 +291,109 @@ Portfolio production contract:
 
 ```text
 lucianogonzalez.dev
-    -> Cloudflare Tunnel
+    -> Cloudflare (proxied DNS, SSL/TLS Full (strict))
+    -> host-level global Caddy :443   (owned by operations, /srv/ingress)
     -> http://127.0.0.1:8000
-    -> portfolio Docker gateway
+    -> portfolio internal Caddy gateway
+    -> Next.js / Laravel -> MySQL
 ```
 
 Rules:
 
-- Do not run a dedicated `cloudflared` container inside the portfolio project.
-- `cloudflared` is a shared Linux service owned by the server.
+- There is no Cloudflare Tunnel and no `cloudflared` in this project or in the current server architecture.
+- The host-level global Caddy, `/srv/ingress`, UFW, Cloudflare and DNS belong to operations. Never add their configuration to this repository.
+- Keep the portfolio's internal Caddy gateway. Do not remove it on the assumption that the global Caddy replaces it: they are different layers.
 - Do not start, stop, reconfigure or assume ownership of other projects.
 - Do not use ports reserved by other projects.
-- The portfolio initially owns `127.0.0.1:8000`.
+- The portfolio owns `127.0.0.1:8000`; this port is a contract between the application and operations.
 - Only the portfolio gateway may publish that host port.
 - Web, API and MySQL remain inside Docker networks.
 - Never expose MySQL publicly.
-- Do not require router port forwarding for normal HTTP/HTTPS access.
-- Never store the Cloudflare Tunnel token in this repository.
+- Never store Cloudflare credentials or API tokens, host secrets, SSH keys or real production secrets in this repository.
 - Laravel authentication remains mandatory for administration.
-- Cloudflare Access may be added as defense in depth for `/admin`.
+- Cloudflare Access may be added by operations as defense in depth for `/admin`.
 - Backups for the portfolio must be isolated from backups for other projects.
 
 ### Deployment responsibility boundary
 
-This repository owns application and release readiness: services, runtime boundaries, environment contracts, persistence requirements, migrations, bootstrap, health checks, build/test commands, and deployment handoff documentation.
+This repository owns everything up to a **complete, deployable release**: application code, production Dockerfiles, `compose.production.yaml`, a production runtime verified locally, tests, health checks, smoke checks, CI, the release workflow, a version tag on `main`, a GitHub Release when appropriate, GHCR images identifiable by version and commit SHA, recorded image digests, the deployment handoff in `docs/DEPLOYMENT.md`, and a clean working tree. This is the final repository-controlled phase (Phase 11 in `ROADMAP.md`).
 
-Actual Linux host inspection and operation belong to the external `home_server_ops_claude` workflow. Portfolio development agents must not duplicate or execute its host preflight, Docker installation, final production Compose, `cloudflared`, firewall, backup/restore, reboot recovery, multiproject registry, cloning, production secrets, or deployment procedures unless the user explicitly changes that responsibility boundary.
+**The repository phase ends when the release is produced. Then STOP.** A valid final report looks like:
 
-The target is a deployment-ready repository, not a prematurely deployed repository. Preserve `docs/SERVER_ARCHITECTURE.md` as the shared topology contract and `docs/DEPLOYMENT.md` as the application handoff consumed by external operations.
+```text
+Release: vX.Y.Z
+Commit: <sha>
+
+CI: PASS
+Production runtime (local): PASS
+Smoke (local): PASS
+
+GHCR:
+- <image A> @ sha256:...
+- <image B> @ sha256:...
+- <image C> @ sha256:...
+
+Handoff: ready
+Working tree: clean
+
+VPS DEPLOYMENT: NOT EXECUTED
+```
+
+The real VPS deployment is performed later, separately and manually/assisted, by the `vps_ops_claude` operational workflow from a different operational context. The launch phase consumes an already existing release; it never creates a tag, release or images after deployment.
+
+Repository agents must NEVER, in any phase (including the release phase) or in documentation tasks:
+
+- open SSH to, connect to, or otherwise access the VPS (including PuTTY or any remote shell);
+- run `git pull` under `/srv/apps`;
+- create `/srv/apps/portfolio` or `/srv/ops/portfolio`;
+- create real VPS overrides;
+- edit `/srv/ingress` or modify the global Caddy;
+- modify UFW, Cloudflare or DNS;
+- create real production secrets or host certificates;
+- run migrations against production or start containers on OVH;
+- modify real backups or execute a real rollback;
+- run smoke checks against production;
+- configure automatic deployment through GitHub Actions or runners with VPS access.
+
+This boundary is absolute. If a task appears to require crossing it, stop and raise it with the user instead of executing it.
+
+Preserve `docs/SERVER_ARCHITECTURE.md` as the shared topology contract and `docs/DEPLOYMENT.md` as the release handoff consumed by operations.
 
 ## Docker rules
 
-Docker must provide a reproducible development/test environment and clear production-compatible application boundaries. Final production images, Compose and host-specific configuration are created or adjusted by the external operations workflow after inspecting the real server.
+Docker provides two separate things, and they must not be conflated:
+
+- `compose.yaml`: the reproducible development/test environment (Phases 3–5).
+- Production Dockerfiles and `compose.production.yaml`: the portable production runtime, owned by this repository, created in Phase 11 and verified locally before any release.
+
+VPS-specific overrides (`/srv/ops/portfolio/compose.vps.yaml`), real secrets and host configuration belong to operations and never live in this repository.
 
 Expected portfolio services:
 
-- Gateway/reverse proxy.
+- Internal gateway/reverse proxy (Caddy).
 - Next.js frontend.
 - Laravel backend.
 - MySQL.
 
-`cloudflared` is intentionally NOT a portfolio Docker service.
+`cloudflared` is NOT part of the architecture.
 
 Only add Redis, queues, scheduler containers, mail services, or other infrastructure when a real requirement appears.
 
 Requirements:
 
-- No secrets committed to Git.
-- Version container images deliberately.
+- No secrets committed to Git or baked into images.
+- Version container images deliberately; release images are identifiable by version and commit SHA.
+- Production never depends exclusively on `latest`; deployments use immutable tags or exact digests.
 - Persistent portfolio database/media volumes.
-- Health checks where useful.
+- Real health checks and appropriate restart policies for production services.
 - Development and production builds must not be conflated.
 - Document migrations, seed, startup, shutdown, backup, restore and rollback procedures.
 - Application services communicate over project-specific Docker networks.
 - MySQL must not publish a host port.
 - Only the gateway may publish the portfolio entrypoint.
-- Bind the production entrypoint to `127.0.0.1:8000`, not `0.0.0.0:8000`, unless a documented infrastructure change requires otherwise.
-- The portfolio repository must not contain or require the Cloudflare Tunnel token.
+- Bind the production entrypoint to `127.0.0.1:8000` (configurable, loopback by default), not `0.0.0.0:8000`, unless a documented infrastructure change requires otherwise.
+- `compose.production.yaml` must stay portable: no `/srv` paths, Cloudflare configuration, global Caddy configuration or host secrets.
+- The portfolio repository must not contain or require Cloudflare credentials.
 
 ---
 
@@ -483,7 +531,7 @@ When portfolio production behavior changes:
 
 - Update `docs/DEPLOYMENT.md`.
 
-When shared-server topology, Cloudflare Tunnel strategy, port allocation, subdomain conventions, multiproject isolation or shared backup policy changes:
+When shared-server topology, public ingress strategy (Cloudflare proxy / global Caddy), port allocation, subdomain conventions, multiproject isolation or shared backup policy changes:
 
 - Update `docs/SERVER_ARCHITECTURE.md`.
 

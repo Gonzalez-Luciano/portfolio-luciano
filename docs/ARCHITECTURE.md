@@ -6,7 +6,7 @@ Baseline de arquitectura del proyecto Portfolio.
 
 Este documento describe la arquitectura interna del portfolio.
 
-La arquitectura compartida de la computadora/servidor se encuentra en:
+La arquitectura compartida del VPS se encuentra en:
 
 `docs/SERVER_ARCHITECTURE.md`
 
@@ -20,18 +20,18 @@ Las reglas de despliegue específicas del portfolio se encuentran en:
 
 El portfolio no es el único proyecto del servidor.
 
-La computadora Linux de producción aloja múltiples aplicaciones Docker independientes.
+El VPS Linux de OVHcloud de producción aloja múltiples aplicaciones Docker independientes.
 
 A nivel del host:
 
 ```text
-Cloudflare Tunnel
-  ├── lucianogonzalez.dev -> 127.0.0.1:8000 -> Portfolio
-  ├── subdominio A        -> 127.0.0.1:8080 -> Proyecto A
-  └── subdominio B        -> 127.0.0.1:8081 -> Proyecto B
+Cloudflare (DNS proxied, SSL/TLS Full (strict))
+  -> Caddy GLOBAL del VPS :80/:443
+       ├── lucianogonzalez.dev  -> 127.0.0.1:8000     -> Portfolio
+       └── <slug>.<dominio>     -> 127.0.0.1:<puerto> -> Otro proyecto
 ```
 
-Por lo tanto, el repositorio del portfolio no debe intentar administrar los demás proyectos ni ser dueño de `cloudflared`.
+Por lo tanto, el repositorio del portfolio no debe intentar administrar los demás proyectos ni ser dueño del Caddy global, UFW, Cloudflare o DNS. No existe Cloudflare Tunnel ni `cloudflared` en la arquitectura vigente.
 
 ---
 
@@ -100,7 +100,8 @@ Responsabilidades:
 - Gateway/reverse proxy del proyecto.
 - Configuración de servicios internos.
 - Configuración de desarrollo/pruebas y validaciones de infraestructura propias del portfolio.
-- Contrato de handoff para que operaciones externas adapte el runtime al servidor real.
+- Dockerfiles productivos y `compose.production.yaml` portable (Fase 11), sin configuración específica del VPS.
+- Artefactos de CI/release y contrato de handoff que consume `vps_ops_claude`.
 
 No debe incluir la configuración global de otros proyectos del servidor.
 
@@ -118,16 +119,16 @@ El portfolio debe exponer exactamente un punto de entrada HTTP al host:
 127.0.0.1:8000
 ```
 
-El puerto podrá parametrizarse, pero `8000` es la reserva inicial.
+El puerto podrá parametrizarse, pero `127.0.0.1:8000` es la reserva vigente y un contrato con operaciones.
 
-`cloudflared` del host publica:
+El Caddy global del VPS (propiedad de operaciones) publica:
 
 ```text
 https://lucianogonzalez.dev
-    -> http://localhost:8000
+    -> http://127.0.0.1:8000
 ```
 
-El stack del portfolio no necesita un contenedor `cloudflared`.
+El stack del portfolio no contiene ni configura el Caddy global, Cloudflare ni `cloudflared`. Conserva su propio gateway Caddy interno: son capas distintas.
 
 ---
 
@@ -170,12 +171,12 @@ Beneficios:
 - Un solo puerto del host.
 - Menos CORS.
 - Cookies más simples.
-- `cloudflared` no necesita conocer la red Docker interna.
+- El Caddy global del VPS no necesita conocer la red Docker interna.
 - Los contenedores web/api/mysql no se exponen directamente.
 
 Caddy debe soportar el tráfico WebSocket/HMR de Next.js durante desarrollo. Los matchers backend definitivos se derivan después de instalar Laravel, Filament y Livewire: `route:list --json` aporta las rutas registradas y el tráfico real de admin, autenticación, Livewire, assets y media completa el inventario. No se adivinan prefijos ni se fija un hash generado de Livewire. Una ruta backend conserva su ownership incluso cuando Laravel responde 404.
 
-Caddy conserva el `Host` entrante y usa su comportamiento normal de forwarded headers. La integración futura con el `cloudflared` externo debe validar trusted proxies y protocolo reenviado en el servidor real, sin configuración Cloudflare especulativa en Fase 3.
+Caddy conserva el `Host` entrante y usa su comportamiento normal de forwarded headers. En producción la cadena es Cloudflare -> Caddy global -> gateway interno -> servicio; Fase 11 define y verifica localmente trusted proxies y protocolo reenviado para esa cadena, sin configuración de Cloudflare ni del Caddy global en este repositorio.
 
 URLs canónicas de desarrollo:
 
@@ -699,9 +700,13 @@ base de desarrollo. La evidencia de rutas, Caddy y smoke manual está en
 `docs/testing/PHASE_3_VERIFICATION.md`; el registro equivalente de Fase 4 está
 en `docs/testing/PHASE_4_VERIFICATION.md`.
 
+### Runtime productivo (Fase 11, pendiente)
+
+El entorno anterior es exclusivamente de desarrollo/pruebas. El runtime productivo es un artefacto separado que el repositorio crea en Fase 11: Dockerfiles productivos y `compose.production.yaml` portable, con el gateway Caddy interno como único puerto publicado (bind configurable, default `127.0.0.1:8000`), MySQL solo en red privada, volúmenes persistentes, restart policies y healthchecks reales. Se verifica levantándolo localmente antes de cualquier release. El contrato detallado vive en `docs/DEPLOYMENT.md`; el override específico del VPS pertenece a operaciones y nunca a este repositorio.
+
 ---
 
-## CI
+## CI y release
 
 CI valida:
 
@@ -709,6 +714,7 @@ CI valida:
 
 - Install.
 - Lint.
+- Format.
 - Type check.
 - Tests.
 - Build.
@@ -717,40 +723,51 @@ CI valida:
 
 - Install.
 - Format/lint/static checks configurados.
-- Tests.
+- Tests contra MySQL real.
 
 ### Docker
 
-- Build validation.
-- Config validation.
+- Build de Dockerfiles productivos.
+- Validación de `compose.production.yaml`.
 
-CI no debe asumir que es responsable del acceso público del servidor.
+### Seguridad
+
+- Auditorías de dependencias acordadas.
+- Detección de secretos accidentales.
+
+El workflow de release, disparado por un tag versionado sobre `main`, publica las imágenes productivas en GHCR identificables por versión y commit SHA, y sus digests quedan registrados en `docs/DEPLOYMENT.md`.
+
+CI y release nunca acceden al VPS, no contienen secretos del host ni de Cloudflare y no despliegan.
 
 ---
 
 ## Producción
 
-El portfolio se ejecuta en la computadora Linux de Luciano.
+El portfolio se ejecutará en el VPS Linux de OVHcloud administrado por Luciano, junto con otros proyectos Docker independientes. **Todavía no está desplegado.**
 
 No se despliega a una plataforma de hosting de aplicaciones.
 
-Cloudflare proporciona DNS/edge/tunnel, pero los procesos y datos de la aplicación permanecen en el servidor propio.
+Cloudflare proporciona DNS proxied y edge (SSL/TLS `Full (strict)`); el Caddy global del VPS recibe el tráfico en `:443` y lo enruta a `127.0.0.1:8000`. Los procesos y datos de la aplicación permanecen en el VPS.
 
 ### Límite de responsabilidad del repositorio
 
-El repositorio es responsable de entregar una aplicación verificable y un contrato de runtime consumible:
+El repositorio es responsable de todo lo necesario hasta una release completa y desplegable:
 
 - servicios y límites de red del proyecto;
-- gateway y rutas públicas esperadas;
-- entrypoint futuro `127.0.0.1:8000`;
+- gateway interno y rutas públicas esperadas;
+- entrypoint `127.0.0.1:8000`;
 - variables y secretos requeridos sin sus valores;
 - persistencia, migraciones, bootstrap y health checks de aplicación;
+- Dockerfiles productivos y `compose.production.yaml`, verificados localmente;
 - procedimientos reproducibles de build, pruebas y smoke checks;
-- información de aplicación relevante para backup y rollback.
+- CI, workflow de release, tag, GitHub Release cuando corresponda, imágenes GHCR y digests registrados;
+- handoff y contrato de rollback de aplicación.
 
-El workflow externo `home_server_ops_claude` es responsable de inspeccionar y operar el servidor real: preflight de Linux/hardware/storage, instalación y configuración del host, clonación, variables reales de producción, Compose final de producción, `cloudflared`, firewall, backups, restores, reinicios, registro multiproyecto y deployment. Este repositorio referencia ese límite, pero no duplica su checklist operacional.
+Ahí termina: el repositorio nunca entra al VPS.
 
-La Fase 3 crea el entorno Compose completo de desarrollo/pruebas y límites compatibles con producción. No crea el Compose final del servidor, targets de imagen especulativos, configuración de Cloudflare, unidades `systemd`, firewall, cron de backup ni scripts específicos del host.
+El flujo operativo `vps_ops_claude` es responsable de operar el VPS real desde un contexto separado: host, SSH, UFW, Caddy global (`/srv/ingress`), Cloudflare y DNS, `/srv/apps`, `/srv/ops` (incluido el override del portfolio), `/srv/backups`, secretos reales, deployment, migraciones de producción, backups, restores, reboot recovery y registro multiproyecto. Este repositorio referencia ese límite, pero no duplica su checklist operacional.
+
+La Fase 3 creó el entorno Compose completo de desarrollo/pruebas y límites compatibles con producción. No creó runtime productivo, targets de imagen especulativos, configuración de Cloudflare, unidades `systemd`, firewall, cron de backup ni scripts específicos del host; el runtime productivo corresponde a Fase 11.
 
 ---
 
@@ -767,7 +784,8 @@ La Fase 3 crea el entorno Compose completo de desarrollo/pruebas y límites comp
 - `.env` fuera de Git.
 - Puerto MySQL no publicado.
 - Gateway enlazado a loopback del host.
-- `cloudflared` administrado fuera de este repo.
+- Caddy global, UFW, Cloudflare y DNS administrados por operaciones, fuera de este repo.
+- Imágenes de release sin secretos.
 
 ---
 
@@ -818,9 +836,9 @@ Actualizar este documento si cambia:
 Actualizar `SERVER_ARCHITECTURE.md` si cambia:
 
 - Estructura multiproyecto del host.
-- Tunnel global.
+- Estrategia de ingress pública (Cloudflare proxy / Caddy global).
 - Convención de puertos.
 - Política de backups compartida.
 - Estrategia general de deploy.
 
-Actualizar `DEPLOYMENT.md` cuando cambie el contrato de handoff que consume el workflow externo de operaciones.
+Actualizar `DEPLOYMENT.md` cuando cambie el runtime productivo, el proceso de release o el contrato de handoff que consume `vps_ops_claude`.

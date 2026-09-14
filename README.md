@@ -312,32 +312,33 @@ La misma regla de secretos aplica: no pasar una contraseña al comando, entorno 
 
 `main` es la única rama estable de larga duración. El trabajo usa ramas cortas con prefijos como `feat/`, `fix/`, `docs/`, `refactor/`, `test/`, `chore/` e `infra/`, y llega a `main` mediante pull request después de las validaciones relevantes. No existe una rama permanente `develop`, no se reescribe historial compartido y ningún trabajo se integra en `main` sin aprobación explícita.
 
-Los tags anotados se crean desde commits aprobados de `main` solo para hitos o releases significativos.
+Los tags anotados se crean desde commits aprobados de `main` solo para hitos o releases significativos. Desde Fase 11, un tag versionado de release dispara el workflow que publica las imágenes productivas en GHCR (todavía no existe).
 
 ## Contexto de producción
 
-El portfolio se ejecutará en una computadora Linux propia junto con otros proyectos Dockerizados.
+El portfolio se ejecutará en un VPS Linux de OVHcloud junto con otros proyectos Dockerizados. **Todavía no está desplegado.**
 
 ```text
 Internet
    ↓
-Cloudflare
+Cloudflare (DNS proxied, SSL/TLS Full (strict))
    ↓
-Cloudflare Tunnel compartido del servidor
+Caddy GLOBAL del VPS :443
    ↓
 127.0.0.1:8000
    ↓
-Portfolio Docker
+Caddy/gateway INTERNO del portfolio
    ├── Next.js
-   ├── Laravel / Filament
-   └── MySQL
+   └── Laravel / Filament
+          ↓
+        MySQL
 ```
 
-Otros proyectos se publicarán usando subdominios y puertos locales diferentes.
+No se usa Cloudflare Tunnel. Otros proyectos se publican con subdominios y puertos loopback diferentes detrás del mismo Caddy global.
 
-El roadmap de este repositorio termina su responsabilidad operativa al entregar una versión aprobada, validada y acompañada por su contrato de deployment. El workflow externo `home_server_ops_claude` inspecciona la computadora Linux real y ejecuta el Compose final de producción, Cloudflare Tunnel, backups, seguridad del host y deployment. El portfolio no duplica ese checklist ni presupone características físicas del servidor.
+El repositorio termina su responsabilidad al producir una release completa y desplegable (Fase 11): runtime productivo verificado localmente, CI, tag, imágenes GHCR con digests y handoff. Ahí hace STOP y nunca entra al VPS. El flujo operativo separado `vps_ops_claude` ejecuta después el deployment real, junto con el Caddy global, Cloudflare, UFW, backups y seguridad del host.
 
-`docs/DEPLOYMENT.md` describe el handoff de aplicación que consume ese workflow externo.
+`docs/DEPLOYMENT.md` describe el contrato de release y el handoff que consume ese flujo operativo.
 
 La arquitectura multiproyecto se documenta en:
 

@@ -1,58 +1,78 @@
-# DEPLOYMENT.md — Contrato de handoff del portfolio
+# DEPLOYMENT.md — Contrato de release y handoff del portfolio
 
 ## Propósito
 
-Este documento describe el contrato de aplicación que el repositorio entrega al workflow externo de operaciones del servidor. No es un checklist para que el agente de desarrollo del portfolio instale, configure u opere la computadora Linux.
+Este documento describe el contrato de aplicación y de release que el repositorio entrega al flujo operativo `vps_ops_claude`. No es un checklist para que un agente del repositorio instale, configure u opere el VPS: **ningún agente del repositorio entra al VPS**.
+
+> **Estado actual (2026-09-14): el portfolio NO está desplegado.** Todavía no existen Dockerfiles productivos, `compose.production.yaml`, workflows de GitHub Actions, tags, GitHub Releases ni imágenes GHCR. Se crean en Fase 11 de `ROADMAP.md`. Las secciones marcadas como "contrato de Fase 11" describen lo que esa fase debe producir, no algo existente.
 
 La secuencia de responsabilidad es:
 
-1. El roadmap del portfolio completa funcionalidad, pruebas, seguridad, builds, CI y release readiness.
-2. Una versión aprobada se publica en GitHub junto con este contrato actualizado.
-3. El workflow externo `home_server_ops_claude` inspecciona el servidor real, clona la versión aprobada y diseña/ejecuta el deployment final.
-4. El lanzamiento del portfolio depende de la confirmación externa de deployment, smoke checks y backup inicial.
+1. Fases 0–10 completan funcionalidad, pruebas y seguridad.
+2. **Fase 11 (repositorio):** runtime productivo verificado localmente, CI verde, workflow de release, tag versionado sobre `main`, GitHub Release cuando corresponda, imágenes en GHCR identificables por versión y commit, digests registrados y handoff en este documento. **Ahí el repositorio hace STOP.**
+3. **`vps_ops_claude` (fuera del repositorio):** despliega exactamente esa release en el VPS, de forma manual/asistida y desde un contexto operativo separado.
+4. **Fase 12 (lanzamiento):** consume la release preexistente y la confirmación externa de deployment, smoke y backup inicial. No crea tags, releases ni imágenes.
 
-No se copian aquí las instrucciones completas de `home_server_ops_claude`. La topología compartida de referencia permanece en `docs/SERVER_ARCHITECTURE.md`.
+La topología compartida de referencia permanece en `docs/SERVER_ARCHITECTURE.md`. No se copian aquí las instrucciones de `vps_ops_claude`.
 
 ## Límites de responsabilidad
 
 ### Responsabilidad del repositorio
 
 - Definir servicios y dependencias de la aplicación.
-- Proporcionar un entorno Docker completo de desarrollo y pruebas.
-- Mantener límites de servicio compatibles con el futuro entorno Linux.
-- Documentar variables, secretos requeridos, persistencia, migraciones, bootstrap y health checks.
+- Proporcionar un entorno Docker completo de desarrollo y pruebas (`compose.yaml`).
+- Crear Dockerfiles productivos y un `compose.production.yaml` portable (Fase 11).
+- Levantar y verificar localmente el runtime productivo: migraciones desde cero, import inicial, bootstrap administrativo, healthchecks, persistencia y smoke.
+- Documentar variables, secretos requeridos (sin valores), persistencia, migraciones, bootstrap y health checks.
 - Proporcionar comandos reproducibles de build, pruebas y smoke checks.
-- Identificar datos que requieren backup y consideraciones de aplicación para rollback.
-- Mantener el gateway como único entrypoint del proyecto.
+- Mantener CI y el workflow de release; crear el tag, la GitHub Release cuando corresponda y las imágenes GHCR con digests registrados.
+- Documentar el contrato de rollback de aplicación e identificar los datos que requieren backup.
+- Mantener el gateway Caddy interno como único entrypoint del proyecto.
 - No incluir secretos reales ni credenciales de Cloudflare.
 
-### Responsabilidad de operaciones externas
+### Responsabilidad de operaciones (`vps_ops_claude`)
 
-- Descubrir distribución Linux, CPU, RAM, discos, filesystem y ubicación real de datos persistentes.
-- Preparar `/srv/apps`, `/srv/backups` y el registro multiproyecto del servidor.
-- Instalar y configurar Docker, Compose y el arranque del host.
-- Clonar la versión aprobada y crear las variables reales de producción.
-- Crear o ajustar imágenes/targets y Compose final de producción según el servidor real.
-- Ejecutar migraciones y bootstrap administrativo en producción.
-- Operar `cloudflared`, DNS, Tunnel, firewall y controles de acceso del host.
-- Configurar y probar backups, restores, reinicios, monitoreo y rollback operativo.
-- Confirmar el deployment y entregar evidencia de smoke checks al proceso de lanzamiento.
+- Host, SSH, UFW, Docker del host y reboot recovery.
+- Caddy global del VPS (`/srv/ingress`): site de `lucianogonzalez.dev` hacia `127.0.0.1:8000` y TLS de origen.
+- Cloudflare: DNS proxied, SSL/TLS `Full (strict)` y controles de acceso opcionales.
+- Crear `/srv/apps/portfolio` (checkout exacto del tag de release), `/srv/ops/portfolio/compose.vps.yaml` y `/srv/backups/portfolio`.
+- Crear y custodiar los secretos productivos reales.
+- Pull de imágenes por tag inmutable o digest exacto; migraciones, import inicial y bootstrap administrativo en producción.
+- Backups, restores, monitoreo y rollback real.
+- Smoke en producción, verificación pública y cierre del deployment.
 
-## Contrato público futuro
+## Frontera absoluta con el VPS
+
+La fase del repositorio **termina al producir la release**. Ni en Fase 11 ni en ninguna otra tarea del repositorio un agente:
+
+- abre SSH, se conecta al VPS ni usa PuTTY u otro acceso remoto;
+- hace `git pull` bajo `/srv/apps`;
+- crea `/srv/apps/portfolio`, `/srv/ops/portfolio` ni overrides reales del VPS;
+- edita `/srv/ingress`, modifica el Caddy global, UFW, Cloudflare o DNS;
+- crea secretos productivos reales o certificados del host;
+- ejecuta migraciones contra producción o levanta contenedores en OVH;
+- modifica backups reales o ejecuta un rollback real;
+- hace smoke contra producción;
+- configura deployment automático con GitHub Actions o runners con acceso al VPS.
+
+## Contrato público
 
 ```text
-lucianogonzalez.dev
-    -> Cloudflare Tunnel compartido del host
+Internet
+    -> Cloudflare (DNS proxied, SSL/TLS Full (strict))
+    -> Caddy GLOBAL del VPS :443                 (operaciones)
     -> http://127.0.0.1:8000
-    -> gateway del portfolio
+    -> gateway Caddy INTERNO del portfolio       (repositorio)
+         ├── Next.js
+         └── Laravel -> MySQL
 ```
 
 - Hostname: `lucianogonzalez.dev`.
-- Entry point del proyecto: `127.0.0.1:8000`.
-- Solo el gateway publica ese puerto.
-- No se requieren puertos HTTP/HTTPS del router para el flujo normal mediante Tunnel.
-- `cloudflared` es infraestructura compartida del host y nunca integra el Compose del portfolio.
-- El token y las credenciales del Tunnel nunca ingresan en este repositorio.
+- Entry point del proyecto: `127.0.0.1:8000`, contrato entre aplicación y operaciones.
+- Solo el gateway publica ese puerto; en el runtime productivo el bind es configurable con default loopback.
+- El Caddy global, Cloudflare y el host no forman parte del Compose ni de este repositorio.
+- No existe `cloudflared` ni Cloudflare Tunnel en la arquitectura.
+- Ninguna credencial o API token de Cloudflare ingresa en este repositorio.
 
 ## Servicios y rutas
 
@@ -79,7 +99,7 @@ El gateway del portfolio es Caddy. `portfolio-api` sirve Laravel mediante Apache
 
 El handoff de Fase 3 registra las rutas Laravel estructuradas y también las rutas públicas observadas que Filament, Livewire y media requieren. Los matchers se derivan de `route:list --json` más smoke checks reales; no se adivina ni se hardcodea el hash variable de Livewire. Web, API y MySQL usan DNS/redes internas de Docker; sus puertos internos no forman parte del contrato público.
 
-Caddy usa su comportamiento normal de `Host` y forwarded headers. Operaciones debe verificar trusted proxies y protocolo reenviado al conectar el `cloudflared` compartido en la topología real.
+Caddy usa su comportamiento normal de `Host` y forwarded headers. En producción cada request atraviesa dos proxies (Caddy global del VPS y gateway interno) antes de llegar a Next.js o Laravel. Fase 11 debe definir y verificar localmente el tratamiento de `Host`, protocolo reenviado y trusted proxies para esa cadena, sin configurar Cloudflare ni el Caddy global; operaciones confirma el comportamiento real durante el deployment.
 
 ## Redes y exposición
 
@@ -186,7 +206,7 @@ Categorías mínimas esperadas para producción:
 
 No pertenecen al repositorio ni al entorno de aplicación:
 
-- token o credenciales de Cloudflare Tunnel;
+- credenciales o API tokens de Cloudflare;
 - credenciales de otros proyectos;
 - configuración global del host;
 - claves SSH, runners o secretos de automatización operativa.
@@ -202,7 +222,7 @@ La documentación de handoff debe permitir a operaciones identificar:
 - archivos o volúmenes requeridos por cada servicio;
 - señales de readiness/health y dependencias de arranque.
 
-Fase 3 no crea targets de producción especulativos ni un Compose final del servidor. Las definiciones de desarrollo deben evitar supuestos exclusivos de Windows y mantener límites claros que operaciones pueda adaptar después del preflight real.
+Fase 3 no crea targets de producción especulativos ni un Compose final del servidor. Las definiciones de desarrollo deben evitar supuestos exclusivos de Windows y mantener límites claros sobre los que Fase 11 construye el runtime productivo. Ese runtime (Dockerfiles productivos y `compose.production.yaml`) lo crea el propio repositorio y se verifica localmente antes de la release; operaciones solo agrega el override del VPS.
 
 Desde Fase 5, la ruta pública localizada renderiza dinámicamente en cada request (hace fetch obligatorio a los seis endpoints públicos por request) en vez de prerenderizarse en build. El build de `web` sigue sin depender de Laravel: completa igual con `gateway`/`api`/`mysql` detenidos o con `INTERNAL_API_ORIGIN` apuntando a un host inalcanzable, porque no ejecuta ningún fetch de contenido durante el build. Esto es relevante para operaciones porque significa que el build de imagen de producción de `web` nunca requiere que el API de producción esté disponible.
 
@@ -217,8 +237,9 @@ El bootstrap local instala desde lockfiles en los volúmenes vacíos, espera
 health, ejecuta migraciones y crea explícitamente `public/storage` solo después
 de comprobar que un enlace existente es no versionado. El entrypoint de API no
 crea ese enlace. El bootstrap administrativo es separado e interactivo.
-Operaciones adapta este contrato al servidor real después del preflight; el
-repositorio no ejecuta ni prescribe acciones de host.
+Fase 11 traslada este contrato al runtime productivo y lo verifica en local;
+operaciones aplica el override del VPS y ejecuta el deployment. El repositorio
+no ejecuta acciones de host.
 
 ## Migraciones y bootstrap
 
@@ -229,7 +250,7 @@ repositorio no ejecuta ni prescribe acciones de host.
 - Los seeds normales contienen solo datos seguros y no crean credenciales.
 - En desarrollo, el primer administrador de Filament se crea mediante `php artisan portfolio:bootstrap-admin`, un comando interactivo create-only con password oculto y confirmación.
 - El comando rechaza duplicados/estados ambiguos, no actualiza usuarios y no imprime ni registra secretos.
-- Si producción necesita un mecanismo no interactivo, operaciones lo decide después del preflight real; Fase 3 no especula cómo inyectar ese secreto.
+- En producción, el operador ejecuta el mismo comando interactivo dentro del contenedor API del runtime productivo; Fase 11 verifica ese flujo en local. Un mecanismo no interactivo no forma parte del contrato vigente y requeriría una decisión explícita documentada antes de implementarse.
 
 Las unidades persistentes relevantes son MySQL y, desde Fase 4, los dos
 volúmenes de media descritos arriba: `api_private_media`
@@ -253,14 +274,30 @@ El contrato debe definir checks que no revelen secretos para:
 - proceso Next.js;
 - gateway y rutas principales.
 
-Smoke checks mínimos después de un deployment externo:
+### Smoke local del runtime productivo (Fase 11, repositorio)
+
+Contra el stack levantado localmente con `compose.production.yaml`, desde una base fresca:
+
+- `/` redirige según el contrato de locale;
+- `/es` y `/en` responden;
+- `/api/v1` y los endpoints públicos localizados responden con el contrato esperado;
+- `/admin` responde y requiere autenticación;
+- `/storage/*` y `/cv/*` responden según el estado de publicación;
+- migraciones, import inicial y bootstrap administrativo funcionan;
+- los datos persisten tras restart y recreate;
+- MySQL no es alcanzable desde el host;
+- el gateway es el único puerto publicado por el proyecto.
+
+### Smoke en producción (operaciones, fuera del repositorio)
+
+Después del deployment, ejecutado por `vps_ops_claude` y nunca por un agente del repositorio, a través de `https://lucianogonzalez.dev`:
 
 - `/` redirige según el contrato de locale;
 - `/es` y `/en` responden;
 - `/api/v1` responde con el contrato base esperado;
 - `/admin` responde y requiere autenticación;
 - MySQL no es alcanzable desde el host ni Internet;
-- el gateway es el único puerto publicado por el proyecto.
+- el gateway es el único puerto publicado por el proyecto, sobre loopback.
 
 ## Logs
 
@@ -272,11 +309,11 @@ Smoke checks mínimos después de un deployment externo:
 
 El repositorio identifica qué datos necesitan backup y qué migraciones pueden afectar compatibilidad. Operaciones define rutas físicas, agenda, retención, copia externa y restore.
 
-Antes del lanzamiento, el handoff externo debe confirmar:
+Antes del lanzamiento, el cierre de deployment de operaciones debe confirmar:
 
 - backup inicial de MySQL y media;
 - restore probado según el workflow operacional;
-- versión/commit desplegado;
+- release, commit y digests desplegados;
 - ruta para volver a una versión anterior;
 - tratamiento de migraciones incompatibles;
 - smoke checks posteriores al rollback.
@@ -295,30 +332,138 @@ Siguiendo la misma frontera que `docs/SERVER_ARCHITECTURE.md` ya establece para 
 - Las migraciones de Fase 4 son aditivas (tablas nuevas, sin `ALTER`/`DROP` sobre tablas de Fases 1–3). Un rollback de aplicación a una versión pre-Fase-4 con la base de datos ya migrada a Fase 4 deja tablas nuevas sin uso, pero no rompe el esquema previo; no se requiere una migración `down` destructiva para un rollback seguro de código.
 - Ningún rollback de código elimina archivos de `api_private_media`/`api_public_media` por sí mismo; la limpieza de esos volúmenes sigue siendo responsabilidad explícita de operaciones si realmente se desea revertir contenido, no solo código.
 
-## Supuestos que deben descubrirse
+## Runtime productivo (contrato de Fase 11 — pendiente)
 
-El repositorio no adivina:
+Lo que Fase 11 debe producir y verificar localmente antes de cualquier release:
+
+- Dockerfiles específicos de producción; no se reutilizan ciegamente las imágenes de desarrollo.
+- `compose.production.yaml` portable y separado de `compose.yaml`: sin bind mounts de código, watchers/HMR ni dependencias de desarrollo.
+- Servicios: gateway Caddy interno, Next.js, Laravel y MySQL. Las imágenes propias (frontend, backend y gateway según la arquitectura real) y sus nombres GHCR se definen al implementar; MySQL usa una imagen oficial fijada deliberadamente.
+- Solo el gateway publica un puerto, con bind configurable y default `127.0.0.1:8000`.
+- Redes propias del portfolio; MySQL pertenece solo a la red de datos.
+- Volúmenes persistentes: datos MySQL, `api_private_media` y `api_public_media`.
+- Restart policies apropiadas y healthchecks reales por servicio.
+- Configuración productiva sin secretos embebidos; sin rutas `/srv`, configuración de Cloudflare ni del Caddy global.
+- Almacén de caché con `LockProvider` (ver "Requisitos del almacén de caché").
+
+Las decisiones abiertas que Fase 11 debe cerrar al empezar están enumeradas en `ROADMAP.md`.
+
+## Release, imágenes y digests (contrato de Fase 11 — pendiente)
+
+Orden obligatorio:
+
+```text
+main aprobada
+  -> CI verde
+  -> runtime productivo local PASS
+  -> smoke local PASS
+  -> tag versionado sobre main (por ejemplo v1.0.0)
+  -> workflow de release
+  -> GitHub Release si corresponde
+  -> imágenes en GHCR
+  -> versiones y digests registrados
+  -> handoff a operaciones
+  -> STOP
+```
+
+Reglas:
+
+- Cada imagen es identificable al menos por versión de release y por commit SHA.
+- `latest`, si existe, es solo comodidad: producción nunca depende exclusivamente de `latest`.
+- El deployment usa tags inmutables o, preferentemente, digests exactos.
+- Las imágenes no contienen `.env`, claves, tokens, passwords, secretos ni artefactos temporales innecesarios.
+- El workflow de release usa permisos mínimos y nunca accede al VPS.
+
+### Registro de releases
+
+| Release | Commit | Imagen | Digest | Migraciones/schema incluidos |
+|---|---|---|---|---|
+| — | — | — | — | Sin releases todavía |
+
+## Handoff de release
+
+Fase 11 termina con un handoff equivalente a:
+
+```text
+Release: vX.Y.Z
+Commit: <sha>
+
+CI: PASS
+Runtime productivo local: PASS
+Smoke local: PASS
+
+GHCR:
+- <imagen A> @ sha256:...
+- <imagen B> @ sha256:...
+- <imagen C> @ sha256:...
+
+Handoff: listo
+Working tree: clean
+
+DEPLOYMENT AL VPS: NO EJECUTADO
+```
+
+Después: **STOP**.
+
+## Deployment posterior (fuera del repositorio)
+
+Contrato esperado; ningún agente del repositorio lo ejecuta. Lo realiza `vps_ops_claude`, manual/asistido, desde su propio contexto operativo:
+
+```text
+release ya creada
+  -> operador entra al VPS
+  -> preflight
+  -> backup si corresponde
+  -> checkout exacto del tag de release en /srv/apps/portfolio
+  -> compose.production.yaml + override /srv/ops/portfolio/compose.vps.yaml
+  -> pull de imágenes/digests exactos
+  -> migraciones
+  -> arranque
+  -> health
+  -> smoke
+  -> verificación pública
+  -> cierre del deployment
+```
+
+Fase 11 documenta qué valores espera el runtime productivo desde el entorno o el override (secretos, referencias de imagen y demás parámetros); el contenido real del override lo crea operaciones y nunca se versiona aquí.
+
+No se despliega desde un working tree sin versionar ni desde una imagen construida manualmente sin referencia a una release o commit conocido.
+
+## Contrato de rollback
+
+- **Identificar la versión anterior:** tags y GitHub Releases del repositorio, más el registro de releases de este documento.
+- **Imágenes por release:** cada release registra sus imágenes y digests exactos.
+- **Volver atrás:** checkout del tag anterior y redeploy con los digests de esa release. Un rollback no reconstruye código.
+- **Base de datos:** un rollback de aplicación **no** implica rollback de base de datos ni de los volúmenes de media. Revertir datos es una operación separada de restore.
+- **Migraciones:** las migraciones destructivas requieren análisis independiente antes de cualquier rollback; las futuras migraciones deben considerar compatibilidad con la release anterior, y cada release registra qué schema incluye.
+- **Ejecución:** el rollback real lo ejecuta `vps_ops_claude`; el repositorio solo entrega este contrato y las advertencias de aplicación (ver "Advertencias de rollback (Fase 4)").
+
+## Supuestos que el repositorio no conoce
+
+Hechos conocidos de la topología (ver `docs/SERVER_ARCHITECTURE.md`): VPS Linux OVHcloud multiproyecto, Cloudflare DNS proxied con SSL/TLS `Full (strict)`, Caddy global en `:80`/`:443`, UFW restringido a rangos de Cloudflare, layout `/srv/apps`, `/srv/ops`, `/srv/ingress`, `/srv/backups` y reserva de `127.0.0.1:8000`.
+
+El repositorio no adivina, y pertenecen a operaciones:
 
 - distribución o versión de Linux;
 - CPU, RAM o capacidad efectiva;
-- discos, filesystem o layout físico;
-- ubicación de Docker data root;
+- discos, filesystem o ubicación de Docker data root;
 - rutas físicas finales de volúmenes;
-- política real de firewall, monitoreo o backups;
-- estado del Tunnel compartido;
+- contenido de `/srv/ops` y `/srv/ingress`;
+- mecanismo de certificado de origen del Caddy global;
+- política real de monitoreo y backups;
 - otros proyectos, puertos o restricciones presentes en el host.
 
-El workflow externo obtiene esos datos antes de producir configuración final.
+## Definition of done del handoff (Fase 11)
 
-## Definition of done del handoff
-
+- [ ] El runtime productivo fue levantado y verificado localmente desde una base fresca.
 - [ ] Servicios, redes, puertos internos y entrypoint están documentados.
 - [ ] Variables y secretos requeridos tienen owner y ejemplo sin valores reales.
-- [ ] Persistencia, migraciones y bootstrap están documentados.
-- [ ] Build, tests, health checks y smoke checks son reproducibles.
+- [ ] Persistencia, migraciones, import inicial y bootstrap están documentados.
+- [ ] Build, tests, health checks y smoke local son reproducibles.
 - [ ] MySQL y servicios internos no se exponen públicamente.
-- [ ] La frontera de `cloudflared` está explícita.
-- [ ] Los datos relevantes para backup y rollback están identificados.
-- [ ] Los supuestos de servidor pendientes de descubrimiento están enumerados.
-- [ ] La versión aprobada puede entregarse a `home_server_ops_claude` sin duplicar su checklist operacional.
-- [ ] El documento no afirma que el servidor ya fue desplegado.
+- [ ] La frontera con el Caddy global, Cloudflare y el VPS está explícita.
+- [ ] Release, commit, imágenes y digests están registrados.
+- [ ] El contrato de rollback está documentado.
+- [ ] Los datos relevantes para backup están identificados.
+- [ ] La release puede entregarse a `vps_ops_claude` sin reconstruir código ni duplicar su checklist operacional.
+- [ ] El documento no afirma que el portfolio ya fue desplegado.

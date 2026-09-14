@@ -1,28 +1,29 @@
-# SERVER_ARCHITECTURE.md — Servidor Linux multiproyecto
+# SERVER_ARCHITECTURE.md — VPS Linux multiproyecto
 
 ## Objetivo
 
-Usar una computadora Linux propia como un pequeño servidor de aplicaciones para aprender y practicar una arquitectura similar a la de un servidor cloud.
+Usar un VPS Linux de OVHcloud, administrado por Luciano, como servidor de aplicaciones compartido entre proyectos Docker independientes, practicando una arquitectura equivalente a la de un servidor cloud real.
 
-El servidor alojará:
+El servidor aloja o alojará:
 
-- El portfolio.
+- El portfolio (todavía **no desplegado**).
 - Proyectos Laravel.
 - Frontends React/Next.js.
 - APIs.
 - Bases de datos de demo.
 - Futuros proyectos Dockerizados.
 
-Cloudflare Tunnel será la capa de acceso público.
+La entrada pública es **Cloudflare DNS proxied + Caddy global del host**. No se utiliza Cloudflare Tunnel y `cloudflared` no forma parte de la arquitectura vigente.
+
+> Nota histórica: los specs, planes y evidencias de Fases 0–5 describen una computadora Linux doméstica publicada mediante Cloudflare Tunnel y un `cloudflared` compartido. Esa topología fue reemplazada por el VPS descrito en este documento. Los registros de fases cerradas se conservan tal como fueron escritos; este documento es la única fuente de verdad vigente de la topología compartida.
 
 ## Propiedad operativa
 
-Este documento registra la topología compartida y el contrato que el portfolio debe respetar; no convierte al roadmap del portfolio en propietario de las operaciones físicas del servidor.
+Este documento registra la topología compartida y el contrato que el portfolio debe respetar. No convierte al repositorio del portfolio en operador del servidor.
 
-- El repositorio del portfolio define su stack, su gateway, su entrypoint futuro `127.0.0.1:8000`, persistencia, variables, migraciones, bootstrap y health checks.
-- El workflow externo `home_server_ops_claude` inspecciona el servidor real y ejecuta el preflight, la preparación del host, el Compose final de producción, el deployment, `cloudflared`, firewall, backups, restores, reinicios y coordinación multiproyecto.
-- Las características reales de Linux, hardware, almacenamiento y layout se descubren durante ese workflow externo; nunca se inventan desde este repositorio.
-- La documentación del portfolio entrega el contrato necesario y referencia el workflow externo sin copiar su checklist completo.
+- **Repositorio del portfolio:** define la aplicación, su gateway interno, el entrypoint `127.0.0.1:8000`, persistencia, variables, migraciones, bootstrap y health checks, y — en su fase final (Fase 11 de `ROADMAP.md`) — produce el runtime productivo (Dockerfiles productivos y `compose.production.yaml`), CI, workflow de release, tag, imágenes en GHCR con digests registrados y el handoff de deployment. **Termina ahí y nunca entra al VPS.**
+- **Flujo operativo `vps_ops_claude`:** opera el VPS real desde un contexto separado: host, SSH, UFW, Caddy global (`/srv/ingress`), Cloudflare y DNS, `/srv/apps`, `/srv/ops`, `/srv/backups`, secretos productivos reales, overrides por proyecto, deployment, migraciones de producción, backups, restores, reboot recovery y registro multiproyecto.
+- Las características de hardware, distribución y layout interno del host pertenecen a operaciones; nunca se infieren ni se inventan desde este repositorio.
 
 ---
 
@@ -34,85 +35,59 @@ PC de desarrollo
       | git push
       v
     GitHub
-      |
-      | CI: lint / tests / build validation
+      |  CI: lint / format / typecheck / tests / builds / validación Docker
+      |  tag vX.Y.Z -> workflow de release
+      v
+    GHCR  (imágenes identificables por release y commit; digests registrados)
+      :
+      :  pull manual/asistido de tags inmutables o digests exactos,
+      :  ejecutado por vps_ops_claude — fuera de cualquier repositorio de proyecto
       v
 
 Internet
       |
       v
-Cloudflare DNS / Edge
+Cloudflare  (DNS proxied, SSL/TLS "Full (strict)")
       |
-      | Cloudflare Tunnel
+      |  HTTPS :443 — UFW solo admite rangos IP oficiales de Cloudflare
       v
-+-------------------------------------------------------+
-|              PC Linux de producción                  |
-|                                                       |
-|  cloudflared (servicio compartido del host)           |
-|       |                                               |
-|       +------> 127.0.0.1:8000 -> Portfolio           |
-|       |                                               |
-|       +------> 127.0.0.1:8080 -> Proyecto A          |
-|       |                                               |
-|       +------> 127.0.0.1:8081 -> Proyecto B          |
-|       |                                               |
-|       +------> 127.0.0.1:8082 -> Proyecto C          |
-|                                                       |
-+-------------------------------------------------------+
++----------------------------------------------------------------+
+|                    VPS Linux OVHcloud                          |
+|                                                                |
+|  Caddy GLOBAL del host  :80 / :443      (config: /srv/ingress) |
+|       |  TLS de origen + routing por hostname                   |
+|       |                                                        |
+|       +------> 127.0.0.1:8000     -> stack Docker Portfolio    |
+|       |                                                        |
+|       +------> 127.0.0.1:<puerto> -> stack Docker Proyecto N   |
+|                                                                |
++----------------------------------------------------------------+
 ```
 
-Un mismo Cloudflare Tunnel puede publicar múltiples aplicaciones, cada una asociando un hostname público con un servicio local distinto.
+GitHub Actions nunca se conecta al VPS. La línea punteada entre GHCR y el VPS representa una acción operativa posterior, no un paso de CI.
 
 ---
 
-## Estructura lógica del servidor
-
-Los proyectos no deben vivir todos dentro del repositorio del portfolio.
-
-Cada aplicación es independiente.
-
-Estructura definida:
+## Estructura del servidor
 
 ```text
-/srv/apps/
-├── portfolio/
-│   ├── .git/
-│   ├── compose.yaml
-│   ├── web/
-│   ├── api/
-│   ├── infra/
-│   └── ...
-│
-├── reserva-hub/
-│   ├── .git/
-│   ├── compose.yaml
-│   ├── frontend/
-│   ├── backend/
-│   └── ...
-│
-├── proyecto-tickets/
-│   ├── .git/
-│   ├── compose.yaml
-│   └── ...
-│
-└── futuro-proyecto/
-    └── ...
+/srv/apps/       aplicaciones desplegadas (un directorio por proyecto)
+/srv/ops/        configuración/overrides operacionales por proyecto + vps_ops_claude
+/srv/ingress/    configuración del Caddy global del host
+/srv/backups/    backups gestionados por operaciones
 ```
 
-Infraestructura compartida del host:
+Convención esperada para el portfolio, **creada exclusivamente por `vps_ops_claude` durante el deployment posterior** (hoy no existe y ningún agente del repositorio la crea):
 
 ```text
-/etc/cloudflared/            # configuración/credenciales si corresponde
-/srv/backups/
-├── portfolio/
-├── reserva-hub/
-└── ...
-/var/log/                    # logs del sistema/servicios
+/srv/apps/portfolio/                   checkout exacto del tag de release
+/srv/ops/portfolio/compose.vps.yaml    override específico del VPS
+/srv/backups/portfolio/                backups del portfolio
 ```
 
-`/srv/apps` es la raíz definitiva de aplicaciones desplegadas y `/srv/backups` es la raíz definitiva de backups. El portfolio usa `/srv/apps/portfolio` y `/srv/backups/portfolio`.
+Los proyectos no viven dentro del repositorio del portfolio: cada aplicación tiene su propio repositorio, directorio, Compose y ciclo de release.
 
-La distribución y versión de Linux, CPU, RAM, discos, capacidades, layout físico y ubicación final de los datos persistentes se relevan al iniciar el preflight de deployment. No se infieren durante la fase de diseño local.
+El layout interno de `/srv/ops`, `/srv/ingress` y `/srv/backups`, la estructura de `vps_ops_claude` y la ubicación física de los datos persistentes pertenecen a operaciones. Este documento solo nombra los puntos de contacto que un proyecto necesita conocer.
 
 ---
 
@@ -133,36 +108,80 @@ No compartir por defecto entre proyectos:
 - Cola.
 - Redis.
 
-Compartir únicamente infraestructura deliberadamente global, por ejemplo:
+Compartir únicamente infraestructura deliberadamente global:
 
 - Docker Engine.
-- `cloudflared`.
+- Caddy global del host.
+- UFW.
 - Sistema operativo.
 - Sistema de backups.
 - Monitorización del host.
 
-Esto reduce el impacto de errores entre demos.
+Esto reduce el impacto de errores entre proyectos.
+
+---
+
+## Ingress: dos capas de Caddy
+
+Existen dos capas de Caddy con responsabilidades distintas. No deben confundirse ni fusionarse.
+
+| | Caddy GLOBAL del VPS | Caddy INTERNO del portfolio (gateway) |
+|---|---|---|
+| Pertenece a | Operaciones (`vps_ops_claude`) | Repositorio del portfolio |
+| Configuración | `/srv/ingress` | `infra/caddy/` del repositorio |
+| Escucha | `:80` / `:443` públicos del host | `80` dentro de Docker; publicado solo en `127.0.0.1:8000` |
+| Responsabilidad | TLS de origen, routing por hostname, multiproyecto | Entrypoint único del stack; enruta a Next.js, Laravel, media y rutas de backend |
+| Conoce | Hostnames y puertos loopback de cada proyecto | Servicios y redes Docker internas del portfolio |
+
+El Caddy global no conoce los contenedores internos del portfolio. El gateway interno no conoce Cloudflare, otros proyectos ni la configuración del host. **El gateway interno del portfolio se conserva:** no es un duplicado del Caddy global, sino la frontera HTTP propia del stack.
+
+---
+
+## Cloudflare
+
+- Los hostnames públicos usan registros DNS **proxied**.
+- SSL/TLS en modo **Full (strict)**: Cloudflare se conecta al origen por HTTPS y valida el certificado presentado por el Caddy global.
+- Cloudflare es obligatoriamente la **única** entrada HTTP/HTTPS pública.
+- DNS, SSL/TLS, reglas y cualquier control de acceso de Cloudflare pertenecen a operaciones.
+- Ningún repositorio de proyecto contiene credenciales, API tokens ni configuración de Cloudflare.
+- Cloudflare Access puede agregarse sobre `/admin` como defensa en profundidad por decisión de operaciones; nunca reemplaza la autenticación de Laravel.
+
+---
+
+## Firewall y puertos públicos del host
+
+UFW está activo con política `default deny incoming`.
+
+| Puerto | Escucha | Admitido desde |
+|---|---|---|
+| `80` / `443` | Caddy global | Únicamente rangos IP oficiales de Cloudflare |
+| `22` | SSH | Público; autenticación exclusivamente por clave |
+| Cualquier otro | — | Denegado |
+
+- El bypass directo al origen (conectarse a la IP del VPS sin pasar por Cloudflare) fue probado y está bloqueado.
+- Mantener sincronizados los rangos de Cloudflare en UFW es responsabilidad de operaciones.
+- Nunca publicar MySQL, Redis ni puertos de contenedores internos.
+- Los puertos de proyecto se publican exclusivamente sobre `127.0.0.1`. Docker publica puertos mediante reglas `iptables` propias que no pasan por UFW; por eso el binding a loopback es obligatorio y no un detalle opcional.
 
 ---
 
 ## Registro de puertos del host
 
-Cada proyecto recibe un único puerto de entrada local.
+Cada proyecto recibe un único puerto loopback de entrada.
 
-Ejemplo inicial:
+| Puerto host | Proyecto | Hostname | Estado |
+|---:|---|---|---|
+| `127.0.0.1:8000` | Portfolio | `lucianogonzalez.dev` | Reservado; **no desplegado** |
 
-| Puerto host | Proyecto | Dominio |
-|---:|---|---|
-| `127.0.0.1:8000` | Portfolio | `lucianogonzalez.dev` |
-| Sin reservar | Proyecto futuro | Sin reservar |
+El registro autoritativo del resto de proyectos lo mantiene `vps_ops_claude`. Este documento no replica puertos de otros proyectos ni reserva puertos para proyectos inexistentes.
 
-No reservar nombres ni puertos para proyectos inexistentes.
+Antes de cada deployment, el registro operativo debe guardar: identificador del proyecto, hostname público, puerto loopback, ruta en `/srv/apps`, override en `/srv/ops` y site correspondiente del Caddy global.
 
-El registro central debe guardar, antes de cada deployment, el identificador del proyecto, hostname público, puerto loopback, ruta de deployment y mapeo de Cloudflare Tunnel.
+El puerto `127.0.0.1:8000` es un **contrato entre aplicación y operaciones**. Cambiarlo exige actualizar este registro y la documentación del portfolio en el mismo cambio, y coordinarlo con operaciones.
 
 ### Regla
 
-Los servicios públicos de cada proyecto deben enlazarse a:
+Los servicios de entrada de cada proyecto deben enlazarse a:
 
 ```text
 127.0.0.1:PUERTO
@@ -174,23 +193,23 @@ y no, salvo necesidad documentada, a:
 0.0.0.0:PUERTO
 ```
 
-El objetivo es que el servicio sea alcanzable desde el host para `cloudflared`, pero no quede escuchando directamente en todas las interfaces de red.
+Así el Caddy global alcanza el proyecto desde el host sin que el servicio escuche en interfaces públicas.
 
 ---
 
 ## Arquitectura interna de cada proyecto
 
-Cloudflare no necesita conocer todos los contenedores internos.
+Cloudflare y el Caddy global no necesitan conocer los contenedores internos.
 
 Cada proyecto presenta un solo endpoint HTTP al host.
 
 Ejemplo Laravel + React:
 
 ```text
-Cloudflare Tunnel
+Caddy global :443
       |
       v
-127.0.0.1:8080
+127.0.0.1:<puerto>
       |
       v
 gateway del proyecto
@@ -202,7 +221,7 @@ React          Laravel
                 MySQL
 ```
 
-El gateway del portfolio es Caddy. Hace reverse proxy HTTP hacia Next.js y hacia el contenedor interno Apache + Laravel, sin montar ni interpretar el source tree de Laravel. Solo Caddy publica `127.0.0.1:8000`; el servidor externo debe preservar este contrato al preparar el Compose final.
+El gateway del portfolio es Caddy (capa interna). Hace reverse proxy HTTP hacia Next.js y hacia el contenedor interno Apache + Laravel, sin montar ni interpretar el source tree de Laravel. Solo el gateway publica `127.0.0.1:8000`.
 
 Ejemplo de rutas internas:
 
@@ -218,34 +237,34 @@ La base de datos queda únicamente en la red Docker privada.
 
 ## Portfolio
 
-El portfolio ocupa inicialmente:
+El portfolio tiene reservado:
 
 ```text
 127.0.0.1:8000
 ```
 
-y se publica como:
+y se publicará como:
 
 ```text
 https://lucianogonzalez.dev
 ```
 
-Topología conceptual:
+Topología objetivo:
 
 ```text
-lucianogonzalez.dev
+Internet
         |
         v
-Cloudflare
+Cloudflare (DNS proxied, Full (strict))
         |
         v
-cloudflared del host
+Caddy GLOBAL del VPS :443
         |
         v
 127.0.0.1:8000
         |
         v
-portfolio-gateway
+Caddy/gateway INTERNO del portfolio
     |          |
     v          v
  Next.js     Laravel
@@ -254,75 +273,42 @@ portfolio-gateway
               MySQL
 ```
 
+MySQL y cualquier otro servicio interno permanecen en redes Docker privadas, sin puertos publicados al host ni acceso desde Internet.
+
 ---
 
 ## Proyectos adicionales
 
 Cada nuevo proyecto obtiene:
 
-1. Directorio independiente.
-2. Repositorio independiente.
-3. Compose independiente.
-4. Puerto local reservado.
+1. Repositorio independiente.
+2. Directorio independiente en `/srv/apps`.
+3. Compose productivo propio y override operativo en `/srv/ops`.
+4. Puerto loopback reservado en el registro.
 5. Subdominio.
-6. Entrada propia en Cloudflare Tunnel.
-7. Backups independientes si contiene datos persistentes.
+6. Registro DNS proxied en Cloudflare.
+7. Site propio en el Caddy global (`/srv/ingress`).
+8. Backups independientes si contiene datos persistentes.
 
 Ejemplo:
 
 ```text
-reservas.lucianogonzalez.dev
+<slug>.lucianogonzalez.dev
         |
         v
-Cloudflare Tunnel
+Cloudflare (proxied)
         |
         v
-127.0.0.1:8080
+Caddy global :443
         |
         v
-stack Docker de Reserva Hub
+127.0.0.1:<puerto>
+        |
+        v
+stack Docker del proyecto
 ```
 
-Esto permite agregar y quitar proyectos sin modificar la arquitectura interna de los demás.
-
----
-
-## Cloudflare Tunnel
-
-### Estrategia
-
-Usar un tunnel compartido a nivel del host para las aplicaciones públicas de este servidor.
-
-`cloudflared` se ejecuta como servicio Linux administrado por `systemd`.
-
-No debe formar parte del `compose.yaml` de cada proyecto.
-
-Ventajas:
-
-- Un solo conector para el servidor.
-- Configuración de hostnames centralizada.
-- Cada aplicación sigue aislada.
-- Reiniciar un proyecto no reinicia el tunnel.
-- Agregar una demo consiste en asignar puerto + hostname.
-
-### Ejemplo conceptual de rutas publicadas
-
-```text
-lucianogonzalez.dev
-    -> http://localhost:8000
-
-reservas.lucianogonzalez.dev
-    -> http://localhost:8080
-
-proyecto2.lucianogonzalez.dev
-    -> http://localhost:8081
-```
-
-Las rutas pueden administrarse mediante el dashboard/API de Cloudflare para un tunnel administrado remotamente.
-
-El token del tunnel es un secreto del servidor.
-
-Nunca debe estar dentro de un repositorio.
+Agregar o quitar un proyecto no modifica la arquitectura interna de los demás.
 
 ---
 
@@ -346,30 +332,18 @@ Esto simplifica:
 - CORS.
 - Cookies.
 - Autenticación.
-- Configuración del tunnel.
+- Configuración del Caddy global.
 - Demostración al usuario.
-
----
-
-## Puertos públicos del router
-
-Para servir las aplicaciones mediante Cloudflare Tunnel:
-
-- No abrir `80`.
-- No abrir `443`.
-- No publicar MySQL.
-- No publicar Redis.
-- No publicar puertos Docker innecesarios.
-
-La conexión del tunnel parte de forma saliente desde el servidor.
-
-La administración remota del servidor debe definirse por separado y no debe lograrse simplemente publicando SSH al Internet.
 
 ---
 
 ## Docker por proyecto
 
-Cada proyecto tiene su propio `compose.yaml`.
+Cada proyecto mantiene separados su entorno de desarrollo y su runtime productivo. Para el portfolio:
+
+- `compose.yaml` — desarrollo y pruebas (existente).
+- `compose.production.yaml` — runtime productivo portable, entregado por el repositorio en su fase de release (todavía no existe).
+- `/srv/ops/portfolio/compose.vps.yaml` — override del VPS, propiedad de operaciones; nunca vive en el repositorio.
 
 Ejemplo conceptual de un stack:
 
@@ -380,11 +354,11 @@ project-api
 project-mysql
 ```
 
-Solo `project-gateway` publica un puerto al host.
+Solo `project-gateway` publica un puerto al host, sobre loopback.
 
-Los demás usan redes Docker privadas.
+Los demás usan redes Docker privadas. Los nombres reales de los servicios se definen en cada proyecto.
 
-Los nombres reales de los servicios se definen en cada proyecto.
+El Compose productivo del proyecto debe ser portable: no contiene rutas `/srv`, secretos reales, hostnames del host ni configuración del Caddy global. Lo específico del VPS se aplica mediante el override de `/srv/ops`.
 
 ### Volúmenes
 
@@ -396,8 +370,8 @@ Ejemplo conceptual:
 portfolio_mysql_data
 portfolio_media
 
-reserva_mysql_data
-reserva_storage
+otro-proyecto_mysql_data
+otro-proyecto_storage
 ```
 
 Nunca usar el mismo volumen de base de datos para dos proyectos independientes.
@@ -429,58 +403,61 @@ El portfolio y su CMS **nunca** deben usar `migrate:fresh --seed` programado en 
 
 ---
 
-## CI
+## CI y release
 
-GitHub Actions se utiliza inicialmente para:
+GitHub Actions se utiliza para:
 
-- Lint.
-- Tests.
+- Lint y formato.
 - Type checking.
-- Build validation.
-- Docker build validation.
+- Tests.
+- Builds de aplicación.
+- Validación de Dockerfiles productivos y Compose productivo.
+- Auditorías de dependencias y detección de secretos accidentales.
+- Workflow de release: a partir de un tag versionado sobre `main`, publicar imágenes en GHCR identificables por versión y commit.
 
-CI y despliegue son responsabilidades separadas.
+Reglas:
 
-Un build exitoso en GitHub no significa que los archivos compilados hayan sido desplegados al servidor.
+- CI y release **nunca** acceden al VPS.
+- CI no contiene secretos del host, claves SSH ni credenciales de Cloudflare.
+- No existen runners con acceso al VPS.
+- Un build o una release exitosa en GitHub no significa que algo haya sido desplegado.
+- Producción nunca depende exclusivamente de `latest`: el deployment usa tags inmutables o, preferentemente, digests exactos.
 
 ---
 
 ## Despliegue
 
-La ejecución de esta sección pertenece al workflow externo `home_server_ops_claude`. El repositorio del portfolio debe llegar a ese workflow como candidato aprobado, verificable y acompañado por su contrato de deployment; no instala ni opera el host desde su roadmap de desarrollo.
+El deployment es propiedad de `vps_ops_claude` y se ejecuta desde un contexto operativo separado, manual/asistido. Un proyecto llega a ese flujo como **release ya creada** (tag, imágenes GHCR con digests y handoff); ningún agente de repositorio de proyecto entra al VPS.
 
-### Primera etapa
+Flujo conceptual:
 
-Mantener el despliegue deliberadamente simple:
-
-1. CI valida el commit.
-2. Conectarse de forma segura al servidor.
-3. Entrar al directorio del proyecto.
-4. Actualizar el repositorio a una versión aprobada.
-5. Ejecutar el procedimiento Docker del proyecto.
-6. Ejecutar migraciones si corresponde.
-7. Ejecutar smoke tests.
-8. Confirmar que el hostname público responde.
+```text
+release ya creada (tag + digests + handoff)
+  -> operador entra al VPS
+  -> preflight
+  -> backup si corresponde
+  -> checkout exacto del tag de release en /srv/apps/<proyecto>
+  -> compose productivo del proyecto + override /srv/ops/<proyecto>/compose.vps.yaml
+  -> pull de imágenes/digests exactos
+  -> migraciones
+  -> arranque
+  -> health
+  -> smoke
+  -> verificación pública
+  -> cierre del deployment
+```
 
 No ejecutar `docker compose down` por costumbre si `docker compose up -d` permite actualizar sin una interrupción innecesaria.
 
-### Automatización futura
+### Automatización
 
-La automatización de producción se decidirá en una fase posterior.
-
-Opciones aceptables:
-
-- Runner self-hosted asociado únicamente a infraestructura/repositorios privados de despliegue.
-- Administración remota protegida mediante Cloudflare Access/Tunnel.
-- Otra estrategia que no requiera exponer SSH públicamente.
-
-No configurar un runner self-hosted sin restricciones para workflows de repositorios públicos.
+No existe deployment automático. GitHub Actions no despliega, no hace SSH al VPS y no hay runners self-hosted con acceso al servidor. Cualquier automatización futura del deployment sería una decisión explícita de operaciones, fuera de los repositorios de proyecto.
 
 ---
 
 ## Backups
 
-Cada aplicación con datos persistentes debe tener backup independiente.
+`/srv/backups` pertenece a operaciones. Cada aplicación con datos persistentes tiene backup independiente.
 
 Estructura sugerida:
 
@@ -489,42 +466,44 @@ Estructura sugerida:
 ├── portfolio/
 │   ├── mysql/
 │   └── media/
-├── reserva-hub/
-│   └── mysql/
-└── ...
+└── <proyecto>/
+    └── ...
 ```
 
 Requisitos:
 
 - Retención definida.
-- Copia en un disco o equipo diferente del disco principal.
+- Copia fuera del disco del VPS.
 - Restore probado.
 - No considerar una copia en el mismo disco como única estrategia de backup.
+
+Los repositorios de proyecto identifican qué datos requieren backup; no ejecutan ni programan backups reales.
 
 ---
 
 ## Reinicios del servidor
 
-Después de reiniciar Linux deben recuperarse automáticamente:
+Después de reiniciar el VPS deben recuperarse automáticamente:
 
 1. Docker.
-2. `cloudflared`.
-3. Stacks Docker marcados para inicio automático.
-4. Bases de datos.
-5. APIs.
-6. Frontends.
-7. Gateways.
+2. Reglas de UFW.
+3. Caddy global.
+4. Stacks Docker con restart policy adecuada.
+5. Bases de datos.
+6. APIs.
+7. Frontends.
+8. Gateways de proyecto.
 
-Probar este escenario antes de considerar la infraestructura terminada.
+Operaciones prueba este escenario antes de considerar terminada la infraestructura de cada proyecto.
 
 ---
 
 ## Seguridad mínima del host
 
 - Usuario administrativo no utilizado como usuario de aplicación.
-- SSH con claves si se utiliza SSH.
+- SSH en `:22` con autenticación exclusiva por clave: `PermitRootLogin no`, `PasswordAuthentication no`, `PubkeyAuthentication yes`.
+- UFW con `default deny incoming`; `80`/`443` solo desde rangos de Cloudflare.
 - Contraseñas/keys fuera de Git.
-- Firewall del host.
 - Actualizaciones del sistema operativo.
 - MySQL solo en redes privadas.
 - Backups.
@@ -541,18 +520,19 @@ Esta infraestructura forma parte del portfolio técnico.
 
 Debe permitir demostrar experiencia práctica con:
 
-- Linux.
+- Linux en VPS.
 - Docker.
 - Networking.
 - DNS.
-- Reverse proxy.
-- Cloudflare Tunnel.
-- CI/CD.
+- Cloudflare como proxy con SSL/TLS Full (strict).
+- Reverse proxy en dos capas (Caddy global + gateway por proyecto).
+- Firewall (UFW) restringido a Cloudflare.
+- CI, releases versionadas y GHCR.
 - HTTPS.
 - Gestión de secretos.
 - Persistencia.
 - Backups.
-- Despliegues.
+- Despliegues controlados.
 - Observabilidad básica.
 
-La infraestructura no debe ocultarse como un detalle accidental: puede documentarse como un proyecto técnico real siempre que la seguridad no se vea comprometida.
+La infraestructura no debe ocultarse como un detalle accidental: puede documentarse como un proyecto técnico real siempre que la seguridad no se vea comprometida (sin IPs de origen, usuarios, rutas sensibles ni configuración que facilite eludir Cloudflare).

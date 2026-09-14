@@ -58,6 +58,7 @@ Cerrar las decisiones necesarias antes de inicializar el workspace de aplicacion
 - [x] Confirmar dominio principal definitivo.
 - [x] Definir convención de subdominios para futuros proyectos.
 - [x] Confirmar que `cloudflared` será un servicio global del host y no un contenedor por proyecto.
+      — **Superada:** la arquitectura vigente usa un VPS OVHcloud con Cloudflare DNS proxied + Caddy global del host y no utiliza Cloudflare Tunnel ni `cloudflared` (ver `docs/SERVER_ARCHITECTURE.md`). Se conserva como registro histórico de la decisión de Fase 0.
 - [x] Diferir distribución Linux, CPU, RAM, almacenamiento y layout físico al preflight de deployment.
 - [x] Confirmar `/srv/apps` como raíz de aplicaciones y `/srv/backups` como raíz de backups.
 - [x] Definir formato del CV público.
@@ -75,6 +76,7 @@ Cerrar las decisiones necesarias antes de inicializar el workspace de aplicacion
 
 - Frontend, backend y administración tienen responsabilidades claras.
 - La arquitectura de producción está definida para ejecutarse completamente en el servidor propio mediante Docker y Cloudflare Tunnel.
+  — Criterio histórico de Fase 0. La topología vigente es VPS OVHcloud + Cloudflare DNS proxied + Caddy global del host, sin Tunnel (`docs/SERVER_ARCHITECTURE.md`).
 - Las decisiones diferidas están identificadas.
 - No queda ninguna duda que impida crear el repositorio.
 
@@ -282,6 +284,7 @@ Crear una base reproducible para frontend, backend, base de datos y administraci
 - [x] Crear Caddy como gateway/reverse proxy del portfolio y enlazar únicamente `127.0.0.1:8000`.
 - [x] Inventariar rutas y tráfico público reales de Laravel/Filament/Livewire/media antes de fijar los matchers backend de Caddy.
 - [x] Verificar compatibilidad del stack con el `cloudflared` global del servidor; no crear `cloudflared` dentro del proyecto.
+      — Registro histórico: `cloudflared` ya no forma parte de la arquitectura vigente. La regla equivalente actual es que el gateway interno publica solo `127.0.0.1:8000` hacia el Caddy global del VPS.
 - [x] Definir redes Docker internas del portfolio (`front` y `data` o equivalente).
 - [x] Confirmar que MySQL no publica puertos al host ni a Internet.
 - [x] Agregar health checks.
@@ -315,6 +318,8 @@ Crear una base reproducible para frontend, backend, base de datos y administraci
 - La administración requiere autenticación.
 - Frontend, backend, gateway y MySQL pueden ejecutarse de forma reproducible mediante Docker; `cloudflared` permanece como servicio compartido del host.
 - El repositorio describe límites, persistencia, variables, migraciones, bootstrap y health checks suficientes para el futuro agente externo de operaciones.
+
+> Nota de reconciliación (2026-09-14): Fase 3 creó y verificó únicamente el entorno de desarrollo/pruebas; no creó runtime productivo, y eso fue correcto. La mención a `cloudflared` es histórica (ver `docs/SERVER_ARCHITECTURE.md`). El runtime productivo, CI, release e imágenes GHCR pertenecen a Fase 11.
 
 ---
 
@@ -727,8 +732,8 @@ Preparar el sistema para exposición pública.
 - [ ] Cabeceras de seguridad.
 - [ ] Gestión de secretos.
 - [ ] Rotación de credenciales iniciales.
-- [ ] Backups.
-- [ ] Restauración de prueba.
+- [ ] Procedimiento de backup de datos de aplicación (MySQL y ambos volúmenes de media) documentado.
+- [ ] Restauración de prueba en entorno local descartable.
 - [ ] Actualización de dependencias.
 - [ ] Auditoría de paquetes.
 - [ ] Revisión de logs.
@@ -737,6 +742,8 @@ Preparar el sistema para exposición pública.
 - [ ] Protección de rutas administrativas.
 - [ ] Revisión del CV público.
 - [ ] Revisión de información confidencial.
+
+> Los backups y restores reales del VPS (`/srv/backups`) pertenecen a `vps_ops_claude`; esta fase entrega y prueba localmente el procedimiento de aplicación, sin tocar el servidor.
 
 ## Entregables
 
@@ -831,69 +838,208 @@ Comprobar el funcionamiento completo antes del lanzamiento.
 - No hay contenido faltante en un idioma.
 - No hay fallos graves de accesibilidad.
 - No hay degradación severa por animaciones.
-- Frontend y backend pasan CI.
+- Frontend y backend pasan localmente todas las validaciones que CI ejecutará en Fase 11.
 
 ---
 
-# Fase 11 — CI y preparación de entrega
+# Fase 11 — Runtime de producción, CI y release readiness
 
 ## Objetivo
 
-Convertir el repositorio aprobado en un artefacto verificable y listo para entregar al flujo externo de operaciones del servidor, sin acceder ni desplegar directamente en el servidor doméstico.
+Convertir `main` aprobada en una **release real, completa y desplegable**: runtime Docker productivo verificado localmente, CI verde, tag versionado, imágenes publicadas en GHCR con digests registrados y handoff listo para operaciones.
+
+Esta es la **última fase controlada por el repositorio**. Termina al producir la release y entregar el handoff. **Nunca entra al VPS ni despliega.** El deployment real lo ejecuta después `vps_ops_claude`, de forma manual/asistida y desde un contexto operativo separado (ver `docs/DEPLOYMENT.md` y `docs/SERVER_ARCHITECTURE.md`).
+
+> Estado al 2026-09-14: Fases 3–5 construyeron y verificaron solo el entorno de desarrollo/pruebas. No existen todavía Dockerfiles productivos, `compose.production.yaml`, workflows de GitHub Actions, remoto GitHub configurado en este workspace, tags ni imágenes GHCR. **El portfolio no está desplegado.**
+
+Secuencia conceptual de la fase:
+
+```text
+desarrollo terminado (Fases 0–10)
+  -> runtime Docker productivo independiente
+  -> Dockerfiles productivos
+  -> compose.production.yaml portable
+  -> stack PRODUCTIVO levantado localmente
+  -> migraciones / import inicial / bootstrap / healthchecks / persistencia
+  -> smoke local
+  -> CI verde
+  -> main aprobada
+  -> tag versionado (por ejemplo v1.0.0)
+  -> workflow de release
+  -> GitHub Release si corresponde
+  -> imágenes GHCR
+  -> versiones y digests registrados
+  -> handoff a operaciones
+  -> STOP
+```
+
+Que las imágenes compilen **no** es evidencia suficiente: el runtime productivo debe levantarse y ser usable en local antes de crear la release.
+
+## Prerrequisitos
+
+- Fases 9 y 10 cerradas.
+- `main` en estado aprobado por decisión humana explícita.
+- Las brechas editoriales abiertas de Fase 5 resueltas, o su tratamiento en la release decidido explícitamente por un humano.
 
 ## Tareas
 
-### GitHub Actions y controles del repositorio
+### Decisiones a cerrar al iniciar la fase
 
-- [ ] Crear workflow frontend.
-- [ ] Crear workflow backend.
-- [ ] Crear workflow Docker.
+No se fijan antes de inspeccionar la implementación real; se registran cuando se decidan.
+
+- [ ] Nombres definitivos de las imágenes GHCR, derivados de la arquitectura real (frontend, backend y gateway según corresponda).
+- [ ] Visibilidad del repositorio GitHub y de los paquetes GHCR.
+- [ ] Cómo accede el runtime productivo a los assets aprobados que consume `portfolio:import-initial-content` sin depender de bind mounts de desarrollo.
+- [ ] Almacén de caché productivo compatible con `LockProvider` (`file` o `database`; ver `docs/DEPLOYMENT.md`).
+- [ ] Tratamiento de `Host`, protocolo reenviado y trusted proxies para la cadena Caddy global -> gateway interno -> Laravel/Next.js, verificable en local sin configurar Cloudflare ni el Caddy global.
+
+### GitHub y auditoría previa
+
+- [ ] Auditar el historial Git completo (no solo el working tree) buscando `.env`, claves, tokens, passwords, dumps, logs sensibles y contenido confidencial, con conclusión explícita antes de publicar.
+- [ ] Crear o conectar el repositorio GitHub canónico `portfolio` y subir `main`.
+- [ ] Documentar la protección liviana de `main` (sin force push, sin borrado accidental, checks requeridos cuando corresponda).
+
+### Runtime productivo
+
+- [ ] Diseñar Dockerfiles específicos de producción, sin reutilizar ciegamente las imágenes de desarrollo.
+- [ ] Definir las imágenes frontend, backend y gateway según la arquitectura real; MySQL usa una imagen oficial fijada deliberadamente.
+- [ ] Crear `compose.production.yaml` portable, separado de `compose.yaml`.
+- [ ] Separar configuración de desarrollo y producción (sin bind mounts de código, watchers/HMR ni dependencias de desarrollo en runtime).
+- [ ] Conservar el gateway Caddy interno como único entrypoint del stack.
+- [ ] Mantener MySQL exclusivamente interno, sin puertos publicados.
+- [ ] Publicar únicamente el gateway, con bind/puerto configurable y default `127.0.0.1:8000`.
+- [ ] Definir networks y volumes propios del portfolio (datos MySQL, `api_private_media`, `api_public_media`).
+- [ ] Definir restart policies apropiadas.
+- [ ] Definir healthchecks reales por servicio.
+- [ ] Definir la configuración productiva sin secretos embebidos; los secretos quedan fuera de Git y fuera de las imágenes.
+- [ ] Verificar que ninguna imagen contiene `.env`, claves, tokens, passwords, secretos ni artefactos temporales innecesarios.
+- [ ] Verificar que ni `compose.production.yaml` ni las imágenes contienen rutas `/srv`, configuración de Cloudflare, del Caddy global ni del host.
+
+### Verificación productiva local
+
+- [ ] Levantar localmente el runtime productivo completo con `compose.production.yaml`, sin el Compose de desarrollo.
+- [ ] Verificar gateway, Next.js, Laravel y MySQL.
+- [ ] Verificar la API (`/api/v1` y los endpoints públicos localizados).
+- [ ] Verificar `/`, `/es`, `/en` y `/admin`.
+- [ ] Verificar media/storage (`/storage/*`) y descargas de CV (`/cv/*`).
+- [ ] Ejecutar migraciones desde una base fresca.
+- [ ] Ejecutar el import/bootstrap inicial de contenido según su contrato.
+- [ ] Ejecutar el bootstrap administrativo según el contrato vigente.
+- [ ] Verificar healthchecks.
+- [ ] Verificar persistencia tras restart y recreate de contenedores.
+- [ ] Confirmar que solo el gateway publica un puerto y que MySQL no es alcanzable desde el host.
+- [ ] Ejecutar un smoke funcional reproducible y registrar la evidencia.
+
+### CI
+
+- [ ] Ejecutar lint.
+- [ ] Ejecutar format check cuando corresponda.
+- [ ] Ejecutar typecheck.
+- [ ] Ejecutar tests frontend.
+- [ ] Ejecutar tests backend contra MySQL real.
+- [ ] Ejecutar build frontend.
+- [ ] Ejecutar build/validación backend cuando aplique.
+- [ ] Construir los Dockerfiles productivos.
+- [ ] Validar `compose.production.yaml`.
+- [ ] Ejecutar las auditorías de dependencias acordadas.
+- [ ] Detectar secretos accidentales.
 - [ ] Configurar caché de dependencias donde sea segura y útil.
-- [ ] Ejecutar lint y formato verificable.
-- [ ] Ejecutar TypeScript checks.
-- [ ] Ejecutar pruebas frontend y backend.
-- [ ] Ejecutar builds de aplicación.
-- [ ] Validar configuración y builds Docker definidos por el repositorio.
-- [ ] Ejecutar auditorías de dependencias y seguridad acordadas.
-- [ ] Documentar requisitos de protección de `main` y revisión previa a release.
-- [ ] Confirmar que CI no necesita acceso al servidor doméstico, sus secretos ni su red privada.
+- [ ] Confirmar que CI no accede al VPS ni contiene secretos del host, claves SSH ni credenciales de Cloudflare.
 
-### Preparación de release
+### Release
 
 - [ ] Definir el checklist de release readiness.
-- [ ] Confirmar que la versión candidata proviene de una rama y commit aprobados.
-- [ ] Registrar comandos reproducibles de build, pruebas y smoke checks de aplicación.
-- [ ] Documentar versionado, release notes y creación de tags anotados.
-- [ ] Confirmar que los artefactos y logs de CI no exponen secretos ni contenido confidencial.
+- [ ] Documentar versionado, release notes y tags anotados sobre `main`.
+- [ ] Crear el workflow de release disparado por tag versionado, con permisos mínimos para publicar Packages.
+- [ ] Etiquetar las imágenes al menos por versión de release y por commit SHA; `latest`, si existe, es solo comodidad.
+- [ ] Confirmar `main` aprobada, CI verde, runtime productivo local PASS, smoke local PASS y working tree limpio antes del tag.
+- [ ] Crear el tag versionado (por ejemplo `v1.0.0`) sobre el commit aprobado de `main`.
+- [ ] Publicar GitHub Release cuando corresponda.
+- [ ] Publicar las imágenes productivas en GHCR.
+- [ ] Registrar versión, commit y digest `sha256` de cada imagen.
+- [ ] Confirmar que artefactos, imágenes y logs de CI no exponen secretos ni contenido confidencial.
+
+### Contrato de rollback
+
+- [ ] Documentar cómo identificar la release anterior.
+- [ ] Documentar qué imágenes y digests corresponden a cada release.
+- [ ] Documentar cómo volver a una imagen/digest anterior sin reconstruir código.
+- [ ] Documentar que un rollback de aplicación no implica automáticamente rollback de base de datos.
+- [ ] Documentar que las migraciones destructivas requieren análisis independiente y registrar el schema asociado a cada release.
 
 ### Handoff de deployment
 
-- [ ] Documentar servicios, gateway y puertos internos del proyecto.
-- [ ] Documentar el futuro entrypoint `127.0.0.1:8000` y las rutas `/`, `/es`, `/en`, `/api/*` y `/admin/*`.
-- [ ] Documentar datos persistentes, variables requeridas y secretos necesarios sin incluir valores.
-- [ ] Documentar procedimientos de build, migración, bootstrap administrativo y health checks de aplicación.
-- [ ] Identificar los datos/rutas lógicas relevantes para backup y la información de aplicación necesaria para rollback.
-- [ ] Documentar qué servicios y puertos nunca deben exponerse públicamente.
-- [ ] Preservar la frontera de Cloudflare: `cloudflared` y sus credenciales permanecen fuera del repositorio.
-- [ ] Enumerar las condiciones del servidor que el flujo externo debe descubrir en el preflight, sin inferirlas.
-- [ ] Referenciar el flujo externo `home_server_ops_claude` como propietario del deployment y las operaciones físicas.
+- [ ] Actualizar `docs/DEPLOYMENT.md` con release, commit, imágenes y digests.
+- [ ] Documentar servicios, gateway, puertos internos, entrypoint `127.0.0.1:8000` y rutas `/`, `/es`, `/en`, `/api/*`, `/admin/*`, `/storage/*` y `/cv/*`.
+- [ ] Documentar volúmenes persistentes, variables requeridas y secretos necesarios sin incluir valores.
+- [ ] Documentar migraciones, import inicial, bootstrap administrativo, health checks y smoke checks para el deployment posterior.
+- [ ] Documentar qué debe respaldarse y qué servicios y puertos nunca se exponen.
+- [ ] Documentar qué debe aportar el override `/srv/ops/portfolio/compose.vps.yaml`, sin crearlo.
+- [ ] Referenciar `vps_ops_claude` como propietario del deployment real.
+
+## Salida esperada
+
+La fase se considera terminada con un reporte equivalente a:
+
+```text
+Release: vX.Y.Z
+Commit: <sha>
+
+CI: PASS
+Runtime productivo local: PASS
+Smoke local: PASS
+
+GHCR:
+- <imagen A> @ sha256:...
+- <imagen B> @ sha256:...
+- <imagen C> @ sha256:...
+
+Handoff: listo
+Working tree: clean
+
+DEPLOYMENT AL VPS: NO EJECUTADO
+```
+
+Después de esto: **STOP**.
+
+## Prohibido en esta fase
+
+El agente del repositorio nunca:
+
+- abre SSH al VPS, se conecta al VPS ni usa PuTTY u otro acceso remoto;
+- hace `git pull` bajo `/srv/apps`;
+- crea `/srv/apps/portfolio` ni `/srv/ops/portfolio`;
+- crea overrides reales del VPS;
+- edita `/srv/ingress` ni modifica el Caddy global;
+- modifica UFW, Cloudflare ni DNS;
+- crea secretos productivos reales ni certificados del host;
+- ejecuta migraciones contra producción ni levanta contenedores en OVH;
+- modifica backups reales ni ejecuta un rollback real;
+- hace smoke contra producción;
+- configura deployment automático mediante GitHub Actions ni runners con acceso al VPS.
 
 ## Entregables
 
-- Pipeline de CI del repositorio.
-- Candidato de release validado.
-- Checklist de release readiness.
-- Contrato de runtime y deployment actualizado.
-- Handoff autocontenido para el agente externo de operaciones del servidor.
-- Procedimientos de build, migración, bootstrap y smoke checks de aplicación.
+- Dockerfiles productivos.
+- `compose.production.yaml` portable.
+- Evidencia del runtime productivo local y del smoke local.
+- Pipeline de CI.
+- Workflow de release.
+- Tag de release sobre `main` y GitHub Release cuando corresponda.
+- Imágenes en GHCR identificables por versión y commit, con digests registrados.
+- Contrato de rollback.
+- Handoff de deployment actualizado en `docs/DEPLOYMENT.md`.
 
 ## Criterios de aceptación
 
+- El runtime productivo arranca y es usable en local desde una base fresca, con persistencia verificada.
 - Cada cambio relevante pasa las validaciones automáticas acordadas.
-- La versión candidata se puede reconstruir y verificar desde un commit aprobado.
-- CI no accede al servidor doméstico ni requiere secretos de host o Cloudflare.
-- El handoff describe con precisión servicios, entrypoint, persistencia, secretos, migraciones, bootstrap, health checks y límites de exposición.
-- El repositorio queda listo para ser clonado y operado por el flujo externo sin duplicar su checklist de host.
+- La release proviene de un commit aprobado de `main` y se puede identificar por tag, commit y digests.
+- Producción nunca depende exclusivamente de `latest`.
+- Ninguna imagen ni archivo versionado contiene secretos.
+- CI y release no acceden al VPS ni requieren secretos del host o de Cloudflare.
+- El handoff permite a `vps_ops_claude` desplegar exactamente esa release sin reconstruir código.
+- El working tree queda limpio.
 - Ninguna tarea de esta fase afirma que el portfolio ya fue desplegado.
 
 ---
@@ -904,12 +1050,19 @@ Convertir el repositorio aprobado en un artefacto verificable y listo para entre
 
 Publicar el portfolio y comenzar a utilizarlo en postulaciones.
 
+El lanzamiento parte de una release **que ya existe**: tag, GitHub Release cuando corresponda e imágenes GHCR con digests, todo producido en Fase 11. El deployment al VPS lo ejecuta `vps_ops_claude` fuera del repositorio.
+
+Esta fase **no crea tags, releases ni imágenes**. Si el lanzamiento revela un defecto que requiere cambiar código, se corrige en el repositorio y se produce una nueva release mediante el flujo de Fase 11 antes de un nuevo deployment; nunca se etiqueta a posteriori lo que ya está desplegado.
+
+Las verificaciones contra producción de esta fase las realizan Luciano u operaciones; el agente del repositorio no se conecta al VPS ni ejecuta smoke contra producción.
+
 ## Tareas
 
 ### Prerrequisitos externos de lanzamiento
 
-- [ ] Confirmar que el flujo externo de operaciones desplegó la versión aprobada.
-- [ ] Confirmar que el dominio público y las rutas `/api` y `/admin` responden según el contrato.
+- [ ] Confirmar qué release exacta (tag, commit y digests) desplegó `vps_ops_claude`.
+- [ ] Confirmar que `https://lucianogonzalez.dev` responde a través de Cloudflare.
+- [ ] Confirmar que `/es`, `/en`, `/api` y `/admin` responden según el contrato.
 - [ ] Confirmar que los smoke checks de producción pasaron.
 - [ ] Confirmar que existe un backup inicial gestionado y verificado por operaciones.
 
@@ -926,8 +1079,7 @@ Publicar el portfolio y comenzar a utilizarlo en postulaciones.
 - [ ] Core Web Vitals.
 - [ ] Prueba desde otra red.
 - [ ] Prueba sin sesión de administrador.
-- [ ] Etiqueta de versión.
-- [ ] Aprobar publicación después de recibir el handoff operativo exitoso.
+- [ ] Aprobar publicación después de recibir el cierre de deployment exitoso de operaciones.
 - [ ] Actualizar LinkedIn.
 - [ ] Actualizar GitHub.
 - [ ] Agregar enlace al CV.
@@ -935,9 +1087,8 @@ Publicar el portfolio y comenzar a utilizarlo en postulaciones.
 
 ## Entregables
 
-- Versión 1.0 pública.
-- Release notes.
-- Confirmación del handoff operativo, smoke checks y backup inicial externo.
+- Portfolio público sirviendo la release registrada en Fase 11.
+- Confirmación externa del deployment, smoke checks de producción y backup inicial.
 - Enlaces profesionales actualizados.
 
 ## Criterios de aceptación
@@ -947,7 +1098,8 @@ Publicar el portfolio y comenzar a utilizarlo en postulaciones.
 - Los cuatro contactos funcionan.
 - El contenido real tiene prioridad sobre los efectos.
 - La experiencia es estable en móvil y escritorio.
-- El deployment y el backup fueron confirmados por el flujo externo de operaciones, no ejecutados por el roadmap de desarrollo.
+- El deployment y el backup fueron ejecutados y confirmados por `vps_ops_claude`, no por el roadmap de desarrollo.
+- La versión pública corresponde a una release preexistente de Fase 11; no se creó ningún tag, release ni imagen después del deployment.
 
 ---
 
@@ -1044,7 +1196,7 @@ Resultado:
 - SEO.
 - Analítica.
 
-## Hito E — Entrega, deployment externo y lanzamiento
+## Hito E — Release, deployment externo y lanzamiento
 
 Incluye fases 9 a 12.
 
@@ -1052,10 +1204,11 @@ Resultado:
 
 - Seguridad.
 - Pruebas.
-- CI y candidato de release reproducible.
-- Repositorio y contrato de deployment entregados al flujo externo de operaciones.
-- Deployment en el servidor propio y Cloudflare Tunnel confirmados externamente.
-- Frontend, backend, gateway y MySQL verificados contra el contrato de runtime.
+- Runtime productivo verificado localmente.
+- CI verde.
+- Release versionada con imágenes GHCR y digests registrados (fin de la responsabilidad del repositorio).
+- Handoff entregado a `vps_ops_claude`.
+- Deployment en el VPS confirmado externamente.
 - Lanzamiento.
 
 ---
@@ -1163,18 +1316,19 @@ Mitigación:
 - Revisión manual antes de publicar.
 - No inventar ni revelar nombres o datos internos.
 
-## Servidor físico como punto único de producción
+## VPS como punto único de producción
 
 Riesgo:
 
-- Energía, conexión, disco, Linux o Docker pueden dejar fuera de línea todas las demos.
+- Una falla del proveedor, del disco, de Linux, de Docker o del Caddy global puede dejar fuera de línea todos los proyectos del VPS.
 
 Mitigación:
 
-- Entregar health checks y requisitos de persistencia claros desde el repositorio.
-- Delegar reinicio automático, `cloudflared`, backups, restores, monitoreo, recuperación y seguridad del host al flujo externo `home_server_ops_claude`.
+- Entregar health checks, restart policies y requisitos de persistencia claros desde el repositorio.
+- Entregar releases inmutables (tags y digests) que permitan redeployar o volver atrás sin reconstruir código.
+- Delegar reboot recovery, Caddy global, UFW, backups, restores, monitoreo, recuperación y seguridad del host a `vps_ops_claude`.
 - Confirmar esas capacidades como prerrequisitos externos de lanzamiento.
-- Evaluar UPS y redundancia desde operaciones si el proyecto lo justifica.
+- Evaluar snapshots y redundancia desde operaciones si el proyecto lo justifica.
 
 ## Colisión entre proyectos
 
@@ -1185,7 +1339,7 @@ Riesgo:
 Mitigación:
 
 - Publicar con claridad el entrypoint reservado `127.0.0.1:8000`, las redes y los volúmenes propios del portfolio.
-- Delegar el registro central de puertos y la coordinación multiproyecto al flujo externo de operaciones.
+- Delegar el registro central de puertos y la coordinación multiproyecto a `vps_ops_claude`.
 - Nombres/prefijos por proyecto.
 - Redes independientes.
 - Volúmenes independientes.
@@ -1195,14 +1349,15 @@ Mitigación:
 
 Riesgo:
 
-- Un runner o SSH expuesto de forma incorrecta puede dar acceso al servidor.
+- Un runner, workflow o credencial SSH mal configurado puede dar acceso al VPS y a todos sus proyectos.
 
 Mitigación:
 
-- CI separado de deploy.
-- CI del repositorio sin acceso al servidor doméstico ni secretos del host.
-- Entregar el candidato aprobado y su contrato al flujo externo de operaciones.
-- Delegar SSH, runners, automatización y controles de acceso del host a `home_server_ops_claude`.
+- CI y release separados del deployment.
+- GitHub Actions nunca despliega ni se conecta al VPS; no existen runners con acceso al servidor.
+- CI sin secretos del host, claves SSH ni credenciales de Cloudflare.
+- Entregar la release (tag, digests y handoff) a `vps_ops_claude`, que despliega de forma manual/asistida.
+- Delegar SSH, firewall, automatización y controles de acceso del host a `vps_ops_claude`.
 
 ---
 
@@ -1229,7 +1384,9 @@ Mitigación:
 19. Crear proyectos nuevos.
 20. Implementar SEO.
 21. Implementar pruebas.
-22. Configurar CI y preparar el handoff de deployment.
-23. Entregar la versión aprobada al flujo externo `home_server_ops_claude`.
-24. Confirmar externamente deployment, smoke checks y backup inicial.
-25. Lanzar.
+22. Crear el runtime productivo y verificarlo localmente.
+23. Configurar CI y el workflow de release.
+24. Crear la release: tag, imágenes GHCR, digests y handoff. STOP del repositorio.
+25. Deployment manual/asistido por `vps_ops_claude`, fuera del repositorio.
+26. Confirmar externamente deployment, smoke checks y backup inicial.
+27. Lanzar.
