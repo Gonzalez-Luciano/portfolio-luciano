@@ -47,7 +47,8 @@ final class PublicApiContractTest extends TestCase
 
         $this->getJson('/api/v1/es/profile')->assertExactJson(['data' => [
             'name' => 'Luciano González', 'headline' => 'Backend', 'short_summary' => 'Resumen',
-            'introduction' => 'Introducción', 'availability' => 'Disponible', 'cta' => 'Contacto', 'photo' => null,
+            'introduction' => 'Introducción', 'availability' => 'Disponible', 'statement' => null, 'closing' => null,
+            'cta' => 'Contacto', 'photo' => null,
         ]]);
 
         Storage::disk('public')->put('profiles/public.jpg', 'image');
@@ -55,9 +56,35 @@ final class PublicApiContractTest extends TestCase
 
         $this->getJson('/api/v1/en/profile')->assertExactJson(['data' => [
             'name' => 'Luciano González', 'headline' => 'Backend', 'short_summary' => 'Summary',
-            'introduction' => 'Introduction', 'availability' => 'Available', 'cta' => 'Contact',
-            'photo' => ['url' => '/storage/profiles/public.jpg', 'alt' => 'Portrait'],
+            'introduction' => 'Introduction', 'availability' => 'Available', 'statement' => null, 'closing' => null,
+            'cta' => 'Contact', 'photo' => ['url' => '/storage/profiles/public.jpg', 'alt' => 'Portrait'],
         ]]);
+    }
+
+    public function test_profile_scene_copy_groups_are_exposed_only_when_every_localized_part_is_filled(): void
+    {
+        DB::table('profiles')->where('singleton_key', 'default')->update([
+            'name' => 'Luciano González', 'headline_es' => 'Backend', 'headline_en' => 'Backend',
+            'short_summary_es' => 'Resumen', 'short_summary_en' => 'Summary',
+            'introduction_es' => 'Introducción', 'introduction_en' => 'Introduction',
+            'availability_es' => 'Disponible', 'availability_en' => 'Available', 'cta_es' => 'Contacto', 'cta_en' => 'Contact',
+            'statement_lead_es' => 'Inicio', 'statement_lead_en' => 'Lead',
+            'statement_emphasis_es' => 'Énfasis', 'statement_emphasis_en' => 'Emphasis',
+            'statement_tail_es' => 'Cierre', 'statement_tail_en' => 'Tail',
+            'closing_line_one_es' => 'Línea uno', 'closing_line_one_en' => 'Line one',
+            'closing_line_two_es' => 'Línea dos', 'closing_line_two_en' => '   ',
+            'status' => PublicationStatus::Published->value, 'is_visible' => true, 'published_at' => now(),
+        ]);
+
+        $this->getJson('/api/v1/es/profile')
+            ->assertOk()
+            ->assertJsonPath('data.statement', ['lead' => 'Inicio', 'emphasis' => 'Énfasis', 'tail' => 'Cierre'])
+            ->assertJsonPath('data.closing', ['line_one' => 'Línea uno', 'line_two' => 'Línea dos']);
+
+        $this->getJson('/api/v1/en/profile')
+            ->assertOk()
+            ->assertJsonPath('data.statement', ['lead' => 'Lead', 'emphasis' => 'Emphasis', 'tail' => 'Tail'])
+            ->assertJsonPath('data.closing', null);
     }
 
     public function test_collection_resources_emit_exact_types_normalized_dates_and_no_editorial_data(): void

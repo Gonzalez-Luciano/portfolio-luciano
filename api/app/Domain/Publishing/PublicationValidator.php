@@ -39,6 +39,11 @@ final class PublicationValidator
      */
     private const ALT_TEXT_MAX_LENGTH = 500;
 
+    /**
+     * Optional bilingual Profile copy used by the Phase 6 scroll scene.
+     */
+    private const PROFILE_SCENE_PAIRS = ['statement_lead', 'statement_emphasis', 'statement_tail', 'closing_line_one', 'closing_line_two'];
+
     /** @return list<PublicationIssue> */
     public function issues(Model $content): array
     {
@@ -83,10 +88,11 @@ final class PublicationValidator
         return [
             ...$this->required($profile, ['name']),
             ...$this->requiredPairs($profile, ['headline', 'short_summary', 'introduction', 'availability', 'cta']),
+            ...$this->optionalPairs($profile, self::PROFILE_SCENE_PAIRS),
             ...$this->imageAssetIssues($profile, 'photo', 5 * 1024 * 1024),
             ...$this->maxLength($profile, ['name'], self::BOUNDED_MAX_LENGTH),
             ...$this->maxLengthPairs($profile, ['cta'], self::BOUNDED_MAX_LENGTH),
-            ...$this->maxLengthPairs($profile, ['headline', 'short_summary', 'introduction', 'availability'], self::NARRATIVE_MAX_LENGTH),
+            ...$this->maxLengthPairs($profile, ['headline', 'short_summary', 'introduction', 'availability', ...self::PROFILE_SCENE_PAIRS], self::NARRATIVE_MAX_LENGTH),
             ...$this->maxLength($profile, ['photo_alt_es', 'photo_alt_en'], self::ALT_TEXT_MAX_LENGTH),
         ];
     }

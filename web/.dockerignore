@@ -1,9 +1,0 @@
-.env*
-.next
-node_modules
-.pnpm-store
-coverage
-.git
-.gitignore
-README.md
-docs

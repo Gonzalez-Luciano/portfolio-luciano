@@ -155,6 +155,16 @@ final class SingletonPageTest extends TestCase
             ->assertFormFieldExists('introduction_en')
             ->assertFormFieldExists('availability_es')
             ->assertFormFieldExists('availability_en')
+            ->assertFormFieldExists('statement_lead_es')
+            ->assertFormFieldExists('statement_lead_en')
+            ->assertFormFieldExists('statement_emphasis_es')
+            ->assertFormFieldExists('statement_emphasis_en')
+            ->assertFormFieldExists('statement_tail_es')
+            ->assertFormFieldExists('statement_tail_en')
+            ->assertFormFieldExists('closing_line_one_es')
+            ->assertFormFieldExists('closing_line_one_en')
+            ->assertFormFieldExists('closing_line_two_es')
+            ->assertFormFieldExists('closing_line_two_en')
             ->assertFormFieldExists('cta_es')
             ->assertFormFieldExists('cta_en');
     }

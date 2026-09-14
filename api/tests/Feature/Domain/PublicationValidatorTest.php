@@ -99,6 +99,26 @@ final class PublicationValidatorTest extends TestCase
         $this->assertSame('organization_label', $issue->path);
     }
 
+    public function test_profile_scene_copy_is_optional_but_bilingual_when_present(): void
+    {
+        $complete = Profile::factory()->publishedHidden()->make([
+            'statement_lead_es' => 'Inicio', 'statement_lead_en' => 'Lead',
+            'closing_line_two_es' => null, 'closing_line_two_en' => null,
+        ]);
+
+        $this->assertSame([], app(PublicationValidator::class)->issues($complete));
+
+        $partial = Profile::factory()->publishedHidden()->make([
+            'statement_emphasis_es' => 'Énfasis', 'statement_emphasis_en' => '   ',
+            'closing_line_one_es' => null, 'closing_line_one_en' => 'Line one',
+        ]);
+
+        $this->assertSame([
+            ['code' => 'translation_pair', 'path' => 'statement_emphasis'],
+            ['code' => 'translation_pair', 'path' => 'closing_line_one'],
+        ], array_map(static fn ($issue): array => ['code' => $issue->code, 'path' => $issue->path], app(PublicationValidator::class)->issues($partial)));
+    }
+
     public function test_it_validates_project_destinations_and_owned_asset_metadata(): void
     {
         $project = Project::factory()->publishedHidden()->make([

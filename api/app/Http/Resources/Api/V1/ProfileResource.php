@@ -16,7 +16,7 @@ final class ProfileResource extends JsonResource
         parent::__construct($resource);
     }
 
-    /** @return array{name: string, headline: string, short_summary: string, introduction: string, availability: string, cta: string, photo: ?array{url: string, alt: string}} */
+    /** @return array{name: string, headline: string, short_summary: string, introduction: string, availability: string, statement: ?array{lead: string, emphasis: string, tail: string}, closing: ?array{line_one: string, line_two: string}, cta: string, photo: ?array{url: string, alt: string}} */
     public function toArray(Request $request): array
     {
         $suffix = $this->locale->value;
@@ -27,9 +27,34 @@ final class ProfileResource extends JsonResource
             'short_summary' => $this->{"short_summary_{$suffix}"},
             'introduction' => $this->{"introduction_{$suffix}"},
             'availability' => $this->{"availability_{$suffix}"},
+            'statement' => $this->group($suffix, ['lead' => 'statement_lead', 'emphasis' => 'statement_emphasis', 'tail' => 'statement_tail']),
+            'closing' => $this->group($suffix, ['line_one' => 'closing_line_one', 'line_two' => 'closing_line_two']),
             'cta' => $this->{"cta_{$suffix}"},
             'photo' => $this->photo($suffix),
         ];
+    }
+
+    /**
+     * An optional copy group is public only when every one of its localized parts is filled.
+     *
+     * @param  array<string, string>  $fields  output key => column prefix
+     * @return ?array<string, string>
+     */
+    private function group(string $suffix, array $fields): ?array
+    {
+        $group = [];
+
+        foreach ($fields as $key => $column) {
+            $value = $this->{"{$column}_{$suffix}"};
+
+            if (! is_string($value) || trim($value) === '') {
+                return null;
+            }
+
+            $group[$key] = $value;
+        }
+
+        return $group;
     }
 
     /** @return ?array{url: string, alt: string} */

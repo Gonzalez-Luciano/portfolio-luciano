@@ -80,6 +80,13 @@ final class EditProfile extends Page implements HasForms
                         Textarea::make('short_summary_es')->label('Short summary (ES)')->maxLength(10000),
                         Textarea::make('introduction_es')->label('Introduction (ES)')->maxLength(10000),
                         TextInput::make('availability_es')->label('Availability (ES)')->maxLength(10000),
+                        TextInput::make('statement_lead_es')->label('Scroll statement: lead (ES)')->maxLength(10000)
+                            ->helperText('Optional. Lead, emphasis, and tail are shown together only when all three are filled.'),
+                        TextInput::make('statement_emphasis_es')->label('Scroll statement: emphasis (ES)')->maxLength(10000),
+                        TextInput::make('statement_tail_es')->label('Scroll statement: tail (ES)')->maxLength(10000),
+                        TextInput::make('closing_line_one_es')->label('Closing title: line one (ES)')->maxLength(10000)
+                            ->helperText('Optional. Both lines are shown only when both are filled.'),
+                        TextInput::make('closing_line_two_es')->label('Closing title: line two (ES)')->maxLength(10000),
                         TextInput::make('cta_es')->label('Call to action (ES)')->maxLength(255),
                         TextInput::make('photo_alt_es')->label('Photo alt text (ES)')->maxLength(500),
                     ]),
@@ -88,6 +95,13 @@ final class EditProfile extends Page implements HasForms
                         Textarea::make('short_summary_en')->label('Short summary (EN)')->maxLength(10000),
                         Textarea::make('introduction_en')->label('Introduction (EN)')->maxLength(10000),
                         TextInput::make('availability_en')->label('Availability (EN)')->maxLength(10000),
+                        TextInput::make('statement_lead_en')->label('Scroll statement: lead (EN)')->maxLength(10000)
+                            ->helperText('Optional. Lead, emphasis, and tail are shown together only when all three are filled.'),
+                        TextInput::make('statement_emphasis_en')->label('Scroll statement: emphasis (EN)')->maxLength(10000),
+                        TextInput::make('statement_tail_en')->label('Scroll statement: tail (EN)')->maxLength(10000),
+                        TextInput::make('closing_line_one_en')->label('Closing title: line one (EN)')->maxLength(10000)
+                            ->helperText('Optional. Both lines are shown only when both are filled.'),
+                        TextInput::make('closing_line_two_en')->label('Closing title: line two (EN)')->maxLength(10000),
                         TextInput::make('cta_en')->label('Call to action (EN)')->maxLength(255),
                         TextInput::make('photo_alt_en')->label('Photo alt text (EN)')->maxLength(500),
                     ]),

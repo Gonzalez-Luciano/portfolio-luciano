@@ -114,6 +114,8 @@ timestamp, `status`, `is_visible`, or `key_locked` value is ever emitted (see
     "short_summary": "string",
     "introduction": "string",
     "availability": "string",
+    "statement": {"lead": "string", "emphasis": "string", "tail": "string"},
+    "closing": {"line_one": "string", "line_two": "string"},
     "cta": "string",
     "photo": null
   }
@@ -127,6 +129,8 @@ timestamp, `status`, `is_visible`, or `key_locked` value is ever emitted (see
 | `short_summary` | `string` | `short_summary_{locale}` |
 | `introduction` | `string` | `introduction_{locale}` |
 | `availability` | `string` | `availability_{locale}` |
+| `statement` | `{lead: string, emphasis: string, tail: string} \| null` | `statement_lead_{locale}`, `statement_emphasis_{locale}`, `statement_tail_{locale}`; always present, `null` unless all three are non-blank |
+| `closing` | `{line_one: string, line_two: string} \| null` | `closing_line_one_{locale}`, `closing_line_two_{locale}`; always present, `null` unless both are non-blank |
 | `cta` | `string` | `cta_{locale}` |
 | `photo` | `{url: string, alt: string} \| null` | present only when `photo_public_path` is non-null **and** that path is verified to exist on the `public` disk at request time; otherwise `null` |
 

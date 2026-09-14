@@ -66,6 +66,9 @@ final class InitialPortfolioImporter
     private const PROFILE_EDITORIAL_COLUMNS = [
         'name', 'headline_es', 'headline_en', 'short_summary_es', 'short_summary_en',
         'introduction_es', 'introduction_en', 'availability_es', 'availability_en',
+        'statement_lead_es', 'statement_lead_en', 'statement_emphasis_es', 'statement_emphasis_en',
+        'statement_tail_es', 'statement_tail_en', 'closing_line_one_es', 'closing_line_one_en',
+        'closing_line_two_es', 'closing_line_two_en',
         'cta_es', 'cta_en', 'photo_private_path', 'photo_public_path', 'photo_mime',
         'photo_size', 'photo_alt_es', 'photo_alt_en',
     ];

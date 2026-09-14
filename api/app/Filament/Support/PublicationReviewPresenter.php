@@ -63,6 +63,11 @@ final class PublicationReviewPresenter
                 ['label' => 'Short summary', 'es' => $profile->short_summary_es, 'en' => $profile->short_summary_en],
                 ['label' => 'Introduction', 'es' => $profile->introduction_es, 'en' => $profile->introduction_en],
                 ['label' => 'Availability', 'es' => $profile->availability_es, 'en' => $profile->availability_en],
+                ['label' => 'Scroll statement: lead', 'es' => $profile->statement_lead_es, 'en' => $profile->statement_lead_en],
+                ['label' => 'Scroll statement: emphasis', 'es' => $profile->statement_emphasis_es, 'en' => $profile->statement_emphasis_en],
+                ['label' => 'Scroll statement: tail', 'es' => $profile->statement_tail_es, 'en' => $profile->statement_tail_en],
+                ['label' => 'Closing title: line one', 'es' => $profile->closing_line_one_es, 'en' => $profile->closing_line_one_en],
+                ['label' => 'Closing title: line two', 'es' => $profile->closing_line_two_es, 'en' => $profile->closing_line_two_en],
                 ['label' => 'Call to action', 'es' => $profile->cta_es, 'en' => $profile->cta_en],
             ],
             'fields' => [
