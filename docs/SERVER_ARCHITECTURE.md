@@ -8,7 +8,7 @@ El servidor aloja o alojará:
 
 - El portfolio (todavía **no desplegado**).
 - Proyectos Laravel.
-- Frontends React/Next.js.
+- Frontends React.
 - APIs.
 - Bases de datos de demo.
 - Futuros proyectos Dockerizados.
@@ -130,7 +130,7 @@ Existen dos capas de Caddy con responsabilidades distintas. No deben confundirse
 | Pertenece a | Operaciones (`vps_ops_claude`) | Repositorio del portfolio |
 | Configuración | `/srv/ingress` | `infra/caddy/` del repositorio |
 | Escucha | `:80` / `:443` públicos del host | `80` dentro de Docker; publicado solo en `127.0.0.1:8000` |
-| Responsabilidad | TLS de origen, routing por hostname, multiproyecto | Entrypoint único del stack; enruta a Next.js, Laravel, media y rutas de backend |
+| Responsabilidad | TLS de origen, routing por hostname, multiproyecto | Entrypoint único del stack; enruta al front, Laravel, media y rutas de backend |
 | Conoce | Hostnames y puertos loopback de cada proyecto | Servicios y redes Docker internas del portfolio |
 
 El Caddy global no conoce los contenedores internos del portfolio. El gateway interno no conoce Cloudflare, otros proyectos ni la configuración del host. **El gateway interno del portfolio se conserva:** no es un duplicado del Caddy global, sino la frontera HTTP propia del stack.
@@ -221,7 +221,7 @@ React          Laravel
                 MySQL
 ```
 
-El gateway del portfolio es Caddy (capa interna). Hace reverse proxy HTTP hacia Next.js y hacia el contenedor interno Apache + Laravel, sin montar ni interpretar el source tree de Laravel. Solo el gateway publica `127.0.0.1:8000`.
+El gateway del portfolio es Caddy (capa interna). Hace reverse proxy HTTP hacia el front (Vite + React) y hacia el contenedor interno Apache + Laravel, sin montar ni interpretar el source tree de Laravel. Solo el gateway publica `127.0.0.1:8000`.
 
 Ejemplo de rutas internas:
 
@@ -267,7 +267,7 @@ Caddy GLOBAL del VPS :443
 Caddy/gateway INTERNO del portfolio
     |          |
     v          v
- Next.js     Laravel
+  Front      Laravel
                 |
                 v
               MySQL

@@ -244,7 +244,7 @@ El propio portfolio debe demostrar buenas prácticas mediante:
 - Laravel.
 - REST API.
 - MySQL.
-- React / Next.js.
+- React (Vite).
 - Docker.
 - Pruebas.
 - CI.

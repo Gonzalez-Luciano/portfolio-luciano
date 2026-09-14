@@ -63,7 +63,7 @@ Internet
     -> Caddy GLOBAL del VPS :443                 (operaciones)
     -> http://127.0.0.1:8000
     -> gateway Caddy INTERNO del portfolio       (repositorio)
-         ├── Next.js
+         ├── Front Vite + React (SPA)
          └── Laravel -> MySQL
 ```
 
@@ -88,9 +88,9 @@ portfolio-mysql
 Rutas del mismo origen:
 
 ```text
-/            -> Next.js; redirección localizada
-/es          -> Next.js; portfolio en español
-/en          -> Next.js; portfolio en inglés
+/            -> front; portfolio en español
+/es          -> front; portfolio en español
+/en          -> front; portfolio en inglés
 /api/*       -> Laravel
 /admin/*     -> Laravel / Filament
 ```
@@ -99,7 +99,7 @@ El gateway del portfolio es Caddy. `portfolio-api` sirve Laravel mediante Apache
 
 El handoff de Fase 3 registra las rutas Laravel estructuradas y también las rutas públicas observadas que Filament, Livewire y media requieren. Los matchers se derivan de `route:list --json` más smoke checks reales; no se adivina ni se hardcodea el hash variable de Livewire. Web, API y MySQL usan DNS/redes internas de Docker; sus puertos internos no forman parte del contrato público.
 
-Caddy usa su comportamiento normal de `Host` y forwarded headers. En producción cada request atraviesa dos proxies (Caddy global del VPS y gateway interno) antes de llegar a Next.js o Laravel. Fase 11 debe definir y verificar localmente el tratamiento de `Host`, protocolo reenviado y trusted proxies para esa cadena, sin configurar Cloudflare ni el Caddy global; operaciones confirma el comportamiento real durante el deployment.
+Caddy usa su comportamiento normal de `Host` y forwarded headers. En producción cada request atraviesa dos proxies (Caddy global del VPS y gateway interno) antes de llegar al front o a Laravel. Fase 11 debe definir y verificar localmente el tratamiento de `Host`, protocolo reenviado y trusted proxies para esa cadena, sin configurar Cloudflare ni el Caddy global; operaciones confirma el comportamiento real durante el deployment.
 
 ## Redes y exposición
 
@@ -108,7 +108,7 @@ Caddy usa su comportamiento normal de `Host` y forwarded headers. En producción
 - MySQL no pertenece a la red frontal y no publica `3306` al host.
 - Ningún servicio usa `network_mode: host` salvo una futura decisión operacional documentada.
 - Redes, volúmenes y credenciales no se comparten con otros proyectos.
-- Desde Fase 5, `web` resuelve la media `/storage/...` del optimizador de imágenes de Next mediante una regla `rewrites()` server-only hacia `INTERNAL_API_ORIGIN` (`api:80`), sobre la misma red interna ya usada para las seis lecturas de contenido público. No agrega un puerto nuevo, no cambia `images.remotePatterns` y el tráfico real del navegador nunca la usa: Caddy sigue enrutando `/storage/*` directo a `api`.
+- Desde Fase 6, `web` no hace requests internas a `api`: el navegador pide `/api/*`, `/storage/*` y `/cv/*` al mismo origen y Caddy los enruta directo a `api`.
 
 ## Persistencia relevante
 
@@ -197,7 +197,7 @@ El repositorio proporciona archivos de ejemplo con placeholders y documentación
 
 Categorías mínimas esperadas para producción:
 
-- configuración del runtime Next.js que no sea secreta;
+- configuración no secreta del servidor de archivos estáticos del front;
 - URL/origen público de la aplicación cuando corresponda;
 - Laravel `APP_KEY` y configuración de entorno;
 - credenciales MySQL específicas del portfolio;
@@ -224,14 +224,15 @@ La documentación de handoff debe permitir a operaciones identificar:
 
 Fase 3 no crea targets de producción especulativos ni un Compose final del servidor. Las definiciones de desarrollo deben evitar supuestos exclusivos de Windows y mantener límites claros sobre los que Fase 11 construye el runtime productivo. Ese runtime (Dockerfiles productivos y `compose.production.yaml`) lo crea el propio repositorio y se verifica localmente antes de la release; operaciones solo agrega el override del VPS.
 
-Desde Fase 5, la ruta pública localizada renderiza dinámicamente en cada request (hace fetch obligatorio a los seis endpoints públicos por request) en vez de prerenderizarse en build. El build de `web` sigue sin depender de Laravel: completa igual con `gateway`/`api`/`mysql` detenidos o con `INTERNAL_API_ORIGIN` apuntando a un host inalcanzable, porque no ejecuta ningún fetch de contenido durante el build. Esto es relevante para operaciones porque significa que el build de imagen de producción de `web` nunca requiere que el API de producción esté disponible.
+Desde Fase 6, `web` es una SPA Vite: `pnpm build` genera archivos estáticos en `web/dist` sin depender de Laravel, y el contenido se pide en el navegador a la API pública. Por eso el build de imagen de producción de `web` nunca requiere que el API de producción esté disponible. Fase 11 define cómo se sirven esos archivos detrás del gateway (el gateway no sirve archivos de aplicación directamente).
 
 La validación local de aceptación usó Caddy `2.11.4-alpine`, Node `24.18.0`,
 pnpm `11.20.0`, Next `16.2.12`, React `19.2.4`, PHP `8.5.8`, Laravel
 `13.25.0`, Filament `5.7.6` y MySQL `8.4`. Los puertos internos son Caddy
 `80`, Next `3000`, Apache/Laravel `80` y MySQL `3306`; el único publish local
 es Caddy `127.0.0.1:8000`. Las señales de aplicación entregadas son Caddy
-`/__gateway/health`, Next `/health`, Laravel `/up` y `mysqladmin ping`.
+`/__gateway/health`, Next `/health`, Laravel `/up` y `mysqladmin ping`. Desde
+Fase 6 el front es Vite (puerto interno `5173`, health `GET /`) y reemplaza a Next.
 
 El bootstrap local instala desde lockfiles en los volúmenes vacíos, espera
 health, ejecuta migraciones y crea explícitamente `public/storage` solo después
@@ -271,14 +272,14 @@ El contrato debe definir checks que no revelen secretos para:
 - MySQL readiness;
 - proceso Laravel;
 - endpoint de salud de la API;
-- proceso Next.js;
+- servicio del front;
 - gateway y rutas principales.
 
 ### Smoke local del runtime productivo (Fase 11, repositorio)
 
 Contra el stack levantado localmente con `compose.production.yaml`, desde una base fresca:
 
-- `/` redirige según el contrato de locale;
+- `/` responde con el front en español;
 - `/es` y `/en` responden;
 - `/api/v1` y los endpoints públicos localizados responden con el contrato esperado;
 - `/admin` responde y requiere autenticación;
@@ -292,7 +293,7 @@ Contra el stack levantado localmente con `compose.production.yaml`, desde una ba
 
 Después del deployment, ejecutado por `vps_ops_claude` y nunca por un agente del repositorio, a través de `https://lucianogonzalez.dev`:
 
-- `/` redirige según el contrato de locale;
+- `/` responde con el front en español;
 - `/es` y `/en` responden;
 - `/api/v1` responde con el contrato base esperado;
 - `/admin` responde y requiere autenticación;
@@ -301,7 +302,7 @@ Después del deployment, ejecutado por `vps_ops_claude` y nunca por un agente de
 
 ## Logs
 
-- Laravel, Next.js y gateway escriben a stdout/stderr o a destinos documentados compatibles con contenedores.
+- Laravel, el front y el gateway escriben a stdout/stderr o a destinos documentados compatibles con contenedores.
 - Los logs no contienen secretos, credenciales, datos financieros reales ni información confidencial.
 - Rotación, retención, recolección y acceso en producción pertenecen a operaciones externas.
 
@@ -338,7 +339,7 @@ Lo que Fase 11 debe producir y verificar localmente antes de cualquier release:
 
 - Dockerfiles específicos de producción; no se reutilizan ciegamente las imágenes de desarrollo.
 - `compose.production.yaml` portable y separado de `compose.yaml`: sin bind mounts de código, watchers/HMR ni dependencias de desarrollo.
-- Servicios: gateway Caddy interno, Next.js, Laravel y MySQL. Las imágenes propias (frontend, backend y gateway según la arquitectura real) y sus nombres GHCR se definen al implementar; MySQL usa una imagen oficial fijada deliberadamente.
+- Servicios: gateway Caddy interno, front (archivos estáticos de la SPA Vite), Laravel y MySQL. Las imágenes propias (frontend, backend y gateway según la arquitectura real) y sus nombres GHCR se definen al implementar; MySQL usa una imagen oficial fijada deliberadamente.
 - Solo el gateway publica un puerto, con bind configurable y default `127.0.0.1:8000`.
 - Redes propias del portfolio; MySQL pertenece solo a la red de datos.
 - Volúmenes persistentes: datos MySQL, `api_private_media` y `api_public_media`.

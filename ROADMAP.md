@@ -530,6 +530,21 @@ Agregar movimiento cinematográfico de forma progresiva y medible.
 
 ## Tareas
 
+### Escena de scroll con video (nuevo front base en `web/`)
+
+Spec: `docs/superpowers/specs/2026-09-14-phase-6-cinematic-scroll-design.md`.
+
+- [x] App Vite + React 18 + TypeScript + Tailwind 3 con alias `@`.
+- [x] Pista de 500vh, escena sticky, video, canvas y overlay.
+- [x] Tres secciones secuenciales, stagger y navbar con cambio de color.
+- [x] Hamburguesa y overlay de menú móvil.
+- [x] `useVideoScrub`: lerp, banco de frames WebCodecs/mp4box, LRU, reintento por software, watchdog y fallback a `currentTime`.
+- [x] Front Next.js de Fase 5 eliminado; la escena es el front en `web/` (`/`, `/es`, `/en`).
+- [x] Contenido desde la API pública (Profile, Site, Technologies) con validación en runtime.
+- [x] Campos opcionales de Profile `statement_*` y `closing_*` en Filament y en la API.
+- [ ] QA en navegador real con ventana visible (scrub del canvas, móvil, movimiento reducido).
+- [ ] Rediseño visual con la nueva foto (la lógica de scroll se conserva).
+
 ### Motion
 
 - [ ] Animación inicial del hero.

@@ -142,7 +142,7 @@ portfolio-gateway (Caddy)
     |             |
     v             v
 portfolio-web   portfolio-api
- Next.js         Apache + Laravel
+ Vite + React    Apache + Laravel
                     |
                     v
               portfolio-mysql
@@ -174,14 +174,14 @@ Beneficios:
 - El Caddy global del VPS no necesita conocer la red Docker interna.
 - Los contenedores web/api/mysql no se exponen directamente.
 
-Caddy debe soportar el tráfico WebSocket/HMR de Next.js durante desarrollo. Los matchers backend definitivos se derivan después de instalar Laravel, Filament y Livewire: `route:list --json` aporta las rutas registradas y el tráfico real de admin, autenticación, Livewire, assets y media completa el inventario. No se adivinan prefijos ni se fija un hash generado de Livewire. Una ruta backend conserva su ownership incluso cuando Laravel responde 404.
+Caddy debe soportar el tráfico WebSocket/HMR de Vite durante desarrollo. Los matchers backend definitivos se derivan después de instalar Laravel, Filament y Livewire: `route:list --json` aporta las rutas registradas y el tráfico real de admin, autenticación, Livewire, assets y media completa el inventario. No se adivinan prefijos ni se fija un hash generado de Livewire. Una ruta backend conserva su ownership incluso cuando Laravel responde 404.
 
 Caddy conserva el `Host` entrante y usa su comportamiento normal de forwarded headers. En producción la cadena es Cloudflare -> Caddy global -> gateway interno -> servicio; Fase 11 define y verifica localmente trusted proxies y protocolo reenviado para esa cadena, sin configuración de Cloudflare ni del Caddy global en este repositorio.
 
 URLs canónicas de desarrollo:
 
 ```text
-http://localhost:8000/        -> redirección localizada
+http://localhost:8000/        -> portfolio en español
 http://localhost:8000/es      -> portfolio en español
 http://localhost:8000/en      -> portfolio en inglés
 http://localhost:8000/api/v1  -> API pública versionada
@@ -194,33 +194,21 @@ Los puertos internos de `web`, `api`, `mysql` y futuros servicios no son URLs ca
 
 ## Frontend
 
-Dirección:
+Dirección (decisión humana del 2026-09-14, Fase 6; reemplaza al front Next.js de Fases 3–5):
 
-- React.
-- Next.js App Router.
+- React 18.
+- Vite (SPA), alias `@` -> `src`.
 - TypeScript estricto.
-- Tailwind CSS 4.x.
+- Tailwind CSS 3.
+- lucide-react y mp4box 0.5.x.
 - Node.js 24 LTS.
-- última release estable parcheada de Next.js 16.2.x disponible al implementar; no preview/canary.
-- React 19.2.x.
 - `pnpm` 11.20.0 fijado en `web/package.json`.
-- `next-intl` 4.x.
 
 `pnpm`, `package.json` y `pnpm-lock.yaml` pertenecen exclusivamente a `web/`; no existe workspace pnpm en la raíz.
 
-### Renderizado
+### Renderizado y datos
 
-Preferir Server Components y renderizado apto para SEO cuando sea posible.
-
-Usar Client Components únicamente donde la interacción lo requiera:
-
-- Tema.
-- Menú.
-- Selector de idioma si corresponde.
-- Animaciones.
-- Campo de nodos.
-
-Evitar hidratar contenido estático innecesariamente.
+El front es una SPA sin render de servidor. `resolveLocale` toma el idioma del path (`/en` -> inglés; `/` y `/es` -> español). En el navegador, `loadPublicContent` pide en paralelo `/api/v1/{locale}/profile`, `/site` y `/technologies` al mismo origen, valida cada cuerpo como `unknown` y `buildScene` lo transforma en el modelo de la escena. Profile y Site son estructurales (su fallo muestra un error con Reintentar); Technologies solo alimenta el eyebrow y degrada a vacío. `web/src/content.ts` contiene solo textos de interfaz, nunca contenido profesional. Consecuencia conocida: sin render de servidor, el HTML inicial no contiene el contenido; SEO/metadata se resuelven en Fase 8.
 
 La base de Fase 3 mantenía `/es` y `/en` prerenderizables porque la UI base todavía no hacía ningún fetch de contenido. Desde Fase 5, la ruta pública localizada hace fetch obligatorio a los seis endpoints públicos en cada request (ver sección "Fase 5 — Sitio público" más abajo) y por lo tanto renderiza dinámicamente (`dynamic = 'force-dynamic'` en `[locale]/layout.tsx`), no estáticamente. `next build` sigue completando sin Laravel, Caddy ni MySQL en ejecución — incluyendo con `INTERNAL_API_ORIGIN` inalcanzable — porque el build no ejecuta ese fetch; la única demostración real de contenido ocurre en runtime, con Laravel arriba. El tema no se resuelve con `cookies()` del servidor: un bootstrap mínimo, estable y previo al paint aplica `data-theme` desde una preferencia explícita `light`/`dark` en `localStorage` o, si no existe, desde `prefers-color-scheme`. Cualquier supresión de warning de hidratación queda limitada al elemento raíz cuya mutación previa es intencional.
 
@@ -474,7 +462,9 @@ Por diseño aprobado (spec sección 22), Fase 4 no implementa: el frontend públ
 
 ---
 
-## Fase 5 — Sitio público (implementado)
+## Fase 5 — Sitio público (implementado; reemplazado en Fase 6)
+
+> Registro histórico. El front Next.js descrito en esta sección fue eliminado el 2026-09-14 y reemplazado por la SPA Vite de Fase 6 (ver "Frontend" y "Escena de scroll con video"). El contrato de la API pública, la política de caché de Laravel y el importador inicial siguen vigentes.
 
 Esta sección documenta lo que el código de `web/` realmente implementa como consumidor del contrato público de Fase 4, no una intención futura. El detalle exacto por comando/componente vive en `web/README.md`; esta sección cubre el transporte, los validadores, el loader coordinado, la compartición con alcance de request, la política de criticidad y los islands de cliente.
 
@@ -598,6 +588,15 @@ Fallbacks:
 - Background tab.
 - Offscreen.
 
+### Escena de scroll con video (Fase 6, implementado)
+
+Decisión humana del 2026-09-14 (spec `docs/superpowers/specs/2026-09-14-phase-6-cinematic-scroll-design.md`): la escena "Scroll Tied Video Section" es la base del front público en `web/` (Vite + React 18 + TypeScript + Tailwind CSS 3 + lucide-react + mp4box 0.5.x). No usa Motion ni GSAP/Lenis, porque el prompt los excluye. La lógica de scroll es definitiva; la capa visual es provisoria y se rediseñará.
+
+- Pista de 500vh con escena sticky de viewport completo: `<video>` (URL CloudFront fija, muted, playsInline, `preload="auto"`, nunca `play()`), `<canvas>` 1920×1080 y overlay con navbar y tres secciones secuenciales.
+- `useVideoScrub` sigue el progreso de scroll con lerp exponencial (`LERP_TAU = 8`, `SNAP = 0.002`). Si hay WebCodecs, arma tras `load` un banco de frames WebP (mp4box + `VideoDecoder`, throttle `LEAD = 24`, reintento `prefer-software`, watchdog de 60 s) y dibuja el frame más cercano con una LRU de `ImageBitmap` (`LRU_MAX = 24`). Sin WebCodecs, con movimiento reducido o ante un fallo, cae a `video.currentTime`.
+- El contenido viene de la API pública: `headline` y `name` (sección 1), `statement` o `short_summary` (sección 2), `closing` o `availability`, tecnologías backend y enlace de email (sección 3), enlaces profesionales (navegación) y `cv` (solo si está publicado). `statement` y `closing` son grupos bilingües opcionales de Profile editables en Filament.
+- No hay scroll-jacking: el scroll nativo nunca se intercepta.
+
 ---
 
 ## Docker
@@ -606,7 +605,7 @@ Compose del portfolio esperado:
 
 ```text
 gateway
-web
+web (Vite dev server, puerto interno 5173)
 api
 mysql
 mysql-test (perfil test, bajo demanda)
@@ -654,14 +653,14 @@ gateway -> 127.0.0.1:8000
 
 Los demás servicios se comunican mediante DNS interno de Docker.
 
-El código de desarrollo usa bind mounts. Volúmenes Linux administrados por Docker aíslan `web/node_modules` y `api/vendor`; un bootstrap frío explícito los puebla desde lockfiles y el arranque normal no reinstala dependencias. MySQL de desarrollo y `storage/app/public` son persistentes. La raíz `.env` alimenta interpolación de Compose, pero cada servicio recibe explícitamente solo sus variables propias; web nunca recibe credenciales MySQL y `http://api` es server-only.
+El código de desarrollo usa bind mounts. Volúmenes Linux administrados por Docker aíslan `web/node_modules` y `api/vendor`; un bootstrap frío explícito los puebla desde lockfiles y el arranque normal no reinstala dependencias. MySQL de desarrollo y `storage/app/public` son persistentes. La raíz `.env` alimenta interpolación de Compose, pero cada servicio recibe explícitamente solo sus variables propias; web nunca recibe credenciales MySQL ni orígenes internos.
 
 PowerShell con Docker Desktop/WSL2 es el flujo Windows canónico. Ubuntu WSL2 opera el mismo engine mediante integración de Docker Desktop, sin instalar un segundo Docker Engine.
 
-En el bind mount Windows/9p, el desarrollo web fija webpack y
-`watchOptions.pollIntervalMs: 1000` para que Next detecte ediciones. Esta
-elección es solo del watcher de desarrollo: no cambia Caddy, sus rutas ni el
-build de producción.
+En el bind mount Windows/9p, el desarrollo web activa el polling de Vite
+(`VITE_USE_POLLING=true`) para detectar ediciones y `VITE_HMR_CLIENT_PORT` para
+que el HMR vuelva por el gateway. Esta elección es solo del watcher de
+desarrollo: no cambia Caddy, sus rutas ni el build de producción.
 
 ### Runtime verificado de Fase 3
 
@@ -672,7 +671,8 @@ Filament `5.7.6` y MySQL `8.4`. Los puertos internos son Caddy `80`, Next
 `127.0.0.1:8000`.
 
 Las señales de health son `GET /__gateway/health` para Caddy, `GET /health`
-para Next, `GET /up` para Laravel y `mysqladmin ping` para MySQL. El bootstrap
+para Next (desde Fase 6: `GET /` en Vite `5173`), `GET /up` para Laravel y
+`mysqladmin ping` para MySQL. El bootstrap
 frío instala dependencias desde los lockfiles en volúmenes inicialmente vacíos,
 espera servicios saludables, ejecuta migraciones y crea explícitamente el link
 estándar `public/storage` tras comprobar que solo se retiraría un enlace no

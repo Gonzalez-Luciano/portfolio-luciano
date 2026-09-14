@@ -23,18 +23,18 @@ Leer:
 
 ## Estructura del repositorio
 
-- `web/` — portfolio público React/Next.js. Desde Fase 5 es el sitio público real (no un shell base); ver `web/README.md` para su runtime de seis requests y comandos propios.
+- `web/` — portfolio público Vite + React 18 (SPA). Desde Fase 6 reemplaza al front Next.js de Fase 5: escena de scroll con video que lee Profile, Site y Technologies de la API pública de Laravel.
 - `api/` — Laravel API + administración.
 - `infra/` — Docker e infraestructura específica del portfolio.
 - `docs/` — documentación del producto, arquitectura y servidor.
 
-La arquitectura de Fase 3 usa Caddy como único gateway local, Next.js interno, Apache + Laravel interno, MySQL 8.4 persistente para desarrollo y un perfil de pruebas con MySQL 8.4 descartable. El contrato local es `http://localhost:8000`; los servicios internos no publican puertos al host.
+La arquitectura usa Caddy como único gateway local, el front Vite interno (desde Fase 6; antes Next.js), Apache + Laravel interno, MySQL 8.4 persistente para desarrollo y un perfil de pruebas con MySQL 8.4 descartable. El contrato local es `http://localhost:8000`; los servicios internos no publican puertos al host.
 
 ## Entorno local
 
 PowerShell/Windows Terminal con Docker Desktop y backend WSL2 es el flujo Windows canónico. Docker Desktop es el único engine: habilitar la integración de Ubuntu WSL2 y no instalar un segundo Docker Engine/dockerd dentro de Ubuntu. El checkout actual de Windows funciona; trasladarlo al filesystem WSL solo es una optimización futura que debe justificarse con una medición.
 
-El servicio web de desarrollo usa explícitamente Next con webpack y `watchOptions.pollIntervalMs: 1000`. Es necesario para detectar de forma fiable ediciones del bind mount Windows/9p desde el contenedor; Caddy conserva su función de gateway y no interviene en ese watcher. Si se modifica esta configuración, comprobar una edición y su reversión en `/es` a través de `http://localhost:8000` sin reiniciar servicios ni hacer una recarga manual.
+El servicio web de desarrollo ejecuta Vite con `VITE_USE_POLLING=true` (polling del watcher) y `VITE_HMR_CLIENT_PORT` igual al puerto del gateway. Es necesario para detectar de forma fiable ediciones del bind mount Windows/9p desde el contenedor y para que el HMR vuelva a través de Caddy; Caddy conserva su función de gateway y no interviene en ese watcher. Si se modifica esta configuración, comprobar una edición y su reversión en `/es` a través de `http://localhost:8000` sin reiniciar servicios ni hacer una recarga manual.
 
 Prerequisitos: Docker Desktop iniciado, backend WSL2 e integración Ubuntu habilitados, Node no es necesario en el host y una copia local de `.env` basada en el ejemplo. No imprimir ni compartir los valores de `.env`.
 
@@ -126,8 +126,6 @@ Para reiniciar sin borrar datos: `docker compose restart`. Para detener el entor
 ```powershell
 node infra/validation/validate-repository.mjs
 docker compose --env-file .env config --quiet
-docker compose run --rm --no-deps web pnpm format:check
-docker compose run --rm --no-deps web pnpm lint
 docker compose run --rm --no-deps web pnpm typecheck
 docker compose run --rm --no-deps web pnpm test:run
 docker compose --profile test run --rm api-test
@@ -135,13 +133,7 @@ docker compose run --rm --no-deps web pnpm build
 .\infra\validation\verify-hmr.ps1
 ```
 
-El build de Next debe poder ejecutarse con `gateway`, `api` y `mysql` detenidos. Desde Fase 5, esto está garantizado por diseño: la ruta pública localizada renderiza dinámicamente en cada request y el build no ejecuta ningún fetch de contenido, por lo que también debe completar con `INTERNAL_API_ORIGIN` apuntando a un host inalcanzable:
-
-```powershell
-$env:INTERNAL_API_ORIGIN = 'http://unreachable.invalid'
-docker compose run --rm --no-deps --env INTERNAL_API_ORIGIN web pnpm build
-Remove-Item Env:INTERNAL_API_ORIGIN -ErrorAction SilentlyContinue
-```
+El front se sirve a través del gateway en `http://localhost:8000/` y `http://localhost:8000/es` (ES) y `http://localhost:8000/en` (EN). Es una SPA: el build no depende de Laravel, Caddy ni MySQL, y el contenido profesional se pide en el navegador a `/api/v1/{locale}/profile`, `/site` y `/technologies` (mismo origen, sin CORS). Solo se muestra contenido publicado y visible.
 
 `api-test` usa únicamente `mysql-test` descartable. Después de una sesión de test se puede retirar exclusivamente ese contenedor con `docker compose --profile test rm -sf mysql-test`.
 
@@ -168,7 +160,7 @@ Los checks directos y el inventario de rutas no imprimen secretos:
 
 ```powershell
 Invoke-WebRequest http://localhost:8000/__gateway/health | Select-Object -ExpandProperty StatusCode
-Invoke-WebRequest http://localhost:8000/health | Select-Object -ExpandProperty StatusCode
+Invoke-WebRequest http://localhost:8000/es | Select-Object -ExpandProperty StatusCode
 Invoke-WebRequest http://localhost:8000/up | Select-Object -ExpandProperty StatusCode
 Invoke-RestMethod http://localhost:8000/api/v1
 docker compose exec -T api php artisan route:list --json
@@ -284,7 +276,7 @@ docker compose exec -T api php artisan migrate
 )
 
 curl --fail http://localhost:8000/__gateway/health
-curl --fail http://localhost:8000/health
+curl --fail http://localhost:8000/es
 curl --fail http://localhost:8000/up
 curl --fail http://localhost:8000/api/v1
 docker compose exec -T api php artisan route:list --json
@@ -328,7 +320,7 @@ Caddy GLOBAL del VPS :443
 127.0.0.1:8000
    ↓
 Caddy/gateway INTERNO del portfolio
-   ├── Next.js
+   ├── Front Vite + React
    └── Laravel / Filament
           ↓
         MySQL

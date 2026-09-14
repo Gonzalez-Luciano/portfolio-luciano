@@ -52,7 +52,7 @@ Never invent metrics, clients, banks, transaction volumes, business results, or 
 
 The project is designed as a monorepository with these main areas:
 
-- `web/` — Next.js / React public portfolio.
+- `web/` — Vite + React public portfolio (single-page app; replaced the Phase 5 Next.js front in Phase 6).
 - `api/` — Laravel API and administration.
 - `infra/` — Docker and infrastructure-related files.
 - `docs/` — project and architecture documentation.
@@ -100,12 +100,12 @@ Current project direction:
 
 ### Public web
 
-- React.
-- Next.js App Router.
+- React 18.
+- Vite single-page app (decided 2026-09-14; see `docs/superpowers/specs/2026-09-14-phase-6-cinematic-scroll-design.md`).
 - TypeScript strict mode.
-- Tailwind CSS.
-- Motion for UI animation.
-- GSAP / ScrollTrigger only for justified cinematic sequences.
+- Tailwind CSS 3.
+- Scroll-tied video scene driven by `useVideoScrub` (WebCodecs frame bank with `currentTime` fallback); no GSAP/Lenis.
+- Motion for UI animation only when CSS transitions are not enough.
 
 ### API / administration
 
@@ -226,8 +226,7 @@ Animation must not destroy performance.
 
 Prefer:
 
-- Server Components by default.
-- Client Components only where interaction requires them.
+- A small static SPA shell that reads public content from the Laravel API at runtime.
 - Dynamic loading for heavy visual effects.
 - Optimized images.
 - Optimized fonts.
@@ -266,13 +265,13 @@ For Laravel work:
 
 ## Frontend rules
 
-For React / Next.js work:
+For React / Vite work:
 
 - TypeScript must remain strict.
 - Avoid `any` unless a temporary integration requires it and it is documented.
 - Keep data-fetching separate from presentational concerns.
+- Validate every API response at runtime before rendering it.
 - Do not duplicate CMS production content in React files.
-- Do not turn the whole application into Client Components.
 - Keep components focused.
 - Use accessible interactive primitives.
 - Avoid a global state library unless the requirement clearly justifies it.
@@ -295,7 +294,7 @@ lucianogonzalez.dev
     -> host-level global Caddy :443   (owned by operations, /srv/ingress)
     -> http://127.0.0.1:8000
     -> portfolio internal Caddy gateway
-    -> Next.js / Laravel -> MySQL
+    -> Vite/React front / Laravel -> MySQL
 ```
 
 Rules:
@@ -371,7 +370,7 @@ VPS-specific overrides (`/srv/ops/portfolio/compose.vps.yaml`), real secrets and
 Expected portfolio services:
 
 - Internal gateway/reverse proxy (Caddy).
-- Next.js frontend.
+- Vite + React frontend.
 - Laravel backend.
 - MySQL.
 

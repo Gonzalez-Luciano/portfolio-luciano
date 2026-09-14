@@ -32,8 +32,9 @@ out Windows path is supported. Moving it under the WSL filesystem is optional
 only after measuring a material bind-mount performance problem.
 
 For reliable development watching on the Windows/9p bind mount, the web
-Compose service runs `next dev --webpack` and `web/next.config.ts` sets
-`watchOptions.pollIntervalMs: 1000`. Keep both settings together. They are
+Compose service runs the Vite dev server with `VITE_USE_POLLING=true`, which
+`web/vite.config.ts` turns into polling, and `VITE_HMR_CLIENT_PORT` set to the
+gateway port so HMR reconnects through Caddy. Keep both settings together. They are
 development-only and do not alter Caddy routing or the production build.
 
 The equivalent Ubuntu command surface is Bash plus the same `docker compose`
@@ -51,7 +52,7 @@ only the variables it owns.
 | `COMPOSE_PROJECT_NAME` | Root / Compose | Compose project | No | Never |
 | `GATEWAY_HOST` | Root / Compose | Gateway port binding | No | Never |
 | `GATEWAY_PORT` | Root / Compose | Gateway port binding | No | Never |
-| `APP_URL` | Root / Compose | API runtime and web server runtime when required | No | Never unless a later browser requirement justifies an explicit `NEXT_PUBLIC_` variable |
+| `APP_URL` | Root / Compose | API runtime | No | Never unless a later browser requirement justifies an explicit `VITE_` variable |
 | `APP_KEY` | Root / Compose | API runtime | Yes | Never |
 | `MYSQL_DATABASE` | Root / Compose | API runtime and development MySQL initialization | No | Never |
 | `MYSQL_USER` | Root / Compose | API runtime and development MySQL initialization | No | Never |
@@ -61,12 +62,13 @@ only the variables it owns.
 | `MYSQL_TEST_USER` | Root / Compose | Test API runtime and disposable test MySQL initialization | No | Never |
 | `MYSQL_TEST_PASSWORD` | Root / Compose | Test API runtime and disposable test MySQL initialization | Yes | Never |
 | `MYSQL_TEST_ROOT_PASSWORD` | Root / Compose | Disposable test MySQL initialization/readiness only | Yes | Never |
-| `INTERNAL_API_ORIGIN=http://api` | Compose service configuration | Web server runtime only | No | Never; it is server-only |
+| `VITE_HMR_CLIENT_PORT` (from `GATEWAY_PORT`) | Compose service configuration | Web development server only | No | Only as the HMR WebSocket port |
+| `VITE_USE_POLLING=true` | Compose service configuration | Web development server only | No | Never |
 
-The web service never receives `MYSQL_*` variables. `INTERNAL_API_ORIGIN=http://api`
-is injected only into the web server runtime; it is not browser-exposed. Browser
-configuration, if a later requirement needs it, must use explicit `NEXT_PUBLIC_`
-names and must not contain secrets.
+The web service never receives `MYSQL_*` variables or an internal API origin:
+the browser calls the API root-relatively through the gateway. Any value that
+Vite exposes to the browser (`VITE_` names read through `import.meta.env`) must
+not contain secrets.
 
 Cloudflare variables do not belong to this repository: there is no tracked
 example, container injection, or placeholder for that shared host concern.
