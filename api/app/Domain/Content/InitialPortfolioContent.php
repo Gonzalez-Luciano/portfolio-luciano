@@ -148,8 +148,8 @@ final class InitialPortfolioContent
         return [
             'singleton_key' => 'default',
             'name' => 'Luciano González',
-            'headline_es' => 'Backend Developer | PHP & Laravel',
-            'headline_en' => 'Backend Developer | PHP & Laravel',
+            'headline_es' => 'Backend Engineer | PHP & Laravel',
+            'headline_en' => 'Backend Engineer | PHP & Laravel',
             'short_summary_es' => 'Desarrollo backend orientado a APIs, lógica de negocio, datos y mantenimiento de aplicaciones.',
             'short_summary_en' => 'Backend development focused on APIs, business logic, data, and application maintenance.',
             'introduction_es' => 'Soy Luciano González, Backend Developer con foco en PHP, Laravel, MySQL y APIs REST. Me interesa construir y mantener soluciones claras, confiables y sostenibles, atendiendo tanto al desarrollo de funcionalidades como a la evolución de aplicaciones existentes.',
@@ -457,11 +457,11 @@ final class InitialPortfolioContent
     private static function assets(): array
     {
         return [
-            'photo' => 'docs/content/approved-assets/professional-photo.jpg',
+            'photo' => 'docs/content/approved-assets/professional-photo.png',
             'cv_es' => 'docs/content/approved-assets/cv-es.pdf',
             'cv_en' => 'docs/content/approved-assets/cv-en.pdf',
-            'photo_alt_es' => 'Retrato profesional de Luciano González sobre fondo naranja',
-            'photo_alt_en' => 'Professional portrait of Luciano González against an orange background',
+            'photo_alt_es' => 'Retrato profesional de Luciano González con camisa blanca frente a una pared de tono cálido',
+            'photo_alt_en' => 'Professional portrait of Luciano González in a white shirt against a warm-toned wall',
             'cv_es_label' => 'Descargar CV',
             'cv_en_label' => 'Download CV',
         ];

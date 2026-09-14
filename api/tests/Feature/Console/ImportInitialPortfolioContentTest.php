@@ -108,12 +108,12 @@ final class ImportInitialPortfolioContentTest extends TestCase
         $this->assertNull($profile->published_at);
 
         // Photo is attached to the existing profile, private-only.
-        $this->assertMatchesRegularExpression('#^profiles/[0-9a-f-]+\.jpg$#', $profile->photo_private_path);
+        $this->assertMatchesRegularExpression('#^profiles/[0-9a-f-]+\.png$#', $profile->photo_private_path);
         $this->assertNull($profile->photo_public_path);
-        $this->assertSame('image/jpeg', $profile->photo_mime);
-        $this->assertSame(175561, $profile->photo_size);
-        $this->assertSame('Retrato profesional de Luciano González sobre fondo naranja', $profile->photo_alt_es);
-        $this->assertSame('Professional portrait of Luciano González against an orange background', $profile->photo_alt_en);
+        $this->assertSame('image/png', $profile->photo_mime);
+        $this->assertSame(1268838, $profile->photo_size);
+        $this->assertSame('Retrato profesional de Luciano González con camisa blanca frente a una pared de tono cálido', $profile->photo_alt_es);
+        $this->assertSame('Professional portrait of Luciano González in a white shirt against a warm-toned wall', $profile->photo_alt_en);
         Storage::disk('local')->assertExists($profile->photo_private_path);
 
         $site = SiteConfiguration::query()->sole();
@@ -283,8 +283,8 @@ final class ImportInitialPortfolioContentTest extends TestCase
 
     public function test_it_rejects_an_oversize_profile_photo_source(): void
     {
-        $real = base_path('../docs/content/approved-assets/professional-photo.jpg');
-        $fixture = $this->tempFixture('photo.jpg', (string) file_get_contents($real).str_repeat('0', 5 * 1024 * 1024));
+        $real = base_path('../docs/content/approved-assets/professional-photo.png');
+        $fixture = $this->tempFixture('photo.png', (string) file_get_contents($real).str_repeat('0', 5 * 1024 * 1024));
 
         $this->assertImportRejected($this->contentWith(['assets.photo' => $fixture]));
     }

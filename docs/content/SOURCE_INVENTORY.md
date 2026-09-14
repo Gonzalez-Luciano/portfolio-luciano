@@ -44,4 +44,4 @@
 
 | Source ID | Description | Owner/location | Verification | Publication authority | Notes |
 |---|---|---|---|---|---|
-| SRC-010 | Professional photo asset | `.source-materials/profile/professional-photo.jpg`; approved tracked copy `docs/content/approved-assets/professional-photo.jpg` | verified by Luciano | public | Luciano approved tracked storage and future publication of this asset. It is staged for later CMS/media integration and is not yet served at a public URL. |
+| SRC-010 | Professional photo asset | Approved tracked copy `docs/content/approved-assets/professional-photo.png`, supplied by Luciano on 2026-09-14 and replacing the earlier `professional-photo.jpg` | verified by Luciano | public | Luciano approved tracked storage and future publication of this asset. It is staged for later CMS/media integration and is not yet served at a public URL. |

@@ -112,8 +112,8 @@ final class InitialPortfolioContentTest extends TestCase
 
         $expected = [
             'name' => 'Luciano González',
-            'headline_es' => 'Backend Developer | PHP & Laravel',
-            'headline_en' => 'Backend Developer | PHP & Laravel',
+            'headline_es' => 'Backend Engineer | PHP & Laravel',
+            'headline_en' => 'Backend Engineer | PHP & Laravel',
             'short_summary_es' => 'Desarrollo backend orientado a APIs, lógica de negocio, datos y mantenimiento de aplicaciones.',
             'short_summary_en' => 'Backend development focused on APIs, business logic, data, and application maintenance.',
             'introduction_es' => 'Soy Luciano González, Backend Developer con foco en PHP, Laravel, MySQL y APIs REST. Me interesa construir y mantener soluciones claras, confiables y sostenibles, atendiendo tanto al desarrollo de funcionalidades como a la evolución de aplicaciones existentes.',
@@ -357,7 +357,7 @@ final class InitialPortfolioContentTest extends TestCase
     {
         $assets = $this->data()['assets'];
 
-        $this->assertSame('docs/content/approved-assets/professional-photo.jpg', $assets['photo']);
+        $this->assertSame('docs/content/approved-assets/professional-photo.png', $assets['photo']);
         $this->assertSame('docs/content/approved-assets/cv-es.pdf', $assets['cv_es']);
         $this->assertSame('docs/content/approved-assets/cv-en.pdf', $assets['cv_en']);
     }
@@ -366,8 +366,8 @@ final class InitialPortfolioContentTest extends TestCase
     {
         $assets = $this->data()['assets'];
 
-        $this->assertSame('Retrato profesional de Luciano González sobre fondo naranja', $assets['photo_alt_es']);
-        $this->assertSame('Professional portrait of Luciano González against an orange background', $assets['photo_alt_en']);
+        $this->assertSame('Retrato profesional de Luciano González con camisa blanca frente a una pared de tono cálido', $assets['photo_alt_es']);
+        $this->assertSame('Professional portrait of Luciano González in a white shirt against a warm-toned wall', $assets['photo_alt_en']);
         $this->assertSame('Descargar CV', $assets['cv_es_label']);
         $this->assertSame('Download CV', $assets['cv_en_label']);
     }
