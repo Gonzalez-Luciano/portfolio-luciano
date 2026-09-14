@@ -15,7 +15,7 @@
 # Frontend dependencies and generated output.
 /web/node_modules
 /web/.pnpm-store
-/web/.next
+/web/dist
 /web/coverage
 
 # Backend dependencies and generated Laravel runtime output.

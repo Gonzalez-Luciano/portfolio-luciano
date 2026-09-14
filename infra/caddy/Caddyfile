@@ -20,8 +20,8 @@
 		reverse_proxy api:80
 	}
 
-	# This final handler owns Next.js routes, assets, and development HMR/WebSocket traffic.
+	# This final handler owns the Vite front (/, /es, /en), its assets, and development HMR/WebSocket traffic.
 	handle {
-		reverse_proxy web:3000
+		reverse_proxy web:5173
 	}
 }

@@ -15,9 +15,10 @@ services:
       timeout: 3s
       retries: 20
 
+  # Public front (Phase 6): Vite + React SPA with the scroll-tied video scene.
   web:
     build: {context: ./web, dockerfile: Dockerfile}
-    command: pnpm dev --webpack --hostname 0.0.0.0
+    command: pnpm dev
     volumes:
       - ./web:/app
       - type: volume
@@ -26,10 +27,13 @@ services:
         volume:
           nocopy: true
     environment:
-      INTERNAL_API_ORIGIN: http://api
+      # The browser reaches Vite HMR through the published gateway port.
+      VITE_HMR_CLIENT_PORT: ${GATEWAY_PORT:-8000}
+      # Windows/9p bind mounts do not deliver inotify events into the container.
+      VITE_USE_POLLING: "true"
     networks: [front]
     healthcheck:
-      test: [CMD-SHELL, 'node -e ''fetch("http://localhost:3000/health").then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))''']
+      test: [CMD-SHELL, 'node -e ''fetch("http://localhost:5173/").then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))''']
       interval: 5s
       timeout: 3s
       retries: 20

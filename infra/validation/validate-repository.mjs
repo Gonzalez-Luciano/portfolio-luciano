@@ -81,7 +81,7 @@ const apiService = service('api');
 const gatewayService = service('gateway');
 const webService = service('web');
 const webDockerfile = read('web/Dockerfile');
-const nextConfig = read('web/next.config.ts');
+const viteConfig = read('web/vite.config.ts');
 
 assert.doesNotMatch(
   webDockerfile,
@@ -99,15 +99,16 @@ assert.match(
   'The web dependency volume must start empty without Docker copy-up',
 );
 assert.match(
-  nextConfig,
-  /watchOptions:\s*\{\s*pollIntervalMs:\s*1000,?\s*\}/,
-  'Next development watching must poll the Windows bind mount every second',
+  viteConfig,
+  /usePolling:\s*true/,
+  'Vite development watching must be able to poll the Windows bind mount',
 );
 assert.match(
   webService,
-  /^ {4}command: pnpm dev --webpack --hostname 0\.0\.0\.0$/m,
-  'The Windows bind mount must use Next webpack development watching',
+  /^ {6}VITE_USE_POLLING: "true"$/m,
+  'The Windows bind mount must enable Vite polling in development',
 );
+assert.match(webService, /^ {4}command: pnpm dev$/m, 'The web service must run the Vite development server');
 
 assert.match(apiService, /^ {6}- api_public_media:\/var\/www\/html\/storage\/app\/public$/m);
 assert.match(apiService, /^ {6}- api_private_media:\/var\/www\/html\/storage\/app\/private$/m);
@@ -146,8 +147,8 @@ const apiHandle = caddy.indexOf('handle @laravel');
 const livewireHandle = caddy.indexOf('handle @livewire');
 const fallbackHandle = caddy.lastIndexOf('\n\thandle {');
 assert.ok(apiHandle >= 0 && livewireHandle >= 0 && fallbackHandle >= 0, 'Caddy must declare backend and fallback handlers');
-assert.ok(apiHandle < fallbackHandle && livewireHandle < fallbackHandle, 'Backend handlers must precede the Next.js fallback');
-assert.match(caddy, /handle \{\n\t\treverse_proxy web:3000\n\t}\n}/, 'Caddy must end with the frontend fallback');
+assert.ok(apiHandle < fallbackHandle && livewireHandle < fallbackHandle, 'Backend handlers must precede the frontend fallback');
+assert.match(caddy, /handle \{\n\t\treverse_proxy web:5173\n\t}\n}/, 'Caddy must end with the frontend fallback');
 
 const routeInventory = JSON.parse(read('infra/caddy/laravel-routes.json'));
 assert.ok(routeInventory.some((route) => route.uri === 'api/v1'));
@@ -166,13 +167,6 @@ assert.match(readme, /com\.docker\.compose\.service/);
 assert.doesNotMatch(readme, /docker compose(?: --profile test)? port/);
 assert.match(readme, /Docker Desktop is the single engine|Docker Desktop es el único engine/);
 assert.match(readme, /no instalar un segundo Docker Engine/);
-
-const spanishMessages = JSON.parse(read('web/messages/es.json'));
-assert.equal(
-  spanishMessages.Portfolio.state.regionalFailure,
-  'No pudimos cargar esta sección.',
-  'Spanish portfolio copy must remain UTF-8',
-);
 
 const environment = read('docs/ENVIRONMENT.md');
 assert.match(environment, /same engine|mismo engine/);

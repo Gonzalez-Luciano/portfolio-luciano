@@ -7,7 +7,7 @@ This record captures the Laravel route inventory generated on 2026-08-13 from th
 | Request family | Owner | Evidence | Caddy matcher | Representative result |
 | --- | --- | --- | --- | --- |
 | `/__gateway/health` | Caddy | Compose gateway health check | Exact `handle` | `200 ok` from Caddy |
-| `/`, `/es`, `/en`, `/_next/*`, `/health`, Next development HMR/WebSocket requests | Next.js | Architecture/Compose contract; localized pages are served by `web:3000` | Final unqualified `handle` | Tested `/es` and `/en` after final routing |
+| `/`, `/es`, `/en`, Vite assets (`/src/*`, `/@vite/*`, `/node_modules/*` in development) and Vite HMR/WebSocket requests | Vite + React front | Architecture/Compose contract since Phase 6; the SPA is served by `web:5173` (Phase 3–5 used Next.js on `web:3000`) | Final unqualified `handle` | Tested `/`, `/es` and `/en` after final routing |
 | `/api`, `/api/*` | Laravel | `api/v1` in `laravel-routes.json` | `@laravel` path family | Tested `/api/v1` and backend-owned unknown API response |
 | `/admin`, `/admin/*` | Laravel/Filament | `admin`, `admin/login`, and `admin/logout` in inventory; browser navigation reached login and an authenticated dashboard through the gateway | `@laravel` path family | Login and dashboard observed through gateway |
 | `/up` | Laravel | Installed framework health route in inventory | `@laravel` path family | API service health check |
@@ -23,6 +23,6 @@ The committed evidence records the unauthenticated panel and its asset URLs. It 
 
 ## Boundary rules
 
-- Backend handlers precede the final Next.js fallback, so Laravel 404s and upstream failures cannot become frontend pages.
+- Backend handlers precede the final frontend fallback, so Laravel 404s and upstream failures cannot become frontend pages.
 - Caddy preserves the incoming `Host` and uses its standard reverse-proxy forwarded headers. There is no Cloudflare trusted-proxy or tunnel configuration in this repository.
 - Caddy mounts no application source or Laravel media path; Apache/Laravel owns framework routes and the storage link.
