@@ -202,10 +202,15 @@ follows the same shape/ordering rule as Experiences.
   "data": [
     {
       "key": "string",
+      "kind": "client",
+      "client_name": "string",
       "title": "string",
+      "role": "string",
+      "status": "in_use",
       "summary": "string",
       "problem": "string",
       "solution": "string",
+      "result": "string",
       "featured": false,
       "image": null,
       "demo_url": null,
@@ -219,10 +224,15 @@ follows the same shape/ordering rule as Experiences.
 | Field | Type | Source |
 |---|---|---|
 | `key` | `string` | `key` |
+| `kind` | `"client" \| "personal"` | `kind` (`App\Enums\ProjectKind`) |
+| `client_name` | `string \| null` | `client_name`; always `null` for a personal project (database check `projects_client_name_kind_check`) |
+| `role` | `string` | `role_{locale}` |
+| `status` | `"in_production" \| "in_use" \| "public_demo" \| "in_development"` | `delivery_status` (`App\Enums\ProjectDeliveryStatus`); this is the delivery state, never the publication state |
 | `title` | `string` | `title_{locale}` |
 | `summary` | `string` | `summary_{locale}` |
 | `problem` | `string` | `problem_{locale}` |
 | `solution` | `string` | `solution_{locale}` |
+| `result` | `string` | `result_{locale}` |
 | `featured` | `bool` | `featured` |
 | `image` | `{url: string, alt: string} \| null` | present only when `image_public_path` is non-null and verified to exist on the `public` disk |
 | `demo_url` | `string \| null` | `demo_url` |
@@ -316,10 +326,10 @@ Gaps and ties in `position` are valid and are never renumbered by the API.
 
 No Resource in this contract ever emits: database IDs, `position`, pivot table
 columns, private or public storage paths, timestamps (`created_at`,
-`updated_at`, `published_at`), `status`, `is_visible`, `key_locked`, a
-`_es`/`_en`-suffixed field name, `location`, a work-case confidentiality note,
-`video_url`, or any SEO/Open Graph field. None of these exist in any Phase 4
-Resource's `toArray()`.
+`updated_at`, `published_at`), the publication `status`, `is_visible`,
+`key_locked`, a `_es`/`_en`-suffixed field name, `location`, a work-case
+confidentiality note, `video_url`, or any SEO/Open Graph field. None of these
+exist in any Phase 4 Resource's `toArray()`.
 
 ## CV routes
 

@@ -5,6 +5,7 @@ namespace Tests\Feature\Domain;
 use App\Domain\Content\Actions\PublishContent;
 use App\Domain\Publishing\PublicationValidationException;
 use App\Domain\Publishing\PublicationValidator;
+use App\Enums\ProjectKind;
 use App\Enums\PublicationStatus;
 use App\Models\CvDocument;
 use App\Models\Experience;
@@ -262,6 +263,9 @@ final class PublicationValidatorTest extends TestCase
             'summary_es' => 'Resumen sintético', 'summary_en' => 'Synthetic summary',
             'problem_es' => 'Problema sintético', 'problem_en' => 'Synthetic problem',
             'solution_es' => 'Solución sintética', 'solution_en' => 'Synthetic solution',
+            'role_es' => 'Rol técnico sintético', 'role_en' => 'Synthetic technical role',
+            'result_es' => 'Resultado técnico sintético.', 'result_en' => 'Synthetic technical result.',
+            'delivery_status' => 'in_development',
         ]);
 
         $published = app(PublishContent::class)($project);
@@ -284,5 +288,33 @@ final class PublicationValidatorTest extends TestCase
             $this->assertSame('required_translation', $exception->issues()[0]->code);
             $this->assertSame('title_es', $exception->issues()[0]->path);
         }
+    }
+
+    public function test_it_requires_project_role_result_delivery_status_and_a_coherent_client(): void
+    {
+        $incomplete = Project::factory()->publishedHidden()->make([
+            'role_en' => null,
+            'result_es' => ' ',
+            'delivery_status' => null,
+            'kind' => ProjectKind::Client,
+            'client_name' => null,
+        ]);
+        $personalWithClient = Project::factory()->publishedHidden()->make([
+            'kind' => ProjectKind::Personal,
+            'client_name' => 'Synthetic Client',
+        ]);
+        $validClient = Project::factory()->publishedHidden()->client()->make();
+
+        $this->assertSame([
+            ['code' => 'required_translation', 'path' => 'role_en'],
+            ['code' => 'required_translation', 'path' => 'result_es'],
+            ['code' => 'required', 'path' => 'delivery_status'],
+            ['code' => 'required', 'path' => 'client_name'],
+        ], array_map(static fn ($issue): array => ['code' => $issue->code, 'path' => $issue->path], app(PublicationValidator::class)->issues($incomplete)));
+        $this->assertSame(
+            [['code' => 'client_name_not_allowed', 'path' => 'client_name']],
+            array_map(static fn ($issue): array => ['code' => $issue->code, 'path' => $issue->path], app(PublicationValidator::class)->issues($personalWithClient)),
+        );
+        $this->assertSame([], app(PublicationValidator::class)->issues($validClient));
     }
 }

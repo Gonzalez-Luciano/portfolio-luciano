@@ -127,6 +127,7 @@ final class PublicApiContractTest extends TestCase
             'solution_es' => 'Solución técnica sintética.', 'solution_en' => 'Synthetic technical solution.',
             'image_private_path' => 'projects/private.jpg', 'image_public_path' => 'projects/image.jpg',
             'image_mime' => 'image/jpeg', 'image_size' => 1, 'image_alt_es' => 'Imagen', 'image_alt_en' => 'Image',
+            'kind' => 'client', 'client_name' => 'Synthetic Client', 'role_es' => 'Backend sintético', 'role_en' => 'Synthetic backend', 'delivery_status' => 'in_use', 'result_es' => 'Resultado técnico sintético.', 'result_en' => 'Synthetic technical result.',
         ]);
         $project->technologies()->attach($technology, ['position' => 0]);
 
@@ -141,8 +142,10 @@ final class PublicApiContractTest extends TestCase
             'technologies' => [['key' => 'laravel', 'name' => 'Laravel', 'category' => 'backend', 'icon' => null]],
         ]]]);
         $this->getJson('/api/v1/es/projects')->assertExactJson(['data' => [[
-            'key' => 'project', 'title' => 'Proyecto técnico sintético', 'summary' => 'Resumen técnico sintético.', 'problem' => 'Problema técnico sintético.',
-            'solution' => 'Solución técnica sintética.', 'featured' => false, 'image' => null, 'demo_url' => null, 'repository_url' => null,
+            'key' => 'project', 'kind' => 'client', 'client_name' => 'Synthetic Client', 'title' => 'Proyecto técnico sintético',
+            'role' => 'Backend sintético', 'status' => 'in_use', 'summary' => 'Resumen técnico sintético.', 'problem' => 'Problema técnico sintético.',
+            'solution' => 'Solución técnica sintética.', 'result' => 'Resultado técnico sintético.', 'featured' => false, 'image' => null,
+            'demo_url' => null, 'repository_url' => null,
             'technologies' => [['key' => 'laravel', 'name' => 'Laravel', 'category' => 'backend', 'icon' => null]],
         ]]]);
         $this->getJson('/api/v1/es/technologies')->assertExactJson(['data' => [[
@@ -205,7 +208,7 @@ final class PublicApiContractTest extends TestCase
         $payload = $this->getJson('/api/v1/es/projects')->assertOk()->json();
         $serialized = json_encode($payload, JSON_THROW_ON_ERROR);
 
-        foreach (['id', 'position', 'pivot', 'private_path', 'public_path', 'created_at', 'updated_at', 'status', 'is_visible', 'published_at', 'key_locked', '_es', '_en', 'location', 'confidentiality_note', 'video_url', 'seo'] as $forbidden) {
+        foreach (['id', 'position', 'pivot', 'private_path', 'public_path', 'created_at', 'updated_at', '"status":"draft"', '"status":"published"', 'is_visible', 'published_at', 'key_locked', '_es', '_en', 'location', 'confidentiality_note', 'video_url', 'seo'] as $forbidden) {
             $this->assertStringNotContainsString($forbidden, $serialized);
         }
     }

@@ -11,6 +11,7 @@ use App\Domain\Content\Actions\UpdateOwnedAssetAltText;
 use App\Domain\Publishing\PublicationValidationException;
 use App\Enums\PublicationStatus;
 use App\Filament\Resources\Projects\ProjectResource;
+use App\Filament\Resources\Projects\Schemas\ProjectForm;
 use App\Filament\Support\EditorialActions;
 use App\Models\Project;
 use Filament\Actions\Action;
@@ -166,6 +167,13 @@ class EditProject extends EditRecord
             $data['technologies'], $data['image'], $data['image_alt_es'], $data['image_alt_en'],
             $data['key'], $data['key_locked'], $data['position'], $data['status'], $data['is_visible'], $data['published_at'],
         );
+
+        // A hidden client field is not dehydrated, so switching to a personal
+        // project must clear the stored client explicitly (DB check
+        // projects_client_name_kind_check).
+        if (! ProjectForm::isClient($data['kind'] ?? $record->kind)) {
+            $data['client_name'] = null;
+        }
 
         $technologies = [];
         foreach (array_values($technologiesInput) as $position => $technology) {

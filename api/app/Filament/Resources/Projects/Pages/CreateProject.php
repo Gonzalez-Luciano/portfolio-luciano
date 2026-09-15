@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Projects\Pages;
 
 use App\Enums\PublicationStatus;
 use App\Filament\Resources\Projects\ProjectResource;
+use App\Filament\Resources\Projects\Schemas\ProjectForm;
 use App\Models\Project;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -30,6 +31,11 @@ class CreateProject extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         unset($data['image'], $data['image_alt_es'], $data['image_alt_en'], $data['technologies']);
+
+        if (! ProjectForm::isClient($data['kind'] ?? null)) {
+            $data['client_name'] = null;
+        }
+
         $data['status'] = PublicationStatus::Draft;
         $data['is_visible'] = false;
         $data['published_at'] = null;

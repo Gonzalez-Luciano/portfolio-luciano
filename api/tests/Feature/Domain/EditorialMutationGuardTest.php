@@ -55,6 +55,9 @@ final class EditorialMutationGuardTest extends TestCase
             'summary_es' => 'Resumen sintético', 'summary_en' => 'Synthetic summary',
             'problem_es' => 'Problema sintético', 'problem_en' => 'Synthetic problem',
             'solution_es' => 'Solución sintética', 'solution_en' => 'Synthetic solution',
+            'role_es' => 'Rol técnico sintético', 'role_en' => 'Synthetic technical role',
+            'result_es' => 'Resultado técnico sintético.', 'result_en' => 'Synthetic technical result.',
+            'delivery_status' => 'in_development',
         ]);
         $staleDraft = $project->fresh();
 
@@ -210,6 +213,9 @@ final class EditorialMutationGuardTest extends TestCase
             'problem_en' => 'Synthetic technical problem.',
             'solution_es' => 'Solución técnica sintética.',
             'solution_en' => 'Synthetic technical solution.',
+            'role_es' => 'Rol técnico sintético', 'role_en' => 'Synthetic technical role',
+            'result_es' => 'Resultado técnico sintético.', 'result_en' => 'Synthetic technical result.',
+            'delivery_status' => 'in_development',
         ]);
 
         return app(PublishContent::class)($project);

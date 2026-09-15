@@ -22,10 +22,15 @@ final class ProjectResource extends JsonResource
 
         return [
             'key' => $this->key,
+            'kind' => $this->kind->value,
+            'client_name' => $this->client_name,
             'title' => $this->{"title_{$suffix}"},
+            'role' => $this->{"role_{$suffix}"},
+            'status' => $this->delivery_status?->value,
             'summary' => $this->{"summary_{$suffix}"},
             'problem' => $this->{"problem_{$suffix}"},
             'solution' => $this->{"solution_{$suffix}"},
+            'result' => $this->{"result_{$suffix}"},
             'featured' => $this->featured,
             'image' => $this->image($suffix),
             'demo_url' => $this->demo_url,

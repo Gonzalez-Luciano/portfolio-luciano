@@ -295,6 +295,9 @@ final class WorkCaseProjectTechnologyActionTest extends TestCase
             'summary_es' => 'Resumen técnico sintético.', 'summary_en' => 'Synthetic technical summary.',
             'problem_es' => 'Problema técnico sintético.', 'problem_en' => 'Synthetic technical problem.',
             'solution_es' => 'Solución técnica sintética.', 'solution_en' => 'Synthetic technical solution.',
+            'role_es' => 'Rol técnico sintético', 'role_en' => 'Synthetic technical role',
+            'result_es' => 'Resultado técnico sintético.', 'result_en' => 'Synthetic technical result.',
+            'delivery_status' => 'in_development',
         ]);
         $this->makePublic($project);
 

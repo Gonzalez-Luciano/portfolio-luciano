@@ -365,6 +365,9 @@ final class AssetTransitionActionTest extends TestCase
             'problem_en' => 'Synthetic problem.',
             'solution_es' => 'Solución sintética.',
             'solution_en' => 'Synthetic solution.',
+            'role_es' => 'Rol técnico sintético', 'role_en' => 'Synthetic technical role',
+            'result_es' => 'Resultado técnico sintético.', 'result_en' => 'Synthetic technical result.',
+            'delivery_status' => 'in_development',
             'image_alt_es' => 'Imagen sintética',
             'image_alt_en' => 'Synthetic image',
         ]);

@@ -164,11 +164,16 @@ final class PublicationReviewPresenter
         return array_merge($this->base('Project', $project->key, $project->position, $project->status->value, $project->is_visible, $project->published_at?->toDateTimeString()), [
             'bilingual' => [
                 ['label' => 'Title', 'es' => $project->title_es, 'en' => $project->title_en],
+                ['label' => 'Role', 'es' => $project->role_es, 'en' => $project->role_en],
                 ['label' => 'Summary', 'es' => $project->summary_es, 'en' => $project->summary_en],
                 ['label' => 'Problem', 'es' => $project->problem_es, 'en' => $project->problem_en],
                 ['label' => 'Solution', 'es' => $project->solution_es, 'en' => $project->solution_en],
+                ['label' => 'Result', 'es' => $project->result_es, 'en' => $project->result_en],
             ],
             'fields' => [
+                ['label' => 'Kind', 'value' => $project->kind?->value],
+                ['label' => 'Client', 'value' => $project->client_name],
+                ['label' => 'Delivery status', 'value' => $project->delivery_status?->value],
                 ['label' => 'Featured', 'value' => $project->featured ? 'Yes' : 'No'],
                 ['label' => 'Demo URL', 'value' => $project->demo_url],
                 ['label' => 'Repository URL', 'value' => $project->repository_url],

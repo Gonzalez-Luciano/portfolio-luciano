@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Projects\Schemas;
 
+use App\Enums\ProjectDeliveryStatus;
+use App\Enums\ProjectKind;
 use App\Enums\PublicationStatus;
 use App\Models\Project;
 use App\Models\Technology;
@@ -14,6 +16,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 
 class ProjectForm
@@ -34,6 +37,30 @@ class ProjectForm
                     // edit, so it is disabled (and not dehydrated) on edit.
                     ->disabledOn('edit'),
 
+                Select::make('kind')
+                    ->label('Kind')
+                    ->options([
+                        ProjectKind::Client->value => 'Client project',
+                        ProjectKind::Personal->value => 'Personal project',
+                    ])
+                    ->default(ProjectKind::Personal->value)
+                    ->required()
+                    ->live(),
+                TextInput::make('client_name')
+                    ->label('Client name')
+                    ->maxLength(255)
+                    ->visible(fn (Get $get): bool => self::isClient($get('kind')))
+                    ->helperText('Required to publish a client project. Personal projects never store a client.'),
+                Select::make('delivery_status')
+                    ->label('Delivery status')
+                    ->options([
+                        ProjectDeliveryStatus::InProduction->value => 'In production',
+                        ProjectDeliveryStatus::InUse->value => 'In use',
+                        ProjectDeliveryStatus::PublicDemo->value => 'Public demo',
+                        ProjectDeliveryStatus::InDevelopment->value => 'In development',
+                    ])
+                    ->helperText('Required to publish.'),
+
                 Toggle::make('featured')
                     ->label('Featured'),
 
@@ -47,16 +74,20 @@ class ProjectForm
                 Tabs::make('locales')->tabs([
                     Tab::make('Spanish')->schema([
                         TextInput::make('title_es')->label('Title (ES)')->maxLength(255),
+                        TextInput::make('role_es')->label('Role (ES)')->maxLength(255),
                         Textarea::make('summary_es')->label('Summary (ES)')->maxLength(10000),
                         Textarea::make('problem_es')->label('Problem (ES)')->maxLength(10000),
                         Textarea::make('solution_es')->label('Solution (ES)')->maxLength(10000),
+                        Textarea::make('result_es')->label('Result (ES)')->maxLength(10000),
                         TextInput::make('image_alt_es')->label('Image alt text (ES)')->maxLength(500),
                     ]),
                     Tab::make('English')->schema([
                         TextInput::make('title_en')->label('Title (EN)')->maxLength(255),
+                        TextInput::make('role_en')->label('Role (EN)')->maxLength(255),
                         Textarea::make('summary_en')->label('Summary (EN)')->maxLength(10000),
                         Textarea::make('problem_en')->label('Problem (EN)')->maxLength(10000),
                         Textarea::make('solution_en')->label('Solution (EN)')->maxLength(10000),
+                        Textarea::make('result_en')->label('Result (EN)')->maxLength(10000),
                         TextInput::make('image_alt_en')->label('Image alt text (EN)')->maxLength(500),
                     ]),
                 ]),
@@ -109,5 +140,10 @@ class ProjectForm
                     ->label('Published at')
                     ->content(fn (?Project $record): string => $record?->published_at?->toDateTimeString() ?? 'Never'),
             ]);
+    }
+
+    public static function isClient(mixed $kind): bool
+    {
+        return $kind === ProjectKind::Client || $kind === ProjectKind::Client->value;
     }
 }

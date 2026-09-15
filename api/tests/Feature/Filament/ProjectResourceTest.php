@@ -4,6 +4,7 @@ namespace Tests\Feature\Filament;
 
 use App\Domain\Content\Actions\PublishContent;
 use App\Domain\Content\Actions\ReplaceOwnedAsset;
+use App\Enums\ProjectKind;
 use App\Enums\PublicationStatus;
 use App\Filament\Resources\Projects\Pages\CreateProject;
 use App\Filament\Resources\Projects\Pages\EditProject;
@@ -80,11 +81,11 @@ final class ProjectResourceTest extends TestCase
 
     // ---- Required pairs ----
 
-    public function test_all_four_bilingual_pairs_are_required_to_publish(): void
+    public function test_all_bilingual_pairs_are_required_to_publish(): void
     {
         $this->authenticateAdmin();
 
-        foreach (['title', 'summary', 'problem', 'solution'] as $field) {
+        foreach (['title', 'role', 'summary', 'problem', 'solution', 'result'] as $field) {
             $attributes = $this->completeAttributes();
             $attributes["{$field}_en"] = null;
             $project = Project::factory()->create($attributes);
@@ -516,13 +517,66 @@ final class ProjectResourceTest extends TestCase
         $this->assertSame(0, DB::table('project_technology')->where('project_id', $project->getKey())->count());
     }
 
+    public function test_client_projects_require_a_client_name_to_publish(): void
+    {
+        $project = Project::factory()->create([...$this->completeAttributes(), 'kind' => ProjectKind::Client, 'client_name' => null]);
+        $this->authenticateAdmin();
+
+        Livewire::test(EditProject::class, ['record' => $project->getKey()])
+            ->callAction('publish')
+            ->assertNotified('Publish failed');
+
+        $this->assertSame(PublicationStatus::Draft, $project->refresh()->status);
+    }
+
+    public function test_editing_kind_client_and_delivery_fields_persists_them(): void
+    {
+        $project = Project::factory()->create();
+        $this->authenticateAdmin();
+
+        Livewire::test(EditProject::class, ['record' => $project->getKey()])
+            ->fillForm([
+                'kind' => ProjectKind::Client->value,
+                'client_name' => 'Synthetic Client',
+                'delivery_status' => 'in_use',
+                'role_es' => 'Backend', 'role_en' => 'Backend',
+                'result_es' => 'Resultado sintético.', 'result_en' => 'Synthetic result.',
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $project->refresh();
+        $this->assertSame(ProjectKind::Client, $project->kind);
+        $this->assertSame('Synthetic Client', $project->client_name);
+        $this->assertSame('in_use', $project->delivery_status->value);
+        $this->assertSame('Synthetic result.', $project->result_en);
+    }
+
+    public function test_switching_a_project_to_personal_clears_its_client_name(): void
+    {
+        $project = Project::factory()->client()->create();
+        $this->authenticateAdmin();
+
+        Livewire::test(EditProject::class, ['record' => $project->getKey()])
+            ->fillForm(['kind' => ProjectKind::Personal->value])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $project->refresh();
+        $this->assertSame(ProjectKind::Personal, $project->kind);
+        $this->assertNull($project->client_name);
+    }
+
     private function completeAttributes(): array
     {
         return [
             'title_es' => 'Proyecto técnico sintético', 'title_en' => 'Synthetic technical project',
+            'role_es' => 'Rol técnico sintético', 'role_en' => 'Synthetic technical role',
+            'delivery_status' => 'in_development',
             'summary_es' => 'Resumen técnico sintético.', 'summary_en' => 'Synthetic technical summary.',
             'problem_es' => 'Problema técnico sintético.', 'problem_en' => 'Synthetic technical problem.',
             'solution_es' => 'Solución técnica sintética.', 'solution_en' => 'Synthetic technical solution.',
+            'result_es' => 'Resultado técnico sintético.', 'result_en' => 'Synthetic technical result.',
         ];
     }
 

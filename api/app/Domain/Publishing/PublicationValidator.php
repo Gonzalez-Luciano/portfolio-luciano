@@ -3,6 +3,7 @@
 namespace App\Domain\Publishing;
 
 use App\Enums\ProfessionalLinkType;
+use App\Enums\ProjectKind;
 use App\Models\CvDocument;
 use App\Models\Experience;
 use App\Models\ExperienceHighlight;
@@ -149,17 +150,31 @@ final class PublicationValidator
     /** @return list<PublicationIssue> */
     private function projectIssues(Project $project): array
     {
-        $issues = [
+        return [
             ...$this->keyIssues($project),
-            ...$this->requiredPairs($project, ['title', 'summary', 'problem', 'solution']),
+            ...$this->requiredPairs($project, ['title', 'summary', 'problem', 'solution', 'role', 'result']),
+            ...$this->required($project, ['delivery_status']),
+            ...$this->projectClientIssues($project),
             ...$this->httpsUrlIssues($project, ['demo_url', 'repository_url']),
             ...$this->imageAssetIssues($project, 'image', 8 * 1024 * 1024),
-            ...$this->maxLengthPairs($project, ['title'], self::BOUNDED_MAX_LENGTH),
-            ...$this->maxLengthPairs($project, ['summary', 'problem', 'solution'], self::NARRATIVE_MAX_LENGTH),
+            ...$this->maxLength($project, ['client_name'], self::BOUNDED_MAX_LENGTH),
+            ...$this->maxLengthPairs($project, ['title', 'role'], self::BOUNDED_MAX_LENGTH),
+            ...$this->maxLengthPairs($project, ['summary', 'problem', 'solution', 'result'], self::NARRATIVE_MAX_LENGTH),
             ...$this->maxLength($project, ['image_alt_es', 'image_alt_en'], self::ALT_TEXT_MAX_LENGTH),
         ];
+    }
 
-        return $issues;
+    /** @return list<PublicationIssue> */
+    private function projectClientIssues(Project $project): array
+    {
+        $kind = $project->kind instanceof ProjectKind ? $project->kind : ProjectKind::tryFrom((string) $project->kind);
+
+        return match (true) {
+            $kind === null => [$this->issue('required', 'kind', 'The project kind is required for publication.')],
+            $kind === ProjectKind::Client && ! $this->hasValue($project->client_name) => [$this->issue('required', 'client_name', 'A client project requires the client name.')],
+            $kind === ProjectKind::Personal && $this->hasValue($project->client_name) => [$this->issue('client_name_not_allowed', 'client_name', 'A personal project cannot name a client.')],
+            default => [],
+        };
     }
 
     /** @return list<PublicationIssue> */
