@@ -1,5 +1,7 @@
 # Phase 6 — Cinematic scroll-tied video scene
 
+> **Partially superseded (2026-09-14):** page structure, CMS model, copy mapping and visual design are defined in `2026-09-14-phase-6-portfolio-redesign-design.md`. The scroll logic described here (section 3, `useVideoScrub`) and revision 1.1 remain valid.
+
 - **Date:** 2026-09-14
 - **Branch / worktree:** `feat/phase-6-cinematic-scroll` / `.worktrees/phase-6-cinematic-scroll`
 - **Authority:** the "Scroll Tied Video Section" prompt supplied by Luciano for Phase 6, to be followed literally, plus the four decisions below.
