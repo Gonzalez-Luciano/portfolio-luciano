@@ -40,11 +40,13 @@ La lógica de scroll existente (pista de 500vh, curvas de opacidad secuenciales,
 | D18 | Empalme escena → secciones | "Amanecer" según tema (oscuro continuo; claro con degradé espresso → crema) |
 | D19 | Proyectos | Dossier completo con galería; "Ver más proyectos" a partir del cuarto por grupo |
 | D20 | Experiencia | Línea de tiempo con nodos y casos desplegables |
-| D21 | Stack / Sobre mí / Contacto | Tres secciones separadas con aire; título de contacto opcional editable |
+| D21 | Stack / Sobre mí / Contacto | Tres secciones separadas con aire; Contacto muestra correo, LinkedIn, GitHub y CV (sin título editable) |
 | D22 | Modo oscuro | Todas las secciones, paleta Terracota oscura (aprobada) |
 | D23 | Navegación | Transparente sobre la escena, sólida en las secciones; idioma, tema y CV a la derecha; menú a pantalla completa en móvil |
 | D24 | Fuentes de contenido | Coned: LinkedIn y CV. ReservaHub: README y CV. Sobre mí: CV |
 | D25 | Referencias externas | Ningún archivo del repositorio nombra el sitio usado como referencia ni a su autor |
+| D26 | Foto profesional | En el hero (beat 1) y, al salir de la escena, como avatar junto al nombre en la navegación |
+| D27 | Datos de Coned | Organización "Coned"; roles "Backend Engineer" (sept 2025 – actualidad) y "Pasante" (may 2025 – sept 2025), con nombres y fechas de LinkedIn |
 
 ## 3. Mapa de la página
 
@@ -52,12 +54,12 @@ Rutas: `/` y `/es` en español, `/en` en inglés. Página única por idioma.
 
 | Orden | Ancla | Sección (ES / EN) | Contenido | Fuente |
 |---|---|---|---|---|
-| — | `#top` | Hero (escena) | Headline, nombre, frase en 3 partes, cierre y CTA de correo | Profile, Site, Technologies |
+| — | `#top` | Hero (escena) | Foto, headline, nombre, frase en 3 partes, cierre y CTA de correo | Profile, Site, Technologies |
 | 01 | `#experience` | Experiencia laboral / Work experience | Organizaciones → roles → casos vinculados; casos sin vínculo al final | Experience, WorkCase |
 | 02 | `#projects` | Proyectos / Projects | `#client-projects` (Para clientes) y luego `#personal-projects` (Personales) | Project, ProjectImage |
 | 03 | `#stack` | Stack | Tecnologías por categoría | Technology, Site |
-| 04 | `#about` | Sobre mí / About me | Foto, frase, formación, idiomas, ubicación y modalidades | Profile, WorkPrinciple, EducationEntry, Language |
-| 05 | `#contact` | Contacto / Contact | Título opcional, introducción, LinkedIn, GitHub, correo, CV | Site, ProfessionalLink, CvDocument |
+| 04 | `#about` | Sobre mí / About me | Frase, formación, idiomas, ubicación y modalidades | Profile, WorkPrinciple, EducationEntry, Language |
+| 05 | `#contact` | Contacto / Contact | Introducción, correo (dirección visible), LinkedIn, GitHub y CV | Site, ProfessionalLink, CvDocument |
 
 Reglas:
 
@@ -110,11 +112,12 @@ Campos con clave estable y posición: `institution` (string), `program_es`/`prog
 
 Campos con clave estable y posición: `name_es`/`name_en` (par obligatorio), `level` enum `native` \| `a1` \| `a2` \| `b1` \| `b2` \| `c1` \| `c2` (obligatorio). Recurso Filament propio.
 
-### 4.7 Profile y SiteConfiguration
+### 4.7 Profile
 
-- Profile: `location` string(255) nullable (no se traduce); `work_modes` JSON con valores `on_site`, `hybrid`, `remote` (opcional). Ambos editables en "Profile".
-- SiteConfiguration: `contact_title_es`/`contact_title_en`, par opcional.
-- El importador inicial agrega estas columnas a su lista de columnas pristine.
+- `location` string(255) nullable (no se traduce); `work_modes` JSON con valores `on_site`, `hybrid`, `remote` (opcional). Ambos editables en "Profile".
+- La foto sigue siendo la de Profile (ya existente); no hay campos nuevos para ella.
+- SiteConfiguration no cambia.
+- El importador inicial agrega `location` y `work_modes` a su lista de columnas pristine de Profile.
 
 ### 4.8 Caché pública
 
@@ -137,7 +140,7 @@ Se actualiza `docs/api/PUBLIC_API_V1.md` y el test de documentación.
 | `GET /projects` | Suma `kind`, `client_name` (`null` si personal), `role`, `status`, `result`, `images: [{url, alt}]` (solo copias públicas verificadas, en orden). Quita `image` |
 | `GET /work-cases` | Suma `experience_key: string \| null` (solo si la experiencia vinculada es pública) |
 | `GET /profile` | Suma `location: string \| null`, `work_modes: string[]` (orden `on_site`, `hybrid`, `remote`) |
-| `GET /site` | Suma `contact_title: string \| null`, `education: [{key, institution, program, detail, start_year, end_year}]`, `languages: [{key, name, level}]` |
+| `GET /site` | Suma `education: [{key, institution, program, detail, start_year, end_year}]` y `languages: [{key, name, level}]` |
 | `GET /experiences`, `GET /technologies` | Sin cambios |
 
 Colecciones vacías devuelven `[]`. Campos opcionales siempre presentes con `null`.
@@ -225,7 +228,7 @@ Por eso se agregan dos **velos** oscuros suaves (`#1A1411`), medidos con la corr
 
 | Beat | Contenido | Color |
 |---|---|---|
-| 1 | Etiqueta con el nombre (Plex Mono) + H1 headline (Fraunces) | Texto `#2D251B`, acento `#9A4E2A` |
+| 1 | Foto de Profile (circular, 128px en desktop y 96px en móvil, borde de 1px `#9A4E2A`) + etiqueta con el nombre (Plex Mono) + H1 headline (Fraunces). Si no hay foto publicada, se omite | Texto `#2D251B`, acento `#9A4E2A` |
 | 2 | Frase en 3 partes (`statement` o `short_summary`) | Inicio `#2D251B`; énfasis `#9A4E2A` en cursiva de Fraunces; cierre `#665244`. Es texto grande (≥24px), por lo que el mínimo AA es 3:1 y se cumple hasta p 0,63 |
 | 3 | Etiqueta con tecnologías backend + H2 cierre (`closing` o `availability`) + CTA de correo | Texto `#F3E9DD`, acento `#E08E5E`, sobre el velo de 7.3 mientras dura |
 
@@ -291,14 +294,15 @@ Todas con encabezado "0N · Sección" (Plex Mono, acento) y H2 en Fraunces.
   - En móvil: texto arriba, galería abajo con miniaturas en carrusel horizontal.
   - Los primeros 3 proyectos por grupo se muestran; el resto aparece con "Ver más proyectos" en el mismo lugar.
 - **03 Stack (D21):** 4 columnas en el orden `backend`, `data`, `integration`, `collaboration` con las etiquetas de `site.technology_groups`; 2 columnas en móvil. Solo nombres.
-- **04 Sobre mí (D21):** columna izquierda con la foto de Profile (cuadrada, 160px, radio 4px) y la frase en Fraunces; columna derecha con Formación, Idiomas y Ubicación · Modalidades.
-- **05 Contacto (D21):** título opcional (`contact_title`), introducción, lista de enlaces (LinkedIn ↗, GitHub ↗, correo →) y botón de CV en contorno si hay CV publicado.
+- **04 Sobre mí (D21):** columna izquierda con la frase en Fraunces; columna derecha con Formación, Idiomas y Ubicación · Modalidades. Sin foto (D26).
+- **05 Contacto (D21):** introducción (`contact_intro`) y lista de enlaces: correo con la dirección visible (tomada del enlace `mailto:`) →, LinkedIn ↗ y GitHub ↗; debajo, botón de CV en contorno si hay CV publicado.
 
 ### 8.5 Navegación (D23)
 
 - Contenido: nombre (enlace a `#top`), Experiencia, Proyectos, Stack, Sobre mí, Contacto; a la derecha ES/EN, cambio de tema y CV (si está publicado).
 - Sobre la escena: transparente; color del texto según el tramo (7.3).
 - En las secciones: barra sólida `--color-canvas` con línea inferior `--color-border`. La sección activa (detectada con `IntersectionObserver`) muestra su índice "0N" y subrayado de 2px en acento.
+- Avatar (D26): al salir de la escena aparece, con un fundido corto, la foto de Profile como avatar circular de 28px a la izquierda del nombre, también en la barra móvil. Es decorativo (`alt=""`) porque el nombre está al lado. Sobre la escena no se muestra, porque la foto ya está en el beat 1. Si no hay foto publicada, se omite.
 - Menos de 1024px: nombre + "Menú". Al abrir, índice a pantalla completa con los destinos numerados y, abajo, idioma, tema y CV. Foco atrapado, cierre con Escape, foco devuelto al botón y scroll bloqueado.
 - Enlace "Saltar al contenido" como primer elemento enfocable.
 
@@ -306,7 +310,7 @@ Todas con encabezado "0N · Sección" (Plex Mono, acento) y H2 en Fraunces.
 
 | Contenido | Fuente | Estado |
 |---|---|---|
-| Experiencias Coned (2 roles), resúmenes y logros | LinkedIn y CV | Hay conflictos a confirmar (sección 10) |
+| Experiencias Coned: "Backend Engineer" (sept 2025 – actualidad) y "Pasante" (may 2025 – sept 2025), con resúmenes y logros | Organización, roles y fechas: LinkedIn (D27). Resúmenes y logros: CV | Listo |
 | Vínculo de los 4 casos con el rol actual | Casos aprobados existentes | Listo |
 | ReservaHub: tipo personal, rol full stack, estado demo pública, P/S/R, stack, demo y repositorio | README del repositorio y CV | Borrador para revisión |
 | Trucks and Drinks: tipo cliente, rol backend, estado en uso | Decisión D2 | Faltan textos de P/S/R y capturas (los aporta Luciano) |
@@ -314,24 +318,26 @@ Todas con encabezado "0N · Sección" (Plex Mono, acento) y H2 en Fraunces.
 | Idiomas: Español nativo; Inglés B2 | CV | Listo |
 | Ubicación: Mar del Plata; modalidades presencial, híbrido, remoto | CV y LinkedIn | Listo |
 | Tecnologías adicionales del "Stack técnico" del CV | CV | Borrador para revisión |
-| Título de contacto | Propuesta editorial | Borrador para revisión |
 
 La carga se hace con las acciones de dominio (el mismo camino que Filament), no con SQL directo.
 
-## 10. Confirmaciones editoriales pendientes
+## 10. Confirmaciones editoriales (resueltas el 2026-09-14)
 
-Son datos, no decisiones de diseño; no bloquean el plan pero sí la publicación:
+| Tema | Conflicto entre fuentes | Decisión |
+|---|---|---|
+| Fin de la pasantía | CV: julio 2025; LinkedIn: septiembre 2025 | Septiembre 2025 (LinkedIn) |
+| Rol actual | CV: "Desarrollador Backend"; LinkedIn: "Backend Engineer" | "Backend Engineer" |
+| Organización | CV: "CONED"; LinkedIn: "Coned Virtual" | "Coned" |
+| Foto | No estaba definida | Hero y avatar en la navegación (D26) |
+| Contacto | Se había propuesto un título editable | Sin título: correo, LinkedIn, GitHub y CV (D21) |
 
-1. **Fin de la pasantía:** CV dice julio 2025; LinkedIn, septiembre 2025.
-2. **Nombre del rol actual:** CV "Desarrollador Backend"; LinkedIn y headline aprobado "Backend Engineer".
-3. **Nombre de la organización:** CV "CONED"; LinkedIn "Coned Virtual".
-4. **Ubicación de la foto:** esta spec la ubica en Sobre mí (8.4), ya que la escena es ilustrada.
-5. **Texto del título de contacto.**
+Sigue pendiente solo el contenido que aporta Luciano: textos de problema, solución y resultado de Trucks and Drinks y sus capturas (sección 9).
 
 ## 11. Accesibilidad y rendimiento
 
 - Jerarquía: H1 en la escena; H2 por sección; H3 organización/proyecto; H4 rol/caso.
 - Acordeones y miniaturas son botones con `aria-expanded` / `aria-current`; el visor es un `<dialog>` nativo.
+- La foto del hero usa el alt de Profile; el avatar de la barra es decorativo.
 - Contraste AA en ambos temas (8.1) y sobre los cuadros de la escena.
 - Nada depende solo del hover; todo funciona con teclado y a 200 % de zoom.
 - Imágenes con `loading="lazy"`, `decoding="async"` y dimensiones explícitas. Video de 246 KB.
@@ -340,9 +346,9 @@ Son datos, no decisiones de diseño; no bloquean el plan pero sí la publicació
 ## 12. Verificación
 
 - **API:** campos y validaciones nuevas; restricción `kind`/`client_name`; ciclo de vida de `project_images` (copia pública, orden, tope 12, alt obligatorio); migración de la imagen existente; `experience_key` con experiencia pública, oculta y borrada; formación e idiomas; invalidación de caché; test de documentación.
-- **Filament:** crear varios proyectos de ambos tipos; agregar, reordenar y quitar capturas; rechazo de la número 13; cliente obligatorio solo en tipo cliente; selector de experiencia en casos; recursos de Formación e Idiomas; campos nuevos de Profile y Site.
+- **Filament:** crear varios proyectos de ambos tipos; agregar, reordenar y quitar capturas; rechazo de la número 13; cliente obligatorio solo en tipo cliente; selector de experiencia en casos; recursos de Formación e Idiomas; campos nuevos de Profile.
 - **Front (unitarios):** validadores de los 6 recursos; `groupExperience` con varias organizaciones, casos sin vínculo y experiencias ocultas; `groupProjects` con grupos vacíos; resolución de tema e idioma; mezcla de cuadros y envolvente de corrección como funciones puras.
-- **Navegador (QA manual con ventana visible):** scrub y mezcla del video, corrección en la transición, paso paisaje → constelación, textos a la izquierda, cambio de color de la barra, empalme en ambos temas, acordeones, galería y visor, "Ver más proyectos", menú móvil, teclado, movimiento reducido, 200 % de zoom, anchos de 375px y 1440px.
+- **Navegador (QA manual con ventana visible):** foto en el hero y avatar en la barra al salir de la escena, scrub y mezcla del video, corrección en la transición, paso paisaje → constelación, textos a la izquierda, cambio de color de la barra, empalme en ambos temas, acordeones, galería y visor, "Ver más proyectos", menú móvil, teclado, movimiento reducido, 200 % de zoom, anchos de 375px y 1440px.
 - **Repositorio:** typecheck, tests y build del front; suite de la API; Pint; validador del repositorio.
 
 ## 13. Documentación a actualizar
