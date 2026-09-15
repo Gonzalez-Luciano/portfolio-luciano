@@ -11,9 +11,12 @@ use App\Domain\Publishing\EditorialMutationContext;
 use App\Domain\Publishing\PublicationValidationException;
 use App\Models\Project;
 use App\Models\ProjectImage;
+use Illuminate\Cache\Repository;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
+use Tests\Support\RecordingLockStore;
 use Tests\TestCase;
 
 final class ProjectGalleryLifecycleTest extends TestCase
@@ -102,6 +105,132 @@ final class ProjectGalleryLifecycleTest extends TestCase
             $project->refresh();
             $this->assertFalse($project->is_visible);
             $this->assertSame([null], $project->images()->pluck('public_path')->all());
+        }
+    }
+
+    public function test_a_failed_copy_of_a_later_image_deletes_the_earlier_copies_and_leaves_every_image_unpublished(): void
+    {
+        $project = $this->publishedProjectWithImages(2);
+        $local = Storage::disk('local');
+        $public = Storage::disk('public');
+        $putCalls = 0;
+        $failingPublic = Mockery::mock();
+        $failingPublic->shouldReceive('put')->twice()->andReturnUsing(function (string $path, string $contents) use (&$putCalls, $public): bool {
+            $putCalls++;
+
+            return $putCalls === 1 ? $public->put($path, $contents) : false;
+        });
+        $failingPublic->shouldReceive('exists')->andReturnUsing(fn (string $path): bool => $public->exists($path));
+        $failingPublic->shouldReceive('delete')->andReturnUsing(fn (string $path): bool => $public->delete($path));
+        Storage::shouldReceive('disk')->with('local')->andReturn($local);
+        Storage::shouldReceive('disk')->with('public')->andReturn($failingPublic);
+
+        try {
+            app(ShowContent::class)($project);
+            $this->fail('A failed copy of a later gallery image must be controlled.');
+        } catch (AssetOperationException) {
+            $project->refresh();
+            $this->assertFalse($project->is_visible);
+            $this->assertSame([null, null], $project->images()->pluck('public_path')->all());
+            $public->assertDirectoryEmpty('/');
+        }
+    }
+
+    public function test_a_failed_gallery_withdrawal_restores_the_already_withdrawn_copies_and_keeps_the_project_visible(): void
+    {
+        $shown = app(ShowContent::class)($this->publishedProjectWithImages(2));
+        $publicPaths = $shown->images()->pluck('public_path')->all();
+        $local = Storage::disk('local');
+        $public = Storage::disk('public');
+        $deleteCalls = 0;
+        $failingPublic = Mockery::mock();
+        $failingPublic->shouldReceive('delete')->twice()->andReturnUsing(function (string $path) use (&$deleteCalls, $public): bool {
+            $deleteCalls++;
+
+            return $deleteCalls === 1 ? $public->delete($path) : false;
+        });
+        $failingPublic->shouldReceive('exists')->andReturnUsing(fn (string $path): bool => $public->exists($path));
+        $failingPublic->shouldReceive('put')->andReturnUsing(fn (string $path, string $contents): bool => $public->put($path, $contents));
+        Storage::shouldReceive('disk')->with('local')->andReturn($local);
+        Storage::shouldReceive('disk')->with('public')->andReturn($failingPublic);
+
+        try {
+            app(HideContent::class)($shown);
+            $this->fail('A failed gallery withdrawal must be controlled.');
+        } catch (AssetOperationException) {
+            $shown->refresh();
+            $this->assertTrue($shown->is_visible);
+            $this->assertSame($publicPaths, $shown->images()->pluck('public_path')->all());
+            foreach ($publicPaths as $path) {
+                $public->assertExists($path);
+            }
+        }
+    }
+
+    public function test_a_pre_commit_cache_invalidation_failure_restores_every_withdrawn_gallery_copy(): void
+    {
+        $shown = app(ShowContent::class)($this->publishedProjectWithImages(2));
+        $publicPaths = $shown->images()->pluck('public_path')->all();
+        $store = new RecordingLockStore($this->app['files'], storage_path('framework/cache/data'));
+        $this->app['cache']->extend('gallery-pre-commit-invalidate-failure', static fn (): Repository => new Repository($store));
+        config([
+            'cache.default' => 'gallery-pre-commit-invalidate-failure',
+            'cache.stores.gallery-pre-commit-invalidate-failure' => ['driver' => 'gallery-pre-commit-invalidate-failure'],
+        ]);
+        Cache::forgetDriver('gallery-pre-commit-invalidate-failure');
+        $store->failFromForget = 1;
+
+        try {
+            app(HideContent::class)($shown);
+            $this->fail('A pre-commit cache invalidation failure must be controlled.');
+        } catch (AssetOperationException) {
+            $shown->refresh();
+            $this->assertTrue($shown->is_visible);
+            $this->assertSame($publicPaths, $shown->images()->pluck('public_path')->all());
+            foreach ($publicPaths as $path) {
+                Storage::disk('public')->assertExists($path);
+            }
+        }
+    }
+
+    public function test_a_pre_commit_transaction_failure_restores_every_withdrawn_gallery_copy(): void
+    {
+        $shown = app(ShowContent::class)($this->publishedProjectWithImages(2));
+        $publicPaths = $shown->images()->pluck('public_path')->all();
+        Project::updating(static function (): never {
+            throw new \RuntimeException('Synthetic pre-commit transaction failure.');
+        });
+
+        try {
+            app(HideContent::class)($shown);
+            $this->fail('A pre-commit transaction failure must be controlled.');
+        } catch (AssetOperationException) {
+            $shown->refresh();
+            $this->assertTrue($shown->is_visible);
+            $this->assertSame($publicPaths, $shown->images()->pluck('public_path')->all());
+            foreach ($publicPaths as $path) {
+                Storage::disk('public')->assertExists($path);
+            }
+        }
+    }
+
+    public function test_delete_reports_a_failed_gallery_private_cleanup_after_the_committed_deletion(): void
+    {
+        $shown = app(ShowContent::class)($this->publishedProjectWithImages(1));
+        $privatePath = $shown->images()->firstOrFail()->private_path;
+        $local = Mockery::mock();
+        $public = Storage::disk('public');
+        $local->shouldReceive('delete')->with($privatePath)->times(3)->andReturnFalse();
+        $local->shouldReceive('exists')->with($privatePath)->times(3)->andReturnTrue();
+        Storage::shouldReceive('disk')->with('local')->andReturn($local);
+        Storage::shouldReceive('disk')->with('public')->andReturn($public);
+
+        try {
+            app(DeleteContent::class)($shown);
+            $this->fail('A failing gallery private cleanup must not claim success.');
+        } catch (AssetOperationException) {
+            $this->assertDatabaseMissing('projects', ['id' => $shown->id]);
+            $this->assertDatabaseCount('project_images', 0);
         }
     }
 
