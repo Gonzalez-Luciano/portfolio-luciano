@@ -125,11 +125,13 @@ final class PublicApiContractTest extends TestCase
             'summary_es' => 'Resumen técnico sintético.', 'summary_en' => 'Synthetic technical summary.',
             'problem_es' => 'Problema técnico sintético.', 'problem_en' => 'Synthetic technical problem.',
             'solution_es' => 'Solución técnica sintética.', 'solution_en' => 'Synthetic technical solution.',
-            'image_private_path' => 'projects/private.jpg', 'image_public_path' => 'projects/image.jpg',
-            'image_mime' => 'image/jpeg', 'image_size' => 1, 'image_alt_es' => 'Imagen', 'image_alt_en' => 'Image',
             'kind' => 'client', 'client_name' => 'Synthetic Client', 'role_es' => 'Backend sintético', 'role_en' => 'Synthetic backend', 'delivery_status' => 'in_use', 'result_es' => 'Resultado técnico sintético.', 'result_en' => 'Synthetic technical result.',
         ]);
         $project->technologies()->attach($technology, ['position' => 0]);
+        DB::table('project_images')->insert([
+            ['project_id' => $project->id, 'position' => 1, 'private_path' => 'projects/second-private.jpg', 'public_path' => 'projects/second.jpg', 'mime' => 'image/jpeg', 'size' => 1, 'alt_es' => 'Segunda', 'alt_en' => 'Second', 'created_at' => now(), 'updated_at' => now()],
+            ['project_id' => $project->id, 'position' => 0, 'private_path' => 'projects/private.jpg', 'public_path' => 'projects/image.jpg', 'mime' => 'image/jpeg', 'size' => 1, 'alt_es' => 'Imagen', 'alt_en' => 'Image', 'created_at' => now(), 'updated_at' => now()],
+        ]);
 
         $this->getJson('/api/v1/es/experiences')->assertExactJson(['data' => [[
             'key' => 'experience', 'organization' => null, 'role' => 'Ingeniero técnico sintético', 'start' => '2024-03', 'end' => '2025-01',
@@ -144,7 +146,7 @@ final class PublicApiContractTest extends TestCase
         $this->getJson('/api/v1/es/projects')->assertExactJson(['data' => [[
             'key' => 'project', 'kind' => 'client', 'client_name' => 'Synthetic Client', 'title' => 'Proyecto técnico sintético',
             'role' => 'Backend sintético', 'status' => 'in_use', 'summary' => 'Resumen técnico sintético.', 'problem' => 'Problema técnico sintético.',
-            'solution' => 'Solución técnica sintética.', 'result' => 'Resultado técnico sintético.', 'featured' => false, 'image' => null,
+            'solution' => 'Solución técnica sintética.', 'result' => 'Resultado técnico sintético.', 'featured' => false, 'images' => [],
             'demo_url' => null, 'repository_url' => null,
             'technologies' => [['key' => 'laravel', 'name' => 'Laravel', 'category' => 'backend', 'icon' => null]],
         ]]]);
@@ -154,11 +156,12 @@ final class PublicApiContractTest extends TestCase
 
         Storage::disk('public')->put('technologies/icon.webp', 'icon');
         Storage::disk('public')->put('projects/image.jpg', 'image');
+        Storage::disk('public')->put('projects/second.jpg', 'image');
         Cache::flush();
 
-        $this->getJson('/api/v1/en/projects')->assertJsonPath('data.0.image', [
-            'url' => '/storage/projects/image.jpg',
-            'alt' => 'Image',
+        $this->getJson('/api/v1/en/projects')->assertJsonPath('data.0.images', [
+            ['url' => '/storage/projects/image.jpg', 'alt' => 'Image'],
+            ['url' => '/storage/projects/second.jpg', 'alt' => 'Second'],
         ]);
         $this->getJson('/api/v1/en/technologies')->assertJsonPath('data.0.icon', [
             'url' => '/storage/technologies/icon.webp',

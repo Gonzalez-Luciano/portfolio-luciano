@@ -12,6 +12,8 @@ use App\Enums\PublicEndpoint;
 use App\Enums\SupportedLocale;
 use App\Models\CvDocument;
 use App\Models\Project;
+use App\Models\ProjectImage;
+use App\Models\Technology;
 use App\Support\PublicContentCache;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\Cache;
@@ -182,15 +184,25 @@ final class EditorialMutationGuardTest extends TestCase
 
     public function test_it_rejects_direct_owned_asset_reference_changes(): void
     {
-        $project = Project::factory()->draft()->create();
-        $project->forceFill([
-            'image_private_path' => 'projects/private.webp',
-            'image_mime' => 'image/webp',
-            'image_size' => 12,
+        $technology = Technology::factory()->draft()->create();
+        $technology->forceFill([
+            'icon_private_path' => 'technologies/private.webp',
+            'icon_mime' => 'image/webp',
+            'icon_size' => 12,
         ]);
 
         $this->expectException(LogicException::class);
-        $project->save();
+        $technology->save();
+    }
+
+    public function test_it_rejects_project_image_changes_outside_a_domain_action(): void
+    {
+        $project = Project::factory()->draft()->create();
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Project images must be changed through a domain action');
+
+        ProjectImage::factory()->for($project)->create();
     }
 
     public function test_reorder_updates_only_position_inside_its_action(): void

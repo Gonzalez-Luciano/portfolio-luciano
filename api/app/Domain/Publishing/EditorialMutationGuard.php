@@ -10,6 +10,7 @@ use App\Models\ExpertiseArea;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
+use App\Models\ProjectImage;
 use App\Models\SiteConfiguration;
 use App\Models\Technology;
 use App\Models\WorkCase;
@@ -25,7 +26,6 @@ final class EditorialMutationGuard implements ShouldHandleEventsAfterCommit
     private const SENSITIVE_ATTRIBUTES = [
         'status', 'is_visible', 'published_at', 'key', 'key_locked',
         'photo_private_path', 'photo_public_path', 'photo_mime', 'photo_size', 'photo_alt_es', 'photo_alt_en',
-        'image_private_path', 'image_public_path', 'image_mime', 'image_size', 'image_alt_es', 'image_alt_en',
         'icon_private_path', 'icon_public_path', 'icon_mime', 'icon_size',
         'private_path', 'mime', 'size',
     ];
@@ -40,6 +40,10 @@ final class EditorialMutationGuard implements ShouldHandleEventsAfterCommit
     public function creating(Model $content): void
     {
         $this->assertHighlightMutationContext($content);
+        $this->assertGalleryMutationContext($content);
+        if ($content instanceof ProjectImage) {
+            return;
+        }
         if ($content instanceof ExperienceHighlight) {
             return;
         }
@@ -53,6 +57,10 @@ final class EditorialMutationGuard implements ShouldHandleEventsAfterCommit
     public function updating(Model $content): void
     {
         $this->assertHighlightMutationContext($content);
+        $this->assertGalleryMutationContext($content);
+        if ($content instanceof ProjectImage) {
+            return;
+        }
         if ($content instanceof ExperienceHighlight) {
             return;
         }
@@ -71,6 +79,7 @@ final class EditorialMutationGuard implements ShouldHandleEventsAfterCommit
     public function deleting(Model $content): void
     {
         $this->assertHighlightMutationContext($content);
+        $this->assertGalleryMutationContext($content);
 
         if (! $this->context->isActive()) {
             throw new \LogicException('Sensitive editorial mutation must be performed through a domain action.');
@@ -126,6 +135,13 @@ final class EditorialMutationGuard implements ShouldHandleEventsAfterCommit
         }
     }
 
+    private function assertGalleryMutationContext(Model $content): void
+    {
+        if ($content instanceof ProjectImage && ! $this->context->isActive()) {
+            throw new \LogicException('Project images must be changed through a domain action.');
+        }
+    }
+
     private function isPublished(Model $content): bool
     {
         return $content->getAttribute('status') === PublicationStatus::Published
@@ -145,7 +161,7 @@ final class EditorialMutationGuard implements ShouldHandleEventsAfterCommit
     {
         return in_array($content::class, [
             Profile::class, SiteConfiguration::class, Experience::class, ExperienceHighlight::class,
-            WorkCase::class, Project::class, Technology::class, ExpertiseArea::class,
+            WorkCase::class, Project::class, ProjectImage::class, Technology::class, ExpertiseArea::class,
             WorkPrinciple::class, ProfessionalLink::class, CvDocument::class,
         ], true);
     }

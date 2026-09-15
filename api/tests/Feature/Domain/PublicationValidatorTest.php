@@ -14,6 +14,7 @@ use App\Models\ExpertiseArea;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
+use App\Models\ProjectImage;
 use App\Models\SiteConfiguration;
 use App\Models\Technology;
 use App\Models\WorkCase;
@@ -120,24 +121,31 @@ final class PublicationValidatorTest extends TestCase
         ], array_map(static fn ($issue): array => ['code' => $issue->code, 'path' => $issue->path], app(PublicationValidator::class)->issues($partial)));
     }
 
-    public function test_it_validates_project_destinations_and_owned_asset_metadata(): void
+    public function test_it_validates_project_destinations_and_every_gallery_image(): void
     {
-        $project = Project::factory()->publishedHidden()->make([
-            'demo_url' => 'http://example.test',
-            'image_private_path' => 'projects/synthetic.webp',
-            'image_mime' => 'image/webp',
-            'image_size' => 9 * 1024 * 1024,
-            'image_alt_es' => 'Imagen sintética',
-            'image_alt_en' => null,
-        ]);
-
-        $issues = app(PublicationValidator::class)->issues($project);
+        $project = Project::factory()->publishedHidden()->make(['demo_url' => 'http://example.test']);
+        $project->setRelation('images', collect([
+            ProjectImage::factory()->make(['alt_en' => null]),
+            ProjectImage::factory()->make(['mime' => 'image/svg+xml', 'size' => 9 * 1024 * 1024]),
+        ]));
 
         $this->assertSame([
             ['code' => 'invalid_https_url', 'path' => 'demo_url'],
-            ['code' => 'asset_size_exceeded', 'path' => 'image_size'],
-            ['code' => 'translation_pair', 'path' => 'image_alt'],
-        ], array_map(static fn ($issue): array => ['code' => $issue->code, 'path' => $issue->path], $issues));
+            ['code' => 'required_translation', 'path' => 'images.0.alt_en'],
+            ['code' => 'invalid_asset_mime', 'path' => 'images.1.mime'],
+            ['code' => 'asset_size_exceeded', 'path' => 'images.1.size'],
+        ], array_map(static fn ($issue): array => ['code' => $issue->code, 'path' => $issue->path], app(PublicationValidator::class)->issues($project)));
+    }
+
+    public function test_it_rejects_more_than_twelve_project_images(): void
+    {
+        $project = Project::factory()->publishedHidden()->make();
+        $project->setRelation('images', ProjectImage::factory()->count(13)->make());
+
+        $issues = app(PublicationValidator::class)->issues($project);
+
+        $this->assertSame('too_many_images', $issues[0]->code);
+        $this->assertSame('images', $issues[0]->path);
     }
 
     public function test_it_validates_experience_dates_and_every_existing_highlight(): void
@@ -189,13 +197,6 @@ final class PublicationValidatorTest extends TestCase
             'photo_alt_es' => 'Retrato sintético',
             'photo_alt_en' => 'Synthetic portrait',
         ]);
-        $project = Project::factory()->publishedHidden()->make([
-            'image_private_path' => 'projects/synthetic.webp',
-            'image_mime' => 'image/webp',
-            'image_size' => 1,
-            'image_alt_es' => 'Imagen sintética',
-            'image_alt_en' => 'Synthetic image',
-        ]);
         $technology = Technology::factory()->publishedHidden()->make([
             'icon_private_path' => 'icons/synthetic.png',
             'icon_mime' => 'image/png',
@@ -205,7 +206,6 @@ final class PublicationValidatorTest extends TestCase
 
         $issues = [
             ...app(PublicationValidator::class)->issues($profile),
-            ...app(PublicationValidator::class)->issues($project),
             ...app(PublicationValidator::class)->issues($technology),
             ...app(PublicationValidator::class)->issues($cv),
         ];

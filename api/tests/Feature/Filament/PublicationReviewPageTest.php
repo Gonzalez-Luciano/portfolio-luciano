@@ -3,6 +3,7 @@
 namespace Tests\Feature\Filament;
 
 use App\Domain\Content\Actions\ReplaceOwnedAsset;
+use App\Domain\Publishing\EditorialMutationContext;
 use App\Enums\PublicationStatus;
 use App\Enums\SupportedLocale;
 use App\Filament\Pages\EditProfile;
@@ -233,21 +234,20 @@ final class PublicationReviewPageTest extends TestCase
 
     // ---- Project: image asset info without exposing a raw path ----
 
-    public function test_project_review_shows_image_asset_presence_and_metadata_without_a_raw_path(): void
+    public function test_project_review_shows_gallery_asset_presence_and_metadata_without_a_raw_path(): void
     {
-        Storage::fake('local');
-        Storage::fake('public');
-
         $project = Project::factory()->create();
-        $updated = app(ReplaceOwnedAsset::class)($project, $this->png('cover.png'));
+        $image = app(EditorialMutationContext::class)->run(fn () => $project->images()->create([
+            'position' => 0, 'private_path' => 'projects/synthetic-review.png', 'mime' => 'image/png', 'size' => 68,
+            'alt_es' => 'Captura sintética', 'alt_en' => 'Synthetic screenshot',
+        ]));
         $this->authenticateAdmin();
 
         $component = Livewire::test(ReviewContent::class, ['type' => 'project', 'record' => $project->getKey()])
             ->assertSee('Present')
             ->assertSee('image/png');
 
-        $html = $component->html();
-        $this->assertStringNotContainsString($updated->fresh()->image_private_path, $html);
+        $this->assertStringNotContainsString($image->private_path, $component->html());
     }
 
     public function test_project_review_shows_asset_absent_when_no_image_exists(): void

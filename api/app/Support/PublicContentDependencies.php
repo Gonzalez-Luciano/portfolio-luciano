@@ -10,6 +10,7 @@ use App\Models\ExpertiseArea;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
+use App\Models\ProjectImage;
 use App\Models\SiteConfiguration;
 use App\Models\Technology;
 use App\Models\WorkCase;
@@ -33,7 +34,8 @@ final class PublicContentDependencies
             Experience::class,
             ExperienceHighlight::class => [PublicEndpoint::Experiences],
             WorkCase::class => [PublicEndpoint::WorkCases],
-            Project::class => [PublicEndpoint::Projects],
+            Project::class,
+            ProjectImage::class => [PublicEndpoint::Projects],
             Technology::class => [
                 PublicEndpoint::Technologies,
                 PublicEndpoint::Experiences,

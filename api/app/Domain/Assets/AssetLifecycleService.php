@@ -8,6 +8,7 @@ use App\Enums\PublicationStatus;
 use App\Models\CvDocument;
 use App\Models\Profile;
 use App\Models\Project;
+use App\Models\ProjectImage;
 use App\Models\SiteConfiguration;
 use App\Models\Technology;
 use App\Support\PublicContentCache;
@@ -115,6 +116,10 @@ final class AssetLifecycleService
             throw new AssetOperationException('Only published hidden content can be shown.');
         }
 
+        if ($owner instanceof Project) {
+            return $this->showProject($owner);
+        }
+
         $definition = $this->definition($owner, false);
         if ($definition === null) {
             return $this->changeState($owner, PublicationStatus::Published, true, false);
@@ -152,6 +157,71 @@ final class AssetLifecycleService
             $this->cache->invalidate($this->dependencies->for($owner));
 
             throw $this->operationFailure('show', $owner, (string) Str::uuid(), $exception);
+        }
+
+        $this->cache->invalidate($this->dependencies->for($owner));
+
+        return $updated->fresh();
+    }
+
+    /**
+     * Publishes one verified public copy per gallery image, in the same
+     * commit-then-copy order as a single owned asset. Any copy failure
+     * withdraws the copies made so far and leaves the project hidden with no
+     * public reference.
+     */
+    private function showProject(Project $owner): Model
+    {
+        $images = $owner->images()->get();
+        foreach ($images as $image) {
+            if (! Storage::disk('local')->exists($image->private_path)) {
+                throw new AssetOperationException('The private original is unavailable.');
+            }
+        }
+        $this->validator->assertPublishable($owner);
+
+        if ($images->isEmpty()) {
+            return $this->changeState($owner, PublicationStatus::Published, true, false);
+        }
+
+        $operationId = (string) Str::uuid();
+        $paths = $images->mapWithKeys(static fn (ProjectImage $image): array => [
+            $image->getKey() => 'projects/'.Str::uuid().'.'.pathinfo($image->private_path, PATHINFO_EXTENSION),
+        ])->all();
+
+        $updated = DB::transaction(function () use ($owner, $paths): Model {
+            $locked = $this->locked($owner);
+
+            return $this->context->run(function () use ($locked, $paths): Model {
+                foreach ($paths as $id => $path) {
+                    ProjectImage::query()->whereKey($id)->update(['public_path' => $path]);
+                }
+                $locked->forceFill(['is_visible' => true])->save();
+
+                return $locked->fresh();
+            });
+        });
+
+        $copied = [];
+        try {
+            foreach ($images as $image) {
+                $this->copyPublic($image->private_path, $paths[$image->getKey()]);
+                $copied[] = $paths[$image->getKey()];
+            }
+        } catch (\Throwable $exception) {
+            foreach ($copied as $path) {
+                Storage::disk('public')->delete($path);
+            }
+            DB::transaction(function () use ($owner): void {
+                $locked = $this->locked($owner);
+                $this->context->run(function () use ($locked): void {
+                    ProjectImage::query()->where('project_id', $locked->getKey())->update(['public_path' => null]);
+                    $locked->forceFill(['is_visible' => false])->save();
+                });
+            });
+            $this->cache->invalidate($this->dependencies->for($owner));
+
+            throw $this->operationFailure('show', $owner, $operationId, $exception);
         }
 
         $this->cache->invalidate($this->dependencies->for($owner));
@@ -252,13 +322,27 @@ final class AssetLifecycleService
     {
         $definition = $this->definition($owner, false);
         $old = $definition === null ? null : $this->snapshot($owner, $definition);
+        $gallery = $this->gallerySnapshot($owner);
         $operationId = (string) Str::uuid();
         $endpoints = $this->dependencies->for($owner);
 
-        return $this->context->run(function () use ($owner, $status, $visible, $clearAsset, $delete, $definition, $old, $operationId, $endpoints): Model {
-            return $this->cache->withMutationLocks($endpoints, function () use ($owner, $status, $visible, $clearAsset, $delete, $definition, $old, $operationId, $endpoints): Model {
+        return $this->context->run(function () use ($owner, $status, $visible, $clearAsset, $delete, $definition, $old, $gallery, $operationId, $endpoints): Model {
+            return $this->cache->withMutationLocks($endpoints, function () use ($owner, $status, $visible, $clearAsset, $delete, $definition, $old, $gallery, $operationId, $endpoints): Model {
                 if ($old !== null) {
                     $this->deletePublic($old['public'], $owner, $operationId, 'withdraw_public_copy');
+                }
+                $withdrawn = [];
+                try {
+                    foreach ($gallery as $image) {
+                        if ($image['public'] !== null) {
+                            $this->deletePublic($image['public'], $owner, $operationId, 'withdraw_gallery_public_copy');
+                            $withdrawn[] = $image;
+                        }
+                    }
+                } catch (\Throwable $exception) {
+                    $this->restoreGalleryCopies($withdrawn, $owner, $operationId);
+
+                    throw $exception;
                 }
                 try {
                     $this->cache->invalidate($endpoints);
@@ -266,6 +350,7 @@ final class AssetLifecycleService
                     if ($old !== null && $old['public'] !== null && $old['private'] !== null) {
                         $this->copyPublic($old['private'], $old['public']);
                     }
+                    $this->restoreGalleryCopies($gallery, $owner, $operationId);
 
                     throw $this->operationFailure('pre_commit_cache_invalidation', $owner, $operationId, $exception);
                 }
@@ -299,6 +384,9 @@ final class AssetLifecycleService
                             if ($clearAsset && $definition !== null) {
                                 $this->clearAsset($locked, $definition);
                             }
+                            if ($locked instanceof Project) {
+                                ProjectImage::query()->where('project_id', $locked->getKey())->whereNotNull('public_path')->update(['public_path' => null]);
+                            }
                             $locked->forceFill($attributes)->save();
 
                             return $locked->fresh();
@@ -311,6 +399,9 @@ final class AssetLifecycleService
                         } catch (\Throwable $restoreException) {
                             $this->log($owner, $operationId, 'restore_public_copy_failed');
                         }
+                    }
+                    if (! $committed) {
+                        $this->restoreGalleryCopies($gallery, $owner, $operationId);
                     }
                     try {
                         $this->cache->invalidate($endpoints);
@@ -342,6 +433,15 @@ final class AssetLifecycleService
                         }
                     } catch (\Throwable $exception) {
                         throw $this->operationFailure('remove_private_cleanup', $owner, $operationId, $exception);
+                    }
+                }
+                if ($delete) {
+                    try {
+                        foreach ($gallery as $image) {
+                            $this->removePrivateOrFail($image['private']);
+                        }
+                    } catch (\Throwable $exception) {
+                        throw $this->operationFailure('delete_gallery_private_cleanup', $owner, $operationId, $exception);
                     }
                 }
 
@@ -392,6 +492,33 @@ final class AssetLifecycleService
         ];
     }
 
+    /** @return list<array{private: string, public: ?string}> */
+    private function gallerySnapshot(Model $owner): array
+    {
+        if (! $owner instanceof Project) {
+            return [];
+        }
+
+        return ProjectImage::query()->where('project_id', $owner->getKey())->orderBy('position')->orderBy('id')->get()
+            ->map(static fn (ProjectImage $image): array => ['private' => $image->private_path, 'public' => $image->public_path])
+            ->all();
+    }
+
+    /** @param list<array{private: string, public: ?string}> $images */
+    private function restoreGalleryCopies(array $images, Model $owner, string $operationId): void
+    {
+        foreach ($images as $image) {
+            if ($image['public'] === null) {
+                continue;
+            }
+            try {
+                $this->copyPublic($image['private'], $image['public']);
+            } catch (\Throwable) {
+                $this->log($owner, $operationId, 'restore_gallery_public_copy_failed');
+            }
+        }
+    }
+
     private function restoreSnapshot(Model $owner, array $definition, array $snapshot, bool $restorePublicPath = true): void
     {
         DB::transaction(function () use ($owner, $definition, $snapshot, $restorePublicPath): void {
@@ -436,7 +563,6 @@ final class AssetLifecycleService
     {
         return match ($owner::class) {
             Profile::class => ['es' => 'photo_alt_es', 'en' => 'photo_alt_en'],
-            Project::class => ['es' => 'image_alt_es', 'en' => 'image_alt_en'],
             default => null,
         };
     }
@@ -515,7 +641,7 @@ final class AssetLifecycleService
     {
         $definition = match ($owner::class) {
             Profile::class => ['namespace' => 'profiles', 'publicNamespace' => 'profiles', 'private' => 'photo_private_path', 'publicPath' => 'photo_public_path', 'mime' => 'photo_mime', 'size' => 'photo_size', 'mimes' => ['image/jpeg', 'image/png', 'image/webp'], 'maximum' => 5 * 1024 * 1024, 'public' => true, 'cv' => false],
-            Project::class => ['namespace' => 'projects', 'publicNamespace' => 'projects', 'private' => 'image_private_path', 'publicPath' => 'image_public_path', 'mime' => 'image_mime', 'size' => 'image_size', 'mimes' => ['image/jpeg', 'image/png', 'image/webp'], 'maximum' => 8 * 1024 * 1024, 'public' => true, 'cv' => false],
+            ProjectImage::class => ['namespace' => 'projects', 'publicNamespace' => 'projects', 'private' => 'private_path', 'publicPath' => 'public_path', 'mime' => 'mime', 'size' => 'size', 'mimes' => ['image/jpeg', 'image/png', 'image/webp'], 'maximum' => 8 * 1024 * 1024, 'public' => true, 'cv' => false],
             Technology::class => ['namespace' => 'technologies', 'publicNamespace' => 'technologies', 'private' => 'icon_private_path', 'publicPath' => 'icon_public_path', 'mime' => 'icon_mime', 'size' => 'icon_size', 'mimes' => ['image/png', 'image/webp'], 'maximum' => 1024 * 1024, 'public' => true, 'cv' => false],
             CvDocument::class => ['namespace' => 'cv', 'publicNamespace' => '', 'private' => 'private_path', 'publicPath' => '', 'mime' => 'mime', 'size' => 'size', 'mimes' => ['application/pdf'], 'maximum' => 5 * 1024 * 1024, 'public' => false, 'cv' => true],
             default => null,

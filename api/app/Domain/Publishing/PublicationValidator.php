@@ -11,11 +11,13 @@ use App\Models\ExpertiseArea;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
+use App\Models\ProjectImage;
 use App\Models\SiteConfiguration;
 use App\Models\Technology;
 use App\Models\WorkCase;
 use App\Models\WorkPrinciple;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 final class PublicationValidator
@@ -39,6 +41,14 @@ final class PublicationValidator
      * Application maximum for alt text (spec section 8).
      */
     private const ALT_TEXT_MAX_LENGTH = 500;
+
+    /** Maximum ordered screenshots per project (spec §4.2). */
+    public const PROJECT_IMAGE_LIMIT = 12;
+
+    public const PROJECT_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
+
+    /** @var list<string> */
+    public const PROJECT_IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
 
     /**
      * Optional bilingual Profile copy used by the Phase 6 scroll scene.
@@ -156,12 +166,42 @@ final class PublicationValidator
             ...$this->required($project, ['delivery_status']),
             ...$this->projectClientIssues($project),
             ...$this->httpsUrlIssues($project, ['demo_url', 'repository_url']),
-            ...$this->imageAssetIssues($project, 'image', 8 * 1024 * 1024),
+            ...$this->projectImageIssues($project),
             ...$this->maxLength($project, ['client_name'], self::BOUNDED_MAX_LENGTH),
             ...$this->maxLengthPairs($project, ['title', 'role'], self::BOUNDED_MAX_LENGTH),
             ...$this->maxLengthPairs($project, ['summary', 'problem', 'solution', 'result'], self::NARRATIVE_MAX_LENGTH),
-            ...$this->maxLength($project, ['image_alt_es', 'image_alt_en'], self::ALT_TEXT_MAX_LENGTH),
         ];
+    }
+
+    /** @return list<PublicationIssue> */
+    private function projectImageIssues(Project $project): array
+    {
+        /** @var Collection<int, ProjectImage> $images */
+        $images = $project->relationLoaded('images')
+            ? $project->getRelation('images')
+            : ($project->exists ? $project->images()->get() : collect());
+
+        $issues = [];
+        if ($images->count() > self::PROJECT_IMAGE_LIMIT) {
+            $issues[] = $this->issue('too_many_images', 'images', 'A project can have at most 12 images.');
+        }
+
+        foreach ($images->values() as $index => $image) {
+            $prefix = "images.{$index}.";
+            $issues = [
+                ...$issues,
+                ...$this->requiredPairs($image, ['alt'], $prefix),
+                ...$this->maxLengthPairs($image, ['alt'], self::ALT_TEXT_MAX_LENGTH, $prefix),
+            ];
+            if (! in_array($image->mime, self::PROJECT_IMAGE_MIMES, true)) {
+                $issues[] = $this->issue('invalid_asset_mime', "{$prefix}mime", 'The owned asset MIME type is not allowed.');
+            }
+            if ((int) $image->size < 1 || (int) $image->size > self::PROJECT_IMAGE_MAX_BYTES) {
+                $issues[] = $this->issue('asset_size_exceeded', "{$prefix}size", 'The owned asset exceeds the allowed size.');
+            }
+        }
+
+        return $issues;
     }
 
     /** @return list<PublicationIssue> */

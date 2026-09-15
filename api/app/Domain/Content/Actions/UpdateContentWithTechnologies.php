@@ -45,7 +45,6 @@ final class UpdateContentWithTechnologies
     private const PROTECTED_ATTRIBUTES = [
         'status', 'is_visible', 'published_at', 'key', 'key_locked',
         'photo_private_path', 'photo_public_path', 'photo_mime', 'photo_size', 'photo_alt_es', 'photo_alt_en',
-        'image_private_path', 'image_public_path', 'image_mime', 'image_size', 'image_alt_es', 'image_alt_en',
         'icon_private_path', 'icon_public_path', 'icon_mime', 'icon_size', 'private_path', 'mime', 'size',
     ];
 

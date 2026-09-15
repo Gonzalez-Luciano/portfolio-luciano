@@ -20,17 +20,17 @@ class CreateProject extends CreateRecord
      * identity is chosen once here; it changes afterward only through the
      * dedicated "Change key" action.
      *
-     * The image upload, its alt text, and technologies are hidden (and not
+     * The screenshot gallery and technologies are hidden (and not
      * dehydrated) on the create form since the owned-asset actions and the
-     * technology domain action both require an existing Project row; all
-     * three are defensively stripped here too, and are managed afterward
+     * technology domain action both require an existing Project row; both
+     * are defensively stripped here too, and are managed afterward
      * on the edit page.
      *
      * @param  array<string, mixed>  $data
      */
     protected function handleRecordCreation(array $data): Model
     {
-        unset($data['image'], $data['image_alt_es'], $data['image_alt_en'], $data['technologies']);
+        unset($data['technologies'], $data['images']);
 
         if (! ProjectForm::isClient($data['kind'] ?? null)) {
             $data['client_name'] = null;

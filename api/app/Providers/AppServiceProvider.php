@@ -12,6 +12,7 @@ use App\Models\ExpertiseArea;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
+use App\Models\ProjectImage;
 use App\Models\SiteConfiguration;
 use App\Models\Technology;
 use App\Models\WorkCase;
@@ -38,7 +39,7 @@ class AppServiceProvider extends ServiceProvider
     {
         foreach ([
             Profile::class, SiteConfiguration::class, Experience::class, ExperienceHighlight::class,
-            WorkCase::class, Project::class, Technology::class, ExpertiseArea::class,
+            WorkCase::class, Project::class, ProjectImage::class, Technology::class, ExpertiseArea::class,
             WorkPrinciple::class, ProfessionalLink::class, CvDocument::class,
         ] as $model) {
             $model::observe(EditorialMutationGuard::class);

@@ -7,7 +7,6 @@ use App\Enums\ProjectKind;
 use App\Enums\PublicationStatus;
 use App\Models\Project;
 use App\Models\Technology;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -79,7 +78,6 @@ class ProjectForm
                         Textarea::make('problem_es')->label('Problem (ES)')->maxLength(10000),
                         Textarea::make('solution_es')->label('Solution (ES)')->maxLength(10000),
                         Textarea::make('result_es')->label('Result (ES)')->maxLength(10000),
-                        TextInput::make('image_alt_es')->label('Image alt text (ES)')->maxLength(500),
                     ]),
                     Tab::make('English')->schema([
                         TextInput::make('title_en')->label('Title (EN)')->maxLength(255),
@@ -88,20 +86,8 @@ class ProjectForm
                         Textarea::make('problem_en')->label('Problem (EN)')->maxLength(10000),
                         Textarea::make('solution_en')->label('Solution (EN)')->maxLength(10000),
                         Textarea::make('result_en')->label('Result (EN)')->maxLength(10000),
-                        TextInput::make('image_alt_en')->label('Image alt text (EN)')->maxLength(500),
                     ]),
                 ]),
-
-                FileUpload::make('image')
-                    ->label('Image')
-                    ->image()
-                    ->storeFiles(false)
-                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                    ->maxSize(8 * 1024)
-                    ->helperText('Optional. JPEG, PNG, or WebP, up to 8 MiB. Uploading a new image replaces the current one only after saving. Alt text in both languages is required for publication once an image is present.'),
-                Placeholder::make('image_display')
-                    ->label('Current image')
-                    ->content(fn (?Project $record): string => filled($record?->image_private_path) ? 'Present' : 'None'),
 
                 Repeater::make('technologies')
                     ->label('Technologies')

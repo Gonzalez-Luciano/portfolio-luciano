@@ -38,8 +38,6 @@ final class PhaseFourSchemaTest extends TestCase
         $columns = [
             ['profiles', 'photo_alt_es'],
             ['profiles', 'photo_alt_en'],
-            ['projects', 'image_alt_es'],
-            ['projects', 'image_alt_en'],
         ];
 
         foreach ($columns as [$table, $column]) {
@@ -80,10 +78,6 @@ final class PhaseFourSchemaTest extends TestCase
         $this->assertDatabaseRejects(fn () => DB::table('work_cases')->insert([
             ...$this->keyedRow('invalid-draft-state'),
             'is_visible' => true,
-        ]));
-        $this->assertDatabaseRejects(fn () => DB::table('projects')->insert([
-            ...$this->keyedRow('incomplete-image'),
-            'image_private_path' => 'projects/private.png',
         ]));
         $this->assertDatabaseRejects(fn () => DB::table('technologies')->insert([
             ...$this->keyedRow('invalid-public-icon'),

@@ -2,8 +2,7 @@
 
 namespace Tests\Feature\Filament;
 
-use App\Domain\Content\Actions\PublishContent;
-use App\Domain\Content\Actions\ReplaceOwnedAsset;
+use App\Domain\Publishing\EditorialMutationContext;
 use App\Enums\ProjectKind;
 use App\Enums\PublicationStatus;
 use App\Filament\Resources\Projects\Pages\CreateProject;
@@ -15,7 +14,6 @@ use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -169,146 +167,6 @@ final class ProjectResourceTest extends TestCase
             ->assertNotified('Publish succeeded');
 
         $this->assertSame(PublicationStatus::Published, $project->refresh()->status);
-    }
-
-    // ---- Optional image with alt-text-required-when-present ----
-
-    public function test_image_alt_text_is_not_required_for_publication_without_an_image(): void
-    {
-        $project = Project::factory()->create($this->completeAttributes());
-        $this->authenticateAdmin();
-
-        Livewire::test(EditProject::class, ['record' => $project->getKey()])
-            ->callAction('publish')
-            ->assertNotified('Publish succeeded');
-    }
-
-    public function test_image_alt_text_is_required_in_both_locales_when_an_image_is_present(): void
-    {
-        $project = Project::factory()->create(array_merge($this->completeAttributes(), [
-            'image_private_path' => 'projects/synthetic.jpg',
-            'image_public_path' => null,
-            'image_mime' => 'image/jpeg',
-            'image_size' => 1024,
-            'image_alt_es' => null,
-            'image_alt_en' => null,
-        ]));
-        $this->authenticateAdmin();
-
-        Livewire::test(EditProject::class, ['record' => $project->getKey()])
-            ->callAction('publish')
-            ->assertNotified('Publish failed');
-
-        $this->assertSame(PublicationStatus::Draft, $project->refresh()->status);
-    }
-
-    public function test_project_with_an_image_publishes_once_both_alt_locales_are_present(): void
-    {
-        $project = Project::factory()->create(array_merge($this->completeAttributes(), [
-            'image_private_path' => 'projects/synthetic.jpg',
-            'image_public_path' => null,
-            'image_mime' => 'image/jpeg',
-            'image_size' => 1024,
-            'image_alt_es' => 'Imagen sintética',
-            'image_alt_en' => 'Synthetic image',
-        ]));
-        $this->authenticateAdmin();
-
-        Livewire::test(EditProject::class, ['record' => $project->getKey()])
-            ->callAction('publish')
-            ->assertNotified('Publish succeeded');
-
-        $this->assertSame(PublicationStatus::Published, $project->refresh()->status);
-    }
-
-    // ---- Lifecycle-controlled image upload/removal ----
-
-    public function test_uploading_an_image_replaces_it_through_replace_owned_asset(): void
-    {
-        Storage::fake('local');
-        Storage::fake('public');
-
-        $project = Project::factory()->create();
-        $this->authenticateAdmin();
-
-        Livewire::test(EditProject::class, ['record' => $project->getKey()])
-            ->fillForm([
-                'image' => $this->png('cover.png'),
-                'image_alt_es' => 'Imagen sintética',
-                'image_alt_en' => 'Synthetic image',
-            ])
-            ->call('save')
-            ->assertHasNoFormErrors();
-
-        $project->refresh();
-        $this->assertNotNull($project->image_private_path);
-        $this->assertSame('Imagen sintética', $project->image_alt_es);
-        $this->assertSame('Synthetic image', $project->image_alt_en);
-        Storage::disk('local')->assertExists($project->image_private_path);
-    }
-
-    public function test_uploading_a_first_image_with_alt_text_on_a_published_project_saves_both(): void
-    {
-        Storage::fake('local');
-        Storage::fake('public');
-
-        $project = Project::factory()->create($this->completeAttributes());
-        app(PublishContent::class)($project);
-        $this->authenticateAdmin();
-
-        Livewire::test(EditProject::class, ['record' => $project->getKey()])
-            ->fillForm([
-                'image' => $this->png('cover.png'),
-                'image_alt_es' => 'Imagen sintética',
-                'image_alt_en' => 'Synthetic image',
-            ])
-            ->call('save')
-            ->assertNotified('Saved');
-
-        $project->refresh();
-        $this->assertNotNull($project->image_private_path);
-        $this->assertSame('Imagen sintética', $project->image_alt_es);
-        $this->assertSame('Synthetic image', $project->image_alt_en);
-        Storage::disk('local')->assertExists($project->image_private_path);
-    }
-
-    public function test_remove_image_action_is_only_visible_with_an_existing_image_and_clears_it(): void
-    {
-        Storage::fake('local');
-        Storage::fake('public');
-
-        $project = Project::factory()->create();
-        $this->authenticateAdmin();
-
-        Livewire::test(EditProject::class, ['record' => $project->getKey()])
-            ->assertActionHidden('remove_image');
-
-        app(ReplaceOwnedAsset::class)($project, $this->png('cover.png'));
-
-        Livewire::test(EditProject::class, ['record' => $project->getKey()])
-            ->assertActionVisible('remove_image')
-            ->callAction('remove_image');
-
-        $this->assertNull($project->fresh()->image_private_path);
-    }
-
-    public function test_editing_image_alt_text_goes_through_update_owned_asset_alt_text(): void
-    {
-        Storage::fake('local');
-        Storage::fake('public');
-
-        $project = Project::factory()->create([
-            'image_alt_es' => 'Alt original', 'image_alt_en' => 'Original alt',
-        ]);
-        app(ReplaceOwnedAsset::class)($project, $this->png('cover.png'));
-        $this->authenticateAdmin();
-
-        Livewire::test(EditProject::class, ['record' => $project->getKey()])
-            ->fillForm(['image_alt_en' => 'Updated alt'])
-            ->call('save')
-            ->assertNotified('Saved');
-
-        $this->assertSame('Updated alt', $project->fresh()->image_alt_en);
     }
 
     // ---- Contextual ordered technologies ----
@@ -467,15 +325,17 @@ final class ProjectResourceTest extends TestCase
 
     // ---- Hard delete ----
 
-    public function test_deleting_a_project_cascades_to_technology_pivots_and_the_owned_asset(): void
+    public function test_deleting_a_project_cascades_to_technology_pivots_and_gallery_originals(): void
     {
         Storage::fake('local');
         Storage::fake('public');
 
         $project = Project::factory()->create();
-        app(ReplaceOwnedAsset::class)($project, $this->png('cover.png'));
-        $project->refresh();
-        $imagePath = $project->image_private_path;
+        Storage::disk('local')->put('projects/cover.png', 'synthetic-png');
+        app(EditorialMutationContext::class)->run(fn () => $project->images()->create([
+            'position' => 0, 'private_path' => 'projects/cover.png', 'mime' => 'image/png', 'size' => 13,
+            'alt_es' => 'Portada sintética', 'alt_en' => 'Synthetic cover',
+        ]));
         $technology = Technology::factory()->create();
         $project->technologies()->attach($technology, ['position' => 0]);
         $this->authenticateAdmin();
@@ -485,10 +345,10 @@ final class ProjectResourceTest extends TestCase
             ->callAction('delete');
 
         $this->assertSame(0, Project::query()->count());
+        $this->assertSame(0, DB::table('project_images')->count());
         $this->assertSame(0, DB::table('project_technology')->count());
-        // The technology itself is not deleted, only the relation row.
         $this->assertSame(1, Technology::query()->count());
-        Storage::disk('local')->assertMissing($imagePath);
+        Storage::disk('local')->assertMissing('projects/cover.png');
     }
 
     // ---- Aggregate atomicity ----
@@ -608,19 +468,5 @@ final class ProjectResourceTest extends TestCase
         }
         $model::query()->whereKey($model->getKey())->update($attributes);
         $model->refresh();
-    }
-
-    /**
-     * A real, tiny, valid PNG's bytes, matching the established fixture
-     * pattern in EditorialActionTest: the sandbox's PHP build has no GD
-     * extension, so `UploadedFile::fake()->image()` (which shells out to
-     * `imagecreatetruecolor()`) is unusable here.
-     */
-    private function png(string $name): UploadedFile
-    {
-        return UploadedFile::fake()->createWithContent(
-            $name,
-            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL9SAAAAABJRU5ErkJggg=='),
-        );
     }
 }

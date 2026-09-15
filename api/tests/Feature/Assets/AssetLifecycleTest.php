@@ -8,7 +8,7 @@ use App\Domain\Assets\AssetValidationException;
 use App\Domain\Content\Actions\RemoveOwnedAsset;
 use App\Models\CvDocument;
 use App\Models\Profile;
-use App\Models\Project;
+use App\Models\ProjectImage;
 use App\Models\Technology;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Http\UploadedFile;
@@ -43,7 +43,7 @@ final class AssetLifecycleTest extends TestCase
     {
         $owners = [
             [Profile::query()->firstOrFail(), UploadedFile::fake()->create('not-an-image.jpg', 12, 'text/plain')],
-            [Project::factory()->create(), UploadedFile::fake()->create('vector.svg', 12, 'image/svg+xml')],
+            [new ProjectImage, UploadedFile::fake()->create('vector.svg', 12, 'image/svg+xml')],
             [Technology::factory()->create(), $this->png('large.png', str_repeat('x', 1024 * 1024))],
             [CvDocument::factory()->create(), UploadedFile::fake()->create('not-a-pdf.pdf', 12, 'text/plain')],
         ];
@@ -60,18 +60,18 @@ final class AssetLifecycleTest extends TestCase
 
     public function test_replacing_a_hidden_asset_commits_only_the_new_private_reference_and_cleans_the_old_original(): void
     {
-        $project = Project::factory()->create();
+        $technology = Technology::factory()->create();
         $service = app(AssetLifecycleService::class);
-        $service->replace($project, $this->png('first.png'));
-        $firstPath = $project->fresh()->image_private_path;
+        $service->replace($technology, $this->png('first.png'));
+        $firstPath = $technology->fresh()->icon_private_path;
 
-        $service->replace($project->fresh(), $this->png('second.png'));
-        $project->refresh();
+        $service->replace($technology->fresh(), $this->png('second.png'));
+        $technology->refresh();
 
-        $this->assertNotSame($firstPath, $project->image_private_path);
-        $this->assertNull($project->image_public_path);
+        $this->assertNotSame($firstPath, $technology->icon_private_path);
+        $this->assertNull($technology->icon_public_path);
         Storage::disk('local')->assertMissing($firstPath);
-        Storage::disk('local')->assertExists($project->image_private_path);
+        Storage::disk('local')->assertExists($technology->icon_private_path);
         Storage::disk('public')->assertDirectoryEmpty('/');
     }
 
@@ -90,53 +90,53 @@ final class AssetLifecycleTest extends TestCase
 
     public function test_private_upload_failure_leaves_no_reference_or_orphan(): void
     {
-        $project = Project::factory()->create();
+        $technology = Technology::factory()->create();
         $local = Mockery::mock();
         $local->shouldReceive('putFileAs')->once()->andReturnFalse();
         Storage::shouldReceive('disk')->with('local')->andReturn($local);
 
         try {
-            app(AssetLifecycleService::class)->replace($project, $this->png('upload.png'));
+            app(AssetLifecycleService::class)->replace($technology, $this->png('upload.png'));
             $this->fail('A private upload failure must be controlled.');
         } catch (AssetOperationException) {
-            $project->refresh();
-            $this->assertNull($project->image_private_path);
-            $this->assertNull($project->image_public_path);
+            $technology->refresh();
+            $this->assertNull($technology->icon_private_path);
+            $this->assertNull($technology->icon_public_path);
         }
     }
 
     public function test_private_cleanup_failure_restores_the_old_hidden_reference(): void
     {
-        $project = Project::factory()->create();
+        $technology = Technology::factory()->create();
         $service = app(AssetLifecycleService::class);
-        $service->replace($project, $this->png('old.png'));
-        $oldPath = $project->fresh()->image_private_path;
+        $service->replace($technology, $this->png('old.png'));
+        $oldPath = $technology->fresh()->icon_private_path;
         $local = Mockery::mock();
         $local->shouldReceive('delete')->with($oldPath)->once()->andReturnFalse();
         Storage::shouldReceive('disk')->with('local')->andReturn($local);
 
         try {
-            app(RemoveOwnedAsset::class)($project->fresh());
+            app(RemoveOwnedAsset::class)($technology->fresh());
             $this->fail('A failed private cleanup must not claim success.');
         } catch (AssetOperationException) {
-            $this->assertSame($oldPath, $project->fresh()->image_private_path);
+            $this->assertSame($oldPath, $technology->fresh()->icon_private_path);
         }
     }
 
     public function test_database_failure_removes_the_staged_file_and_preserves_the_old_reference(): void
     {
-        $project = Project::factory()->create();
+        $technology = Technology::factory()->create();
         $service = app(AssetLifecycleService::class);
-        $service->replace($project, $this->png('old.png'));
-        $oldPath = $project->fresh()->image_private_path;
-        $stale = $project->fresh();
+        $service->replace($technology, $this->png('old.png'));
+        $oldPath = $technology->fresh()->icon_private_path;
+        $stale = $technology->fresh();
         $stale->setAttribute('id', 999999);
 
         try {
             $service->replace($stale, $this->png('new.png'));
             $this->fail('A database failure must be controlled.');
         } catch (AssetOperationException) {
-            $this->assertSame($oldPath, $project->fresh()->image_private_path);
+            $this->assertSame($oldPath, $technology->fresh()->icon_private_path);
             $this->assertSame([$oldPath], Storage::disk('local')->allFiles());
         }
     }

@@ -10,6 +10,7 @@ use App\Models\ExpertiseArea;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
+use App\Models\ProjectImage;
 use App\Models\SiteConfiguration;
 use App\Models\Technology;
 use App\Models\WorkCase;
@@ -160,6 +161,7 @@ final class PublicationReviewPresenter
     private function project(Project $project): array
     {
         $technologies = $project->relationLoaded('technologies') ? $project->getRelation('technologies') : $project->technologies;
+        $images = $project->relationLoaded('images') ? $project->getRelation('images') : $project->images;
 
         return array_merge($this->base('Project', $project->key, $project->position, $project->status->value, $project->is_visible, $project->published_at?->toDateTimeString()), [
             'bilingual' => [
@@ -181,9 +183,11 @@ final class PublicationReviewPresenter
             'relationships' => [
                 'Contextual technologies' => $this->technologyList($technologies),
             ],
-            'assets' => [
-                $this->assetInfo('Image', $project->image_private_path, $project->image_mime, $project->image_size, $project->image_alt_es, $project->image_alt_en),
-            ],
+            'assets' => $images->isEmpty()
+                ? [$this->assetInfo('Screenshots', null, null, null)]
+                : $images->values()->map(fn (ProjectImage $image, int $index): array => $this->assetInfo(
+                    'Screenshot '.($index + 1), $image->private_path, $image->mime, $image->size, $image->alt_es, $image->alt_en,
+                ))->all(),
             'issues' => $this->issues($project),
         ]);
     }

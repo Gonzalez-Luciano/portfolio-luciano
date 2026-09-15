@@ -4,6 +4,7 @@ namespace App\Http\Resources\Api\V1;
 
 use App\Enums\SupportedLocale;
 use App\Models\Project;
+use App\Models\ProjectImage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -32,20 +33,20 @@ final class ProjectResource extends JsonResource
             'solution' => $this->{"solution_{$suffix}"},
             'result' => $this->{"result_{$suffix}"},
             'featured' => $this->featured,
-            'image' => $this->image($suffix),
+            'images' => $this->images($suffix),
             'demo_url' => $this->demo_url,
             'repository_url' => $this->repository_url,
             'technologies' => $this->technologies->map(fn ($technology): array => (new TechnologyResource($technology))->resolve())->values()->all(),
         ];
     }
 
-    /** @return ?array{url: string, alt: string} */
-    private function image(string $suffix): ?array
+    /** @return list<array{url: string, alt: string}> */
+    private function images(string $suffix): array
     {
-        if ($this->image_public_path === null || ! Storage::disk('public')->exists($this->image_public_path)) {
-            return null;
-        }
-
-        return ['url' => '/storage/'.ltrim($this->image_public_path, '/'), 'alt' => $this->{"image_alt_{$suffix}"}];
+        return $this->resource->images
+            ->filter(static fn (ProjectImage $image): bool => $image->public_path !== null && Storage::disk('public')->exists($image->public_path))
+            ->map(static fn (ProjectImage $image): array => ['url' => '/storage/'.ltrim($image->public_path, '/'), 'alt' => $image->{"alt_{$suffix}"}])
+            ->values()
+            ->all();
     }
 }

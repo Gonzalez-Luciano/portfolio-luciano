@@ -56,8 +56,10 @@ final class PrivateDiskAccessTest extends TestCase
         $path = 'projects/synthetic.webp';
         Storage::disk('local')->put($path, 'synthetic-image-original');
 
-        Project::factory()->create([
-            'image_private_path' => $path, 'image_mime' => 'image/webp', 'image_size' => strlen('synthetic-image-original'),
+        $project = Project::factory()->create();
+        DB::table('project_images')->insert([
+            'project_id' => $project->id, 'position' => 0, 'private_path' => $path, 'public_path' => null,
+            'mime' => 'image/webp', 'size' => strlen('synthetic-image-original'), 'created_at' => now(), 'updated_at' => now(),
         ]);
 
         $response = $this->get('/storage/'.$path);

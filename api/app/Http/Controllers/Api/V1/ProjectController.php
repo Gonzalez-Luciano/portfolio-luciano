@@ -19,6 +19,7 @@ final class ProjectController extends Controller
         assert($locale instanceof SupportedLocale);
         $data = $cache->remember($locale, PublicEndpoint::Projects, function () use ($locale): array {
             $projects = Project::query()->publiclyAvailable()->with([
+                'images',
                 'technologies' => static fn ($query) => $query->publiclyAvailable()
                     ->reorder()
                     ->orderByPivot('position')

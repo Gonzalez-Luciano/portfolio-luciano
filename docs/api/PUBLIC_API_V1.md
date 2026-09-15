@@ -212,7 +212,7 @@ follows the same shape/ordering rule as Experiences.
       "solution": "string",
       "result": "string",
       "featured": false,
-      "image": null,
+      "images": [{"url": "/storage/projects/uuid.webp", "alt": "string"}],
       "demo_url": null,
       "repository_url": null,
       "technologies": []
@@ -234,7 +234,7 @@ follows the same shape/ordering rule as Experiences.
 | `solution` | `string` | `solution_{locale}` |
 | `result` | `string` | `result_{locale}` |
 | `featured` | `bool` | `featured` |
-| `image` | `{url: string, alt: string} \| null` | present only when `image_public_path` is non-null and verified to exist on the `public` disk |
+| `images` | `array<{url: string, alt: string}>` (always present, may be empty) | `project_images` rows ordered by `position` then `id`; an image is listed only when its `public_path` is non-null **and** verified to exist on the `public` disk; `alt` is `alt_{locale}`; at most 12 |
 | `demo_url` | `string \| null` | `demo_url` |
 | `repository_url` | `string \| null` | `repository_url` |
 | `technologies` | `array<TechnologyResource>` (always present, may be empty) | same shape/ordering rule as above |
