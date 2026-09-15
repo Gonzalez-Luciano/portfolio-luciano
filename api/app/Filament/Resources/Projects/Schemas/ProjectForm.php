@@ -2,11 +2,14 @@
 
 namespace App\Filament\Resources\Projects\Schemas;
 
+use App\Domain\Publishing\PublicationValidator;
 use App\Enums\ProjectDeliveryStatus;
 use App\Enums\ProjectKind;
 use App\Enums\PublicationStatus;
 use App\Models\Project;
 use App\Models\Technology;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -89,6 +92,35 @@ class ProjectForm
                     ]),
                 ]),
 
+                Repeater::make('images')
+                    ->label('Screenshots')
+                    ->addActionLabel('Add screenshot')
+                    ->schema([
+                        Hidden::make('id'),
+                        Placeholder::make('screenshot_state')
+                            ->label('Screenshot')
+                            ->content(fn (Get $get): string => filled($get('id')) ? 'Saved screenshot' : 'New screenshot'),
+                        FileUpload::make('file')
+                            ->label('Image file')
+                            ->image()
+                            ->storeFiles(false)
+                            ->acceptedFileTypes(PublicationValidator::PROJECT_IMAGE_MIMES)
+                            ->maxSize(8 * 1024)
+                            ->helperText('JPEG, PNG, or WebP, up to 8 MiB. Required for a new screenshot; leave empty to keep a saved one.'),
+                        TextInput::make('alt_es')->label('Alt text (ES)')->maxLength(500),
+                        TextInput::make('alt_en')->label('Alt text (EN)')->maxLength(500),
+                    ])
+                    ->reorderable()
+                    ->maxItems(PublicationValidator::PROJECT_IMAGE_LIMIT)
+                    ->defaultItems(0)
+                    ->columns(1)
+                    ->helperText('Drag to reorder (the first one is the main screenshot). Up to 12. Alt text in both languages is required to publish.')
+                    ->hidden(fn (?Project $record): bool => $record === null)
+                    ->dehydrated(fn (?Project $record): bool => $record !== null),
+                Placeholder::make('images_notice')
+                    ->label('Screenshots')
+                    ->content('Save the project first, then add screenshots here.')
+                    ->visible(fn (?Project $record): bool => $record === null),
                 Repeater::make('technologies')
                     ->label('Technologies')
                     ->addActionLabel('Add technology')

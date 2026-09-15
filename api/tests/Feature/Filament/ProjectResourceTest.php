@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Filament;
 
+use App\Domain\Content\Actions\SyncProjectImages;
 use App\Domain\Publishing\EditorialMutationContext;
 use App\Enums\ProjectKind;
 use App\Enums\PublicationStatus;
@@ -12,8 +13,10 @@ use App\Models\Project;
 use App\Models\Technology;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Repeater;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -425,6 +428,92 @@ final class ProjectResourceTest extends TestCase
         $project->refresh();
         $this->assertSame(ProjectKind::Personal, $project->kind);
         $this->assertNull($project->client_name);
+    }
+
+    // ---- Screenshot gallery ----
+
+    /**
+     * `Repeater::fake()` is Filament's dedicated testing helper: it disables
+     * the repeater's UUID item keys (`CanGenerateUuids`) so item keys stay
+     * the plain, predictable indices this test asserts against. Each new
+     * screenshot is added through the repeater's own "add" action (not a
+     * single `fillForm(['images' => [...]])` call) because only that action
+     * runs the item's schema `fill()`, which is what hydrates a `FileUpload`
+     * field's internal array-backed state; setting a file directly on an
+     * item that was never hydrated leaves the raw state as a bare
+     * `TemporaryUploadedFile`, which fails Filament's own array-typed
+     * validation rule for the field.
+     */
+    public function test_uploading_screenshots_through_the_form_stores_them_in_order(): void
+    {
+        Repeater::fake();
+        Storage::fake('local');
+        Storage::fake('public');
+        $project = Project::factory()->create();
+        $this->authenticateAdmin();
+
+        Livewire::test(EditProject::class, ['record' => $project->getKey()])
+            ->callFormComponentAction('images', 'add')
+            ->callFormComponentAction('images', 'add')
+            ->fillForm([
+                'images.0.file' => $this->png('first.png'),
+                'images.0.alt_es' => 'Primera', 'images.0.alt_en' => 'First',
+                'images.1.file' => $this->png('second.png'),
+                'images.1.alt_es' => 'Segunda', 'images.1.alt_en' => 'Second',
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(['First', 'Second'], $project->images()->pluck('alt_en')->all());
+    }
+
+    /**
+     * No screenshot here carries a real upload: the repeater's own
+     * `maxItems(12)` rule is expected to reject the array before Filament
+     * even reaches each item's file-specific validation, so a thirteenth
+     * blank item is enough to exercise it (see the note on the passing
+     * test above for why a real upload needs the item hydrated through the
+     * repeater's "add" action instead of a single `fillForm` call).
+     */
+    public function test_the_gallery_form_rejects_more_than_twelve_screenshots(): void
+    {
+        $project = Project::factory()->create();
+        $this->authenticateAdmin();
+        $items = array_map(fn (int $index): array => ['id' => null, 'file' => null, 'alt_es' => 'Captura', 'alt_en' => 'Shot'], range(0, 12));
+
+        Livewire::test(EditProject::class, ['record' => $project->getKey()])
+            ->fillForm(['images' => $items])
+            ->call('save')
+            ->assertHasFormErrors(['images']);
+
+        $this->assertSame(0, $project->images()->count());
+    }
+
+    public function test_saving_unrelated_fields_keeps_existing_screenshots(): void
+    {
+        Storage::fake('local');
+        Storage::fake('public');
+        $project = Project::factory()->create();
+        $image = app(SyncProjectImages::class)($project, [
+            ['id' => null, 'upload' => $this->png('cover.png'), 'alt_es' => 'Portada', 'alt_en' => 'Cover'],
+        ])->images[0];
+        $this->authenticateAdmin();
+
+        Livewire::test(EditProject::class, ['record' => $project->getKey()])
+            ->fillForm(['summary_es' => 'Resumen actualizado sintético'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame([$image->id], $project->images()->pluck('id')->all());
+        Storage::disk('local')->assertExists($image->private_path);
+    }
+
+    private function png(string $name): UploadedFile
+    {
+        return UploadedFile::fake()->createWithContent(
+            $name,
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL9SAAAAABJRU5ErkJggg=='),
+        );
     }
 
     private function completeAttributes(): array

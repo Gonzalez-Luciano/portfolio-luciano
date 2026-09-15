@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Projects\Pages;
 
 use App\Domain\Content\Actions\ChangePublicKey;
 use App\Domain\Content\Actions\DeleteContent;
+use App\Domain\Content\Actions\SyncProjectImages;
 use App\Domain\Content\Actions\UpdateContentWithTechnologies;
 use App\Domain\Publishing\PublicationValidationException;
 use App\Enums\PublicationStatus;
@@ -11,6 +12,7 @@ use App\Filament\Resources\Projects\ProjectResource;
 use App\Filament\Resources\Projects\Schemas\ProjectForm;
 use App\Filament\Support\EditorialActions;
 use App\Models\Project;
+use App\Models\ProjectImage;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\TextInput;
@@ -18,6 +20,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Exceptions\Halt;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\UploadedFile;
 
 class EditProject extends EditRecord
 {
@@ -39,6 +42,13 @@ class EditProject extends EditRecord
 
         $data['technologies'] = $record->technologies->map(fn ($technology): array => [
             'technology_id' => $technology->getKey(),
+        ])->all();
+
+        $data['images'] = $record->images->map(fn (ProjectImage $image): array => [
+            'id' => $image->getKey(),
+            'file' => null,
+            'alt_es' => $image->alt_es,
+            'alt_en' => $image->alt_en,
         ])->all();
 
         return $data;
@@ -112,6 +122,7 @@ class EditProject extends EditRecord
             throw new \LogicException('The project form did not submit its technologies state.');
         }
         $technologiesInput = $data['technologies'];
+        $imagesInput = $data['images'] ?? null;
 
         // Defense in depth against a tampered payload: none of these are
         // plain editable attributes on this page.
@@ -142,6 +153,16 @@ class EditProject extends EditRecord
             $this->notifyValidationFailure('Save', $exception);
 
             throw new Halt;
+        }
+
+        if (is_array($imagesInput)) {
+            try {
+                $updated = app(SyncProjectImages::class)($updated, self::galleryItems($imagesInput));
+            } catch (\Throwable $exception) {
+                EditorialActions::notifyAssetFailure('Save', $exception);
+
+                throw new Halt;
+            }
         }
 
         $this->record = $updated;
@@ -184,5 +205,30 @@ class EditProject extends EditRecord
     private function syncRecord(Model $updated): void
     {
         $this->record = $updated;
+    }
+
+    /**
+     * Normalizes the repeater state into the gallery service contract. A
+     * FileUpload may dehydrate a single file either bare or wrapped in a
+     * one-item array.
+     *
+     * @param  array<array-key, array<string, mixed>>  $input
+     * @return list<array{id: ?int, upload: ?UploadedFile, alt_es: ?string, alt_en: ?string}>
+     */
+    private static function galleryItems(array $input): array
+    {
+        return array_values(array_map(static function (array $item): array {
+            $file = $item['file'] ?? null;
+            if (is_array($file)) {
+                $file = array_values($file)[0] ?? null;
+            }
+
+            return [
+                'id' => filled($item['id'] ?? null) ? (int) $item['id'] : null,
+                'upload' => $file instanceof UploadedFile ? $file : null,
+                'alt_es' => $item['alt_es'] ?? null,
+                'alt_en' => $item['alt_en'] ?? null,
+            ];
+        }, $input));
     }
 }
