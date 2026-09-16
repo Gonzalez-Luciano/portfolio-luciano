@@ -327,11 +327,10 @@ Fase 4 agrega seis endpoints públicos localizados (`GET /api/v1/{locale}/profil
 
 ### Project
 
-- Nombre.
-- Descripción.
-- Descripción técnica.
-- Imagen.
-- Video opcional.
+- Tipo: para cliente o personal (`kind`), con nombre del cliente solo en proyectos para clientes.
+- Título, rol y estado de entrega (`delivery_status`: en producción, en uso, demo pública, en desarrollo).
+- Resumen, problema, solución y resultado.
+- Galería ordenada de hasta 12 capturas con alt ES/EN (`project_images`).
 - Tecnologías.
 - Demo URL.
 - Repository URL.
@@ -340,6 +339,12 @@ Fase 4 agrega seis endpoints públicos localizados (`GET /api/v1/{locale}/profil
 - Orden.
 
 La demo URL puede apuntar a subdominios alojados en el mismo servidor.
+
+### Education y Language
+
+- Formación: institución, programa y detalle opcional (ES/EN), años opcionales.
+- Idiomas: nombre (ES/EN) y nivel (`native`, `a1`…`c2`).
+- Ambas son colecciones ordenadas y publicables que se exponen dentro de `site`.
 
 ### Technology
 
@@ -461,6 +466,17 @@ Los endpoints públicos (`ProfileController`, `SiteController`) permanecen estri
 Por diseño aprobado (spec sección 22), Fase 4 no implementa: el frontend público de Fase 5 ni integración completa de Next.js; preview público o tokens de preview; revisiones/historial de versiones/flujo de aprobación ni estados editoriales adicionales a `draft`/`published`; soft deletes; páginas públicas de detalle o ruteo por clave; alias/historial de clave; video de Project; SEO/Open Graph/analítica/metadata de Fase 8; animación o comportamiento de Fase 6; S3, URLs firmadas, Redis introducido solo para esta caché, colas/workers o un daemon de reconciliación; una arquitectura genérica de media/CMS/traducción/taxonomía/page-builder; registro público, múltiples roles, teams, tenants o RBAC empresarial; el hardening final de Fase 9.
 
 ---
+
+## Fase 6 — CMS del portfolio (implementado)
+
+Spec: `docs/superpowers/specs/2026-09-14-phase-6-portfolio-redesign-design.md` (secciones 4 y 5). Todo cambio es aditivo sobre el modelo de Fase 4 y conserva sus reglas: estados `draft`/`published`, `is_visible`, `key_locked`, validación bilingüe, guard de mutaciones y caché por endpoint.
+
+- **Project** suma `kind`, `client_name`, `role_*`, `delivery_status` y `result_*`. Un check de MySQL (`projects_client_name_kind_check`) impide guardar un cliente en un proyecto personal; publicar exige rol, resultado, estado de entrega y, si es para cliente, el nombre del cliente.
+- **Galería (`project_images`)**: reemplaza la imagen única (migrada a la posición 0). Filas escritas solo por `ProjectGalleryService` (acción `SyncProjectImages`) o `AssetLifecycleService`; el guard rechaza cualquier otro cambio. `sync()` valida la lista propuesta (máximo 12, IDs del mismo proyecto, alt ≤ 500), guarda originales privados, aplica las reglas de publicación sobre la galería propuesta, confirma filas en una transacción y solo entonces copia públicos si el proyecto está publicado y visible. Un fallo de copia restaura las filas anteriores y descarta las subidas. Mostrar un proyecto copia cada captura; ocultar, volver a borrador o borrar retira las copias (y al borrar, los originales).
+- **WorkCase** tiene `experience_id` opcional (`ON DELETE SET NULL`); la API expone `experience_key` solo si la experiencia es pública. Cambiar una Experience invalida `experiences` y `work-cases`.
+- **EducationEntry** y **Language** son recursos Filament propios en "Profile and site", con revisión, reorden, cambio de clave y borrado como las demás colecciones; invalidan `site`.
+- **Profile** suma `location` (sin traducir) y `work_modes` (JSON de `on_site`, `hybrid`, `remote`; la API los emite en ese orden).
+- **Contenido inicial de Fase 6**: `php artisan db:seed --class=PhaseSixDraftContentSeeder` crea borradores (experiencias de Coned, vínculo de casos, ReservaHub, Trucks and Drinks sin textos ni capturas, formación, idiomas, tecnologías del CV, ubicación y modalidades) mediante acciones de dominio. Es idempotente, nunca publica y nunca pisa datos existentes.
 
 ## Fase 5 — Sitio público (implementado; reemplazado en Fase 6)
 

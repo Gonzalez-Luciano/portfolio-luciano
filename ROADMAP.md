@@ -545,6 +545,19 @@ Spec: `docs/superpowers/specs/2026-09-14-phase-6-cinematic-scroll-design.md`.
 - [ ] QA en navegador real con ventana visible (scrub del canvas, móvil, movimiento reducido).
 - [ ] Rediseño visual con la nueva foto (la lógica de scroll se conserva).
 
+### CMS y API del portfolio
+
+Spec: `docs/superpowers/specs/2026-09-14-phase-6-portfolio-redesign-design.md`. Plan: `docs/superpowers/plans/2026-09-14-phase-6-cms-api.md`.
+
+- [x] Proyectos para clientes y personales: tipo, cliente, rol, estado de entrega y resultado.
+- [x] Galería ordenada de hasta 12 capturas por proyecto, editable en Filament.
+- [x] Casos vinculados a su experiencia (`experience_key`).
+- [x] Formación e idiomas como colecciones administrables.
+- [x] Ubicación y modalidades de trabajo en Profile.
+- [x] Borradores de contenido de Fase 6 cargados con acciones de dominio.
+- [ ] Revisión y publicación humana de los borradores en Filament.
+- [ ] Textos de problema, solución y resultado y capturas de Trucks and Drinks (los aporta Luciano).
+
 ### Motion
 
 - [ ] Animación inicial del hero.
