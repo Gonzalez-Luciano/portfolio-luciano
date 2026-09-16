@@ -2,6 +2,10 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Domain\Content\Actions\DeleteContent;
+use App\Domain\Content\Actions\HideContent;
+use App\Domain\Content\Actions\PublishContent;
+use App\Domain\Content\Actions\ShowContent;
 use App\Enums\PublicationStatus;
 use App\Enums\TechnologyCategory;
 use App\Models\CvDocument;
@@ -234,6 +238,43 @@ final class PublicApiContractTest extends TestCase
 
         DB::table('experiences')->where('id', $experience->id)->delete();
         Cache::flush();
+        $this->getJson('/api/v1/es/work-cases')->assertJsonPath('data.0.experience_key', null);
+        $this->assertDatabaseHas('work_cases', ['id' => $workCase->id, 'experience_id' => null]);
+    }
+
+    public function test_hiding_or_deleting_an_experience_through_a_domain_action_invalidates_the_cached_work_cases_endpoint(): void
+    {
+        $experience = Experience::factory()->draft()->create([
+            'key' => 'invalidation-role',
+            'role_es' => 'Rol sintético', 'role_en' => 'Synthetic role',
+            'summary_es' => 'Resumen sintético.', 'summary_en' => 'Synthetic summary.',
+        ]);
+        $experience = app(ShowContent::class)(app(PublishContent::class)($experience));
+
+        $workCase = WorkCase::factory()->draft()->create([
+            'key' => 'invalidation-case',
+            'experience_id' => $experience->id,
+            'title_es' => 'Caso técnico sintético', 'title_en' => 'Synthetic technical case',
+            'context_es' => 'Contexto técnico sintético.', 'context_en' => 'Synthetic technical context.',
+            'problem_es' => 'Problema técnico sintético.', 'problem_en' => 'Synthetic technical problem.',
+            'contribution_es' => 'Contribución técnica sintética.', 'contribution_en' => 'Synthetic technical contribution.',
+            'technical_approach_es' => 'Enfoque técnico sintético.', 'technical_approach_en' => 'Synthetic technical approach.',
+            'outcome_es' => 'Resultado técnico sintético.', 'outcome_en' => 'Synthetic technical outcome.',
+        ]);
+        app(ShowContent::class)(app(PublishContent::class)($workCase));
+
+        // Warm the work-cases cache while the experience is still public.
+        $this->getJson('/api/v1/es/work-cases')->assertJsonPath('data.0.experience_key', 'invalidation-role');
+
+        // A real domain-action transition (not a manual Cache::flush()) must
+        // invalidate the already-warmed work-cases cache because Experience
+        // now depends on both `experiences` and `work-cases` (spec 4.8/4.3).
+        app(HideContent::class)($experience->fresh());
+
+        $this->getJson('/api/v1/es/work-cases')->assertJsonPath('data.0.experience_key', null);
+
+        app(DeleteContent::class)($experience->fresh());
+
         $this->getJson('/api/v1/es/work-cases')->assertJsonPath('data.0.experience_key', null);
         $this->assertDatabaseHas('work_cases', ['id' => $workCase->id, 'experience_id' => null]);
     }
