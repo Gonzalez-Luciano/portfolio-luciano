@@ -5,6 +5,7 @@ namespace Tests\Feature\Database;
 use App\Enums\LanguageLevel;
 use App\Enums\ProjectDeliveryStatus;
 use App\Enums\ProjectKind;
+use App\Enums\WorkMode;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -73,6 +74,11 @@ final class PhaseSixSchemaTest extends TestCase
         $this->assertDatabaseHas('languages', ['key' => 'english', 'level' => 'b2']);
 
         $this->assertDatabaseRejects(fn () => DB::table('languages')->insert([...$this->projectRow('fluent'), 'level' => 'fluent']));
+    }
+
+    public function test_work_modes_are_a_closed_set(): void
+    {
+        $this->assertSame(['on_site', 'hybrid', 'remote'], array_column(WorkMode::cases(), 'value'));
     }
 
     /** @param callable(): mixed $operation */

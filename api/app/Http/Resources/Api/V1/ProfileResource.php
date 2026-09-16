@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Enums\SupportedLocale;
+use App\Enums\WorkMode;
 use App\Models\Profile;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -16,13 +17,15 @@ final class ProfileResource extends JsonResource
         parent::__construct($resource);
     }
 
-    /** @return array{name: string, headline: string, short_summary: string, introduction: string, availability: string, statement: ?array{lead: string, emphasis: string, tail: string}, closing: ?array{line_one: string, line_two: string}, cta: string, photo: ?array{url: string, alt: string}} */
+    /** @return array{name: string, location: ?string, work_modes: list<string>, headline: string, short_summary: string, introduction: string, availability: string, statement: ?array{lead: string, emphasis: string, tail: string}, closing: ?array{line_one: string, line_two: string}, cta: string, photo: ?array{url: string, alt: string}} */
     public function toArray(Request $request): array
     {
         $suffix = $this->locale->value;
 
         return [
             'name' => $this->name,
+            'location' => $this->location,
+            'work_modes' => $this->workModes(),
             'headline' => $this->{"headline_{$suffix}"},
             'short_summary' => $this->{"short_summary_{$suffix}"},
             'introduction' => $this->{"introduction_{$suffix}"},
@@ -55,6 +58,17 @@ final class ProfileResource extends JsonResource
         }
 
         return $group;
+    }
+
+    /** @return list<string> Selected modes in WorkMode declaration order. */
+    private function workModes(): array
+    {
+        $selected = is_array($this->work_modes) ? $this->work_modes : [];
+
+        return array_values(array_filter(
+            array_map(static fn (WorkMode $mode): string => $mode->value, WorkMode::cases()),
+            static fn (string $mode): bool => in_array($mode, $selected, true),
+        ));
     }
 
     /** @return ?array{url: string, alt: string} */

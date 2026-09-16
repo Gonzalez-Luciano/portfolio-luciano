@@ -77,6 +77,8 @@ final class PublicationReviewPresenter
             ],
             'fields' => [
                 ['label' => 'Name', 'value' => $profile->name],
+                ['label' => 'Location', 'value' => $profile->location],
+                ['label' => 'Work modes', 'value' => implode(', ', $profile->work_modes ?? [])],
             ],
             'assets' => [
                 $this->assetInfo('Photo', $profile->photo_private_path, $profile->photo_mime, $profile->photo_size, $profile->photo_alt_es, $profile->photo_alt_en),

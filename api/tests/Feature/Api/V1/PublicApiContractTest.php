@@ -52,7 +52,7 @@ final class PublicApiContractTest extends TestCase
         ]);
 
         $this->getJson('/api/v1/es/profile')->assertExactJson(['data' => [
-            'name' => 'Luciano González', 'headline' => 'Backend', 'short_summary' => 'Resumen',
+            'name' => 'Luciano González', 'location' => null, 'work_modes' => [], 'headline' => 'Backend', 'short_summary' => 'Resumen',
             'introduction' => 'Introducción', 'availability' => 'Disponible', 'statement' => null, 'closing' => null,
             'cta' => 'Contacto', 'photo' => null,
         ]]);
@@ -61,10 +61,26 @@ final class PublicApiContractTest extends TestCase
         Cache::flush();
 
         $this->getJson('/api/v1/en/profile')->assertExactJson(['data' => [
-            'name' => 'Luciano González', 'headline' => 'Backend', 'short_summary' => 'Summary',
+            'name' => 'Luciano González', 'location' => null, 'work_modes' => [], 'headline' => 'Backend', 'short_summary' => 'Summary',
             'introduction' => 'Introduction', 'availability' => 'Available', 'statement' => null, 'closing' => null,
             'cta' => 'Contact', 'photo' => ['url' => '/storage/profiles/public.jpg', 'alt' => 'Portrait'],
         ]]);
+    }
+
+    public function test_profile_exposes_location_and_work_modes_in_canonical_order(): void
+    {
+        DB::table('profiles')->where('singleton_key', 'default')->update([
+            'name' => 'Luciano González', 'headline_es' => 'Backend', 'headline_en' => 'Backend',
+            'short_summary_es' => 'Resumen', 'short_summary_en' => 'Summary',
+            'introduction_es' => 'Introducción', 'introduction_en' => 'Introduction',
+            'availability_es' => 'Disponible', 'availability_en' => 'Available', 'cta_es' => 'Contacto', 'cta_en' => 'Contact',
+            'location' => 'Ciudad sintética', 'work_modes' => json_encode(['remote', 'on_site']),
+            'status' => PublicationStatus::Published->value, 'is_visible' => true, 'published_at' => now(),
+        ]);
+
+        $this->getJson('/api/v1/en/profile')
+            ->assertJsonPath('data.location', 'Ciudad sintética')
+            ->assertJsonPath('data.work_modes', ['on_site', 'remote']);
     }
 
     public function test_profile_scene_copy_groups_are_exposed_only_when_every_localized_part_is_filled(): void

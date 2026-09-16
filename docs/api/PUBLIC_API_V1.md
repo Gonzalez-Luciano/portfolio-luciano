@@ -110,6 +110,8 @@ timestamp, `status`, `is_visible`, or `key_locked` value is ever emitted (see
 {
   "data": {
     "name": "string",
+    "location": null,
+    "work_modes": ["on_site", "hybrid", "remote"],
     "headline": "string",
     "short_summary": "string",
     "introduction": "string",
@@ -125,6 +127,8 @@ timestamp, `status`, `is_visible`, or `key_locked` value is ever emitted (see
 | Field | Type | Source |
 |---|---|---|
 | `name` | `string` | `name` |
+| `location` | `string \| null` | `location` (not translated) |
+| `work_modes` | `array<"on_site" \| "hybrid" \| "remote">` (always present, may be empty) | `work_modes` JSON; always emitted in `App\Enums\WorkMode` declaration order |
 | `headline` | `string` | `headline_{locale}` |
 | `short_summary` | `string` | `short_summary_{locale}` |
 | `introduction` | `string` | `introduction_{locale}` |
@@ -135,8 +139,8 @@ timestamp, `status`, `is_visible`, or `key_locked` value is ever emitted (see
 | `photo` | `{url: string, alt: string} \| null` | present only when `photo_public_path` is non-null **and** that path is verified to exist on the `public` disk at request time; otherwise `null` |
 
 `photo.url` is `"/storage/" . ltrim(photo_public_path, '/')`; `photo.alt` is
-`photo_alt_{locale}`. There is no `location` field. A missing/unpublished
-Profile singleton row returns the `not_found` error, not a defaulted object.
+`photo_alt_{locale}`. A missing/unpublished Profile singleton row returns the
+`not_found` error, not a defaulted object.
 
 ### `GET /api/v1/{locale}/experiences` — `ExperienceResource` (array)
 
@@ -342,9 +346,9 @@ Gaps and ties in `position` are valid and are never renumbered by the API.
 No Resource in this contract ever emits: database IDs, `position`, pivot table
 columns, private or public storage paths, timestamps (`created_at`,
 `updated_at`, `published_at`), the publication `status`, `is_visible`,
-`key_locked`, a `_es`/`_en`-suffixed field name, `location`, a work-case
-confidentiality note, `video_url`, or any SEO/Open Graph field. None of these
-exist in any Phase 4 Resource's `toArray()`.
+`key_locked`, a `_es`/`_en`-suffixed field name, a work-case confidentiality
+note, `video_url`, or any SEO/Open Graph field. None of these exist in any
+Phase 4 Resource's `toArray()`.
 
 ## CV routes
 

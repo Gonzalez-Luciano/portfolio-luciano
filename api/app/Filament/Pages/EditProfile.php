@@ -8,10 +8,12 @@ use App\Domain\Content\Actions\UpdateContent;
 use App\Domain\Content\Actions\UpdateOwnedAssetAltText;
 use App\Domain\Publishing\PublicationValidationException;
 use App\Enums\PublicationStatus;
+use App\Enums\WorkMode;
 use App\Filament\Support\EditorialActions;
 use App\Filament\Support\ReviewLink;
 use App\Models\Profile;
 use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Textarea;
@@ -73,6 +75,19 @@ final class EditProfile extends Page implements HasForms
                     ->label('Name')
                     ->maxLength(255)
                     ->helperText('Required to publish. Not required to save a draft.'),
+                TextInput::make('location')
+                    ->label('Location')
+                    ->maxLength(255)
+                    ->helperText('Optional. Shown as written in both languages (for example "Mar del Plata, Argentina").'),
+                CheckboxList::make('work_modes')
+                    ->label('Work modes')
+                    ->options([
+                        WorkMode::OnSite->value => 'On site',
+                        WorkMode::Hybrid->value => 'Hybrid',
+                        WorkMode::Remote->value => 'Remote',
+                    ])
+                    ->columns(3)
+                    ->helperText('Optional. The public site always lists them in this order.'),
 
                 Tabs::make('locales')->tabs([
                     Tab::make('Spanish')->schema([

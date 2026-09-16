@@ -4,6 +4,7 @@ namespace App\Domain\Publishing;
 
 use App\Enums\ProfessionalLinkType;
 use App\Enums\ProjectKind;
+use App\Enums\WorkMode;
 use App\Models\CvDocument;
 use App\Models\EducationEntry;
 use App\Models\Experience;
@@ -106,10 +107,31 @@ final class PublicationValidator
             ...$this->optionalPairs($profile, self::PROFILE_SCENE_PAIRS),
             ...$this->imageAssetIssues($profile, 'photo', 5 * 1024 * 1024),
             ...$this->maxLength($profile, ['name'], self::BOUNDED_MAX_LENGTH),
+            ...$this->maxLength($profile, ['location'], self::BOUNDED_MAX_LENGTH),
+            ...$this->workModeIssues($profile),
             ...$this->maxLengthPairs($profile, ['cta'], self::BOUNDED_MAX_LENGTH),
             ...$this->maxLengthPairs($profile, ['headline', 'short_summary', 'introduction', 'availability', ...self::PROFILE_SCENE_PAIRS], self::NARRATIVE_MAX_LENGTH),
             ...$this->maxLength($profile, ['photo_alt_es', 'photo_alt_en'], self::ALT_TEXT_MAX_LENGTH),
         ];
+    }
+
+    /** @return list<PublicationIssue> */
+    private function workModeIssues(Profile $profile): array
+    {
+        $modes = $profile->work_modes;
+        if ($modes === null) {
+            return [];
+        }
+
+        $allowed = array_column(WorkMode::cases(), 'value');
+        if (! is_array($modes) || ! array_is_list($modes) || array_diff($modes, $allowed) !== []) {
+            return [$this->issue('invalid_work_mode', 'work_modes', 'Work modes must be a list of on_site, hybrid, or remote.')];
+        }
+        if (count($modes) !== count(array_unique($modes))) {
+            return [$this->issue('duplicate_work_mode', 'work_modes', 'Each work mode can be selected only once.')];
+        }
+
+        return [];
     }
 
     /** @return list<PublicationIssue> */

@@ -177,6 +177,7 @@ final class ImportInitialPortfolioContentTest extends TestCase
             'profile localized copy present' => ['profiles', ['headline_es' => 'Encabezado', 'headline_en' => 'Headline']],
             'profile cta copy present' => ['profiles', ['cta_es' => 'Ir', 'cta_en' => 'Go']],
             'profile private photo metadata present' => ['profiles', ['photo_private_path' => 'profiles/manual.jpg', 'photo_mime' => 'image/jpeg', 'photo_size' => 2048]],
+            'profile location present' => ['profiles', ['location' => 'Ciudad sintética']],
             'profile published but hidden' => ['profiles', $published],
             'profile published and visible' => ['profiles', $publishedVisible],
             'site projects-empty message present' => ['site_configurations', ['projects_empty_message_es' => 'x', 'projects_empty_message_en' => 'x']],

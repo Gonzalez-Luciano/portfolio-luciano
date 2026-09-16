@@ -350,4 +350,23 @@ final class PublicationValidatorTest extends TestCase
         );
         $this->assertSame([], app(PublicationValidator::class)->issues($validClient));
     }
+
+    public function test_it_validates_profile_location_and_work_modes(): void
+    {
+        $invalid = Profile::factory()->publishedHidden()->make(['location' => str_repeat('a', 256), 'work_modes' => ['remote', 'office']]);
+        $duplicated = Profile::factory()->publishedHidden()->make(['work_modes' => ['remote', 'remote']]);
+        $valid = Profile::factory()->publishedHidden()->make(['location' => 'Ciudad sintética', 'work_modes' => ['hybrid', 'remote']]);
+
+        $codes = static fn (Profile $profile): array => array_map(
+            static fn ($issue): array => ['code' => $issue->code, 'path' => $issue->path],
+            app(PublicationValidator::class)->issues($profile),
+        );
+
+        $this->assertSame([
+            ['code' => 'max_length_exceeded', 'path' => 'location'],
+            ['code' => 'invalid_work_mode', 'path' => 'work_modes'],
+        ], $codes($invalid));
+        $this->assertSame([['code' => 'duplicate_work_mode', 'path' => 'work_modes']], $codes($duplicated));
+        $this->assertSame([], $codes($valid));
+    }
 }

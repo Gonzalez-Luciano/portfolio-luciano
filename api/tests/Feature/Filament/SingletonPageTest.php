@@ -298,6 +298,22 @@ final class SingletonPageTest extends TestCase
         $this->assertNull($profile->published_at);
     }
 
+    public function test_profile_location_and_work_modes_are_editable(): void
+    {
+        $this->authenticateAdmin();
+
+        Livewire::test(EditProfile::class)
+            ->assertFormFieldExists('location')
+            ->assertFormFieldExists('work_modes')
+            ->fillForm(['location' => 'Ciudad sintética', 'work_modes' => ['remote', 'on_site']])
+            ->call('save')
+            ->assertNotified('Saved');
+
+        $profile = Profile::query()->where('singleton_key', 'default')->firstOrFail();
+        $this->assertSame('Ciudad sintética', $profile->location);
+        $this->assertEqualsCanonicalizing(['remote', 'on_site'], $profile->work_modes);
+    }
+
     private function authenticateAdmin(): User
     {
         Filament::setCurrentPanel(Filament::getPanel('admin'));
