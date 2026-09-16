@@ -6,6 +6,8 @@ use App\Enums\PublicationStatus;
 use App\Filament\Resources\WorkCases\Pages\CreateWorkCase;
 use App\Filament\Resources\WorkCases\Pages\EditWorkCase;
 use App\Filament\Resources\WorkCases\Pages\ListWorkCases;
+use App\Filament\Resources\WorkCases\Schemas\WorkCaseForm;
+use App\Models\Experience;
 use App\Models\Technology;
 use App\Models\User;
 use App\Models\WorkCase;
@@ -302,6 +304,45 @@ final class WorkCaseResourceTest extends TestCase
         $workCase->refresh();
         $this->assertSame($originalTitleEs, $workCase->title_es);
         $this->assertSame(0, DB::table('technology_work_case')->where('work_case_id', $workCase->getKey())->count());
+    }
+
+    // ---- Experience link ----
+
+    public function test_a_work_case_can_be_linked_to_an_experience(): void
+    {
+        $experience = Experience::factory()->withOrganization()->create();
+        $workCase = WorkCase::factory()->create();
+        $this->authenticateAdmin();
+
+        Livewire::test(EditWorkCase::class, ['record' => $workCase->getKey()])
+            ->assertFormFieldExists('experience_id')
+            ->fillForm(['experience_id' => $experience->id])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($experience->id, $workCase->refresh()->experience_id);
+
+        Livewire::test(EditWorkCase::class, ['record' => $workCase->getKey()])
+            ->fillForm(['experience_id' => null])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertNull($workCase->refresh()->experience_id);
+    }
+
+    public function test_experience_options_describe_organization_role_and_dates(): void
+    {
+        $current = Experience::factory()->make([
+            'organization_label_es' => 'Organización sintética', 'role_es' => 'Rol sintético',
+            'start_year' => 2025, 'start_month' => 9, 'end_year' => null, 'end_month' => null,
+        ]);
+        $ended = Experience::factory()->make([
+            'key' => 'ended-role', 'organization_label_es' => null, 'role_es' => null,
+            'start_year' => 2025, 'start_month' => 5, 'end_year' => 2025, 'end_month' => 9,
+        ]);
+
+        $this->assertSame('Organización sintética · Rol sintético · 09/2025 – present', WorkCaseForm::experienceLabel($current));
+        $this->assertSame('No organization · ended-role · 05/2025 – 09/2025', WorkCaseForm::experienceLabel($ended));
     }
 
     private function completeAttributes(): array

@@ -150,6 +150,9 @@ final class PublicationReviewPresenter
                 ['label' => 'Technical approach', 'es' => $workCase->technical_approach_es, 'en' => $workCase->technical_approach_en],
                 ['label' => 'Outcome', 'es' => $workCase->outcome_es, 'en' => $workCase->outcome_en],
             ],
+            'fields' => [
+                ['label' => 'Experience', 'value' => $workCase->experience?->key],
+            ],
             'relationships' => [
                 'Contextual technologies' => $this->technologyList($technologies),
             ],

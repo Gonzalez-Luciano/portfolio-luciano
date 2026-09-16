@@ -38,6 +38,19 @@ final class PhaseSixSchemaTest extends TestCase
         ]));
     }
 
+    public function test_deleting_an_experience_unlinks_its_work_cases(): void
+    {
+        $experienceId = DB::table('experiences')->insertGetId([
+            ...$this->projectRow('linked-experience'),
+            'start_year' => 2025, 'start_month' => 9, 'end_year' => null, 'end_month' => null,
+        ]);
+        $workCaseId = DB::table('work_cases')->insertGetId([...$this->projectRow('linked-case'), 'experience_id' => $experienceId]);
+
+        DB::table('experiences')->where('id', $experienceId)->delete();
+
+        $this->assertDatabaseHas('work_cases', ['id' => $workCaseId, 'experience_id' => null]);
+    }
+
     /** @param callable(): mixed $operation */
     private function assertDatabaseRejects(callable $operation): void
     {

@@ -31,7 +31,7 @@ final class PublicContentDependencies
             ExpertiseArea::class,
             WorkPrinciple::class,
             CvDocument::class => [PublicEndpoint::Site],
-            Experience::class,
+            Experience::class => [PublicEndpoint::Experiences, PublicEndpoint::WorkCases],
             ExperienceHighlight::class => [PublicEndpoint::Experiences],
             WorkCase::class => [PublicEndpoint::WorkCases],
             Project::class,

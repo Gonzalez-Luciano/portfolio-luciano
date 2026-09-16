@@ -30,6 +30,11 @@ final class Experience extends Model
         return $this->belongsToMany(Technology::class)->withPivot('position')->orderByPivot('position')->orderBy('technologies.key');
     }
 
+    public function workCases(): HasMany
+    {
+        return $this->hasMany(WorkCase::class)->orderBy('position')->orderBy('key');
+    }
+
     public function isCurrent(): bool
     {
         return $this->end_year === null && $this->end_month === null;

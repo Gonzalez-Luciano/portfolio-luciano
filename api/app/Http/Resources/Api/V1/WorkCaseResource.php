@@ -21,6 +21,7 @@ final class WorkCaseResource extends JsonResource
 
         return [
             'key' => $this->key,
+            'experience_key' => $this->experience?->key,
             'title' => $this->{"title_{$suffix}"},
             'context' => $this->{"context_{$suffix}"},
             'problem' => $this->{"problem_{$suffix}"},

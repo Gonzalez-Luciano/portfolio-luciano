@@ -97,7 +97,7 @@ final class PublicContentCacheTest extends TestCase
         $this->assertSame([PublicEndpoint::Site], $dependencies->for(ExpertiseArea::class));
         $this->assertSame([PublicEndpoint::Site], $dependencies->for(WorkPrinciple::class));
         $this->assertSame([PublicEndpoint::Site], $dependencies->for(CvDocument::class));
-        $this->assertSame([PublicEndpoint::Experiences], $dependencies->for(Experience::class));
+        $this->assertSame([PublicEndpoint::Experiences, PublicEndpoint::WorkCases], $dependencies->for(Experience::class));
         $this->assertSame([PublicEndpoint::Experiences], $dependencies->for(ExperienceHighlight::class));
         $this->assertSame([PublicEndpoint::WorkCases], $dependencies->for(WorkCase::class));
         $this->assertSame([PublicEndpoint::Projects], $dependencies->for(Project::class));

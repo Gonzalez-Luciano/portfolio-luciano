@@ -101,7 +101,7 @@ final class PublicApiContractTest extends TestCase
             'position' => 0, 'created_at' => now(), 'updated_at' => now(),
         ]);
         $experience->technologies()->attach($technology, ['position' => 0]);
-        $workCase = WorkCase::factory()->create(['key' => 'case']);
+        $workCase = WorkCase::factory()->create(['key' => 'case', 'experience_id' => $experience->id]);
         $workCase->technologies()->attach($technology, ['position' => 0]);
         $project = Project::factory()->create(['key' => 'project']);
         $this->makePublic($technology, [
@@ -139,7 +139,7 @@ final class PublicApiContractTest extends TestCase
             'technologies' => [['key' => 'laravel', 'name' => 'Laravel', 'category' => 'backend', 'icon' => null]],
         ]]]);
         $this->getJson('/api/v1/es/work-cases')->assertExactJson(['data' => [[
-            'key' => 'case', 'title' => 'Caso técnico sintético', 'context' => 'Contexto técnico sintético.', 'problem' => 'Problema técnico sintético.',
+            'key' => 'case', 'experience_key' => 'experience', 'title' => 'Caso técnico sintético', 'context' => 'Contexto técnico sintético.', 'problem' => 'Problema técnico sintético.',
             'contribution' => 'Contribución técnica sintética.', 'technical_approach' => 'Enfoque técnico sintético.', 'outcome' => 'Resultado técnico sintético.',
             'technologies' => [['key' => 'laravel', 'name' => 'Laravel', 'category' => 'backend', 'icon' => null]],
         ]]]);
@@ -214,6 +214,28 @@ final class PublicApiContractTest extends TestCase
         foreach (['id', 'position', 'pivot', 'private_path', 'public_path', 'created_at', 'updated_at', '"status":"draft"', '"status":"published"', 'is_visible', 'published_at', 'key_locked', '_es', '_en', 'location', 'confidentiality_note', 'video_url', 'seo'] as $forbidden) {
             $this->assertStringNotContainsString($forbidden, $serialized);
         }
+    }
+
+    public function test_work_case_experience_key_is_exposed_only_while_the_experience_is_public(): void
+    {
+        $experience = Experience::factory()->create(['key' => 'linked-role']);
+        $workCase = WorkCase::factory()->create(['key' => 'linked-case', 'experience_id' => $experience->id]);
+        $this->makePublic($experience, [
+            'role_es' => 'Rol sintético', 'role_en' => 'Synthetic role',
+            'summary_es' => 'Resumen sintético.', 'summary_en' => 'Synthetic summary.',
+        ]);
+        $this->makePublic($workCase);
+
+        $this->getJson('/api/v1/es/work-cases')->assertJsonPath('data.0.experience_key', 'linked-role');
+
+        DB::table('experiences')->where('id', $experience->id)->update(['is_visible' => false]);
+        Cache::flush();
+        $this->getJson('/api/v1/es/work-cases')->assertJsonPath('data.0.experience_key', null);
+
+        DB::table('experiences')->where('id', $experience->id)->delete();
+        Cache::flush();
+        $this->getJson('/api/v1/es/work-cases')->assertJsonPath('data.0.experience_key', null);
+        $this->assertDatabaseHas('work_cases', ['id' => $workCase->id, 'experience_id' => null]);
     }
 
     private function publishSite(): void

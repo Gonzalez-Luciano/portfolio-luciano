@@ -178,6 +178,7 @@ There is no `is_current` field — a current experience is represented purely by
   "data": [
     {
       "key": "string",
+      "experience_key": null,
       "title": "string",
       "context": "string",
       "problem": "string",
@@ -194,6 +195,12 @@ Each of `title`, `context`, `problem`, `contribution`, `technical_approach`,
 `outcome` maps directly to its `{field}_{locale}` column; all six are required
 bilingual pairs. There is no confidentiality-disclaimer field. `technologies`
 follows the same shape/ordering rule as Experiences.
+
+`experience_key` is `string | null`: the `key` of the linked Experience only
+while that Experience is published and visible; `null` when the case is not
+linked, the Experience is hidden or draft, or it was deleted (the database
+link is cleared with `ON DELETE SET NULL`). Changing an Experience invalidates
+both the `experiences` and `work-cases` caches.
 
 ### `GET /api/v1/{locale}/projects` — `ProjectResource` (array)
 

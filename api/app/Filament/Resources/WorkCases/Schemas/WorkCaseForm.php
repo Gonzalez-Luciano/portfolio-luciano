@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\WorkCases\Schemas;
 
 use App\Enums\PublicationStatus;
+use App\Models\Experience;
 use App\Models\Technology;
 use App\Models\WorkCase;
 use Filament\Forms\Components\Placeholder;
@@ -31,6 +32,15 @@ class WorkCaseForm
                     // dedicated "Change key" action, never a plain field
                     // edit, so it is disabled (and not dehydrated) on edit.
                     ->disabledOn('edit'),
+
+                Select::make('experience_id')
+                    ->label('Experience')
+                    ->options(fn (): array => Experience::query()->orderBy('position')->orderBy('key')->get()
+                        ->mapWithKeys(fn (Experience $experience): array => [$experience->getKey() => self::experienceLabel($experience)])
+                        ->all())
+                    ->searchable()
+                    ->placeholder('Not linked')
+                    ->helperText('Optional. Linked cases appear under that role; unlinked cases appear under "Other cases".'),
 
                 Tabs::make('locales')->tabs([
                     Tab::make('Spanish')->schema([
@@ -88,5 +98,17 @@ class WorkCaseForm
                     ->label('Published at')
                     ->content(fn (?WorkCase $record): string => $record?->published_at?->toDateTimeString() ?? 'Never'),
             ]);
+    }
+
+    public static function experienceLabel(Experience $experience): string
+    {
+        $start = sprintf('%02d/%04d', $experience->start_month, $experience->start_year);
+        $end = $experience->isCurrent() ? 'present' : sprintf('%02d/%04d', $experience->end_month, $experience->end_year);
+
+        return implode(' · ', [
+            $experience->organization_label_es ?: 'No organization',
+            $experience->role_es ?: $experience->key,
+            "{$start} – {$end}",
+        ]);
     }
 }
