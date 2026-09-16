@@ -9,6 +9,7 @@ use App\Domain\Content\Actions\ShowContent;
 use App\Enums\PublicationStatus;
 use App\Enums\TechnologyCategory;
 use App\Models\CvDocument;
+use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExpertiseArea;
 use App\Models\ProfessionalLink;
@@ -195,6 +196,7 @@ final class PublicApiContractTest extends TestCase
             'professional_links' => [['key' => 'email', 'label' => 'Correo', 'href' => 'mailto:synthetic@example.test']],
             'expertise_areas' => [['key' => 'apis', 'title' => 'Área técnica sintética', 'description' => null]],
             'work_principles' => [['key' => 'quality', 'statement' => 'Principio técnico sintético.']],
+            'education' => [],
             'cv' => null,
         ]]);
 
@@ -202,6 +204,22 @@ final class PublicApiContractTest extends TestCase
         Cache::flush();
         $this->getJson('/api/v1/es/site')->assertJsonPath('data.cv', ['url' => '/cv/luciano-gonzalez-es.pdf', 'label' => 'Descargar CV']);
         $this->getJson('/api/v1/en/site')->assertJsonPath('data.cv', null);
+    }
+
+    public function test_site_resource_exposes_public_education_in_order(): void
+    {
+        $this->publishSite();
+        $course = EducationEntry::factory()->create(['key' => 'course', 'position' => 1]);
+        $school = EducationEntry::factory()->create(['key' => 'school', 'position' => 0]);
+        $hidden = EducationEntry::factory()->create(['key' => 'hidden-entry', 'position' => 2]);
+        $this->makePublic($school, ['institution' => 'Instituto sintético', 'program_es' => 'Bachiller sintético', 'program_en' => 'Synthetic diploma', 'end_year' => 2021]);
+        $this->makePublic($course, ['institution' => 'Centro sintético', 'program_es' => 'Curso sintético', 'program_en' => 'Synthetic course', 'detail_es' => 'Detalle', 'detail_en' => 'Detail', 'start_year' => 2022, 'end_year' => 2022]);
+        $this->makePublic($hidden, ['institution' => 'Oculto', 'program_es' => 'Oculto', 'program_en' => 'Hidden', 'is_visible' => false]);
+
+        $this->getJson('/api/v1/en/site')->assertJsonPath('data.education', [
+            ['key' => 'school', 'institution' => 'Instituto sintético', 'program' => 'Synthetic diploma', 'detail' => null, 'start_year' => null, 'end_year' => 2021],
+            ['key' => 'course', 'institution' => 'Centro sintético', 'program' => 'Synthetic course', 'detail' => 'Detail', 'start_year' => 2022, 'end_year' => 2022],
+        ]);
     }
 
     public function test_public_responses_recursively_exclude_internal_and_editorial_fields(): void
@@ -302,7 +320,7 @@ final class PublicApiContractTest extends TestCase
             ...$attributes,
         ];
 
-        if (in_array($model::class, [Experience::class, ExpertiseArea::class, Project::class, Technology::class, WorkCase::class, WorkPrinciple::class], true)) {
+        if (in_array($model::class, [Experience::class, ExpertiseArea::class, Project::class, Technology::class, WorkCase::class, WorkPrinciple::class, EducationEntry::class], true)) {
             $values['key_locked'] = true;
         }
 

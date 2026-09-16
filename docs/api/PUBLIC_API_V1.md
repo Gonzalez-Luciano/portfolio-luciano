@@ -290,6 +290,9 @@ requires that Technology itself to be published and visible — the same
     "work_principles": [
       {"key": "string", "statement": "string"}
     ],
+    "education": [
+      {"key": "string", "institution": "string", "program": "string", "detail": null, "start_year": null, "end_year": 2021}
+    ],
     "cv": {"url": "/cv/luciano-gonzalez-es.pdf", "label": "string"}
   }
 }
@@ -303,6 +306,7 @@ requires that Technology itself to be published and visible — the same
 | `professional_links` | `array<object>` (always present, may be empty) | published+visible `ProfessionalLink` rows, ordered by `position` then `type`; `key` is the link `type` value (`linkedin`/`github`/`email`), `label` is `label_{locale}`, `href` is `destination` verbatim except `type = email`, where it is prefixed `mailto:` only in this Resource (the stored value never contains the prefix) |
 | `expertise_areas` | `array<object>` (always present, may be empty) | published+visible `ExpertiseArea` rows, ordered by `position` then `key`; `title` from `title_{locale}` (required), `description` from `description_{locale}` (optional pair, `null` when empty) |
 | `work_principles` | `array<object>` (always present, may be empty) | published+visible `WorkPrinciple` rows, ordered by `position` then `key`; `statement` from `statement_{locale}` |
+| `education` | `array<object>` (always present, may be empty) | published+visible `EducationEntry` rows, ordered by `position` then `key`; `institution` is not translated; `program` from `program_{locale}` (required); `detail` from `detail_{locale}` (optional pair, `null` when empty); `start_year`/`end_year` are `int \| null` |
 | `cv` | `{url: string, label: string} \| null` | `null` unless a `CvDocument` row for the exact requested locale is published+visible **and** its private PDF is verified to exist on the `local` disk; `url` is always the fixed route for that locale (`/cv/luciano-gonzalez-{locale}.pdf`), never a generated/expiring URL; `label` is the row's plain `label` column |
 
 Site publication does not require any child collection or a CV row to be

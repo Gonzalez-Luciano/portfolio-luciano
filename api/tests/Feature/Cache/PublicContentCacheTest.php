@@ -6,6 +6,7 @@ use App\Enums\PublicEndpoint;
 use App\Enums\SupportedLocale;
 use App\Http\Responses\ApiErrorResponse;
 use App\Models\CvDocument;
+use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExperienceHighlight;
 use App\Models\ExpertiseArea;
@@ -97,6 +98,7 @@ final class PublicContentCacheTest extends TestCase
         $this->assertSame([PublicEndpoint::Site], $dependencies->for(ExpertiseArea::class));
         $this->assertSame([PublicEndpoint::Site], $dependencies->for(WorkPrinciple::class));
         $this->assertSame([PublicEndpoint::Site], $dependencies->for(CvDocument::class));
+        $this->assertSame([PublicEndpoint::Site], $dependencies->for(EducationEntry::class));
         $this->assertSame([PublicEndpoint::Experiences, PublicEndpoint::WorkCases], $dependencies->for(Experience::class));
         $this->assertSame([PublicEndpoint::Experiences], $dependencies->for(ExperienceHighlight::class));
         $this->assertSame([PublicEndpoint::WorkCases], $dependencies->for(WorkCase::class));

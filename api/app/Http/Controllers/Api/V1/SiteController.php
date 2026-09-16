@@ -7,6 +7,7 @@ use App\Enums\SupportedLocale;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\SiteResource;
 use App\Models\CvDocument;
+use App\Models\EducationEntry;
 use App\Models\ExpertiseArea;
 use App\Models\ProfessionalLink;
 use App\Models\SiteConfiguration;
@@ -32,6 +33,7 @@ final class SiteController extends Controller
                 'professional_links' => ProfessionalLink::query()->publiclyAvailable()->get(),
                 'expertise_areas' => ExpertiseArea::query()->publiclyAvailable()->get(),
                 'work_principles' => WorkPrinciple::query()->publiclyAvailable()->get(),
+                'education' => EducationEntry::query()->publiclyAvailable()->get(),
                 'cv' => $cv !== null && Storage::disk('local')->exists($cv->private_path)
                     ? ['url' => "/cv/luciano-gonzalez-{$locale->value}.pdf", 'label' => $cv->label]
                     : null,

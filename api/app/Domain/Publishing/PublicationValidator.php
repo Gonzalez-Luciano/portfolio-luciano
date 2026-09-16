@@ -5,6 +5,7 @@ namespace App\Domain\Publishing;
 use App\Enums\ProfessionalLinkType;
 use App\Enums\ProjectKind;
 use App\Models\CvDocument;
+use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExperienceHighlight;
 use App\Models\ExpertiseArea;
@@ -69,6 +70,7 @@ final class PublicationValidator
             Technology::class => $this->technologyIssues($content),
             ExpertiseArea::class => $this->expertiseAreaIssues($content),
             WorkPrinciple::class => $this->workPrincipleIssues($content),
+            EducationEntry::class => $this->educationEntryIssues($content),
             ProfessionalLink::class => $this->professionalLinkIssues($content),
             CvDocument::class => $this->cvDocumentIssues($content),
             default => throw new \InvalidArgumentException("No publication validator is defined for [{$class}]."),
@@ -248,6 +250,37 @@ final class PublicationValidator
             ...$this->requiredPairs($principle, ['statement']),
             ...$this->maxLengthPairs($principle, ['statement'], self::NARRATIVE_MAX_LENGTH),
         ];
+    }
+
+    /** @return list<PublicationIssue> */
+    private function educationEntryIssues(EducationEntry $entry): array
+    {
+        return [
+            ...$this->keyIssues($entry),
+            ...$this->required($entry, ['institution']),
+            ...$this->requiredPairs($entry, ['program']),
+            ...$this->optionalPairs($entry, ['detail']),
+            ...$this->educationYearIssues($entry),
+            ...$this->maxLength($entry, ['institution'], self::BOUNDED_MAX_LENGTH),
+            ...$this->maxLengthPairs($entry, ['program', 'detail'], self::BOUNDED_MAX_LENGTH),
+        ];
+    }
+
+    /** @return list<PublicationIssue> */
+    private function educationYearIssues(EducationEntry $entry): array
+    {
+        $issues = [];
+        foreach (['start_year', 'end_year'] as $field) {
+            $year = $entry->getAttribute($field);
+            if ($year !== null && ((int) $year < 1000 || (int) $year > 9999)) {
+                $issues[] = $this->issue('invalid_year', $field, 'The year must have four digits.');
+            }
+        }
+        if ($issues === [] && $entry->start_year !== null && $entry->end_year !== null && (int) $entry->end_year < (int) $entry->start_year) {
+            $issues[] = $this->issue('invalid_date_range', 'end_year', 'The end year must not precede the start year.');
+        }
+
+        return $issues;
     }
 
     /** @return list<PublicationIssue> */

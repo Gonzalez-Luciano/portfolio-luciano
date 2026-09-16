@@ -5,6 +5,7 @@ namespace App\Filament\Support;
 use App\Domain\Publishing\PublicationIssue;
 use App\Domain\Publishing\PublicationValidator;
 use App\Models\CvDocument;
+use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExpertiseArea;
 use App\Models\ProfessionalLink;
@@ -49,6 +50,7 @@ final class PublicationReviewPresenter
             Technology::class => $this->technology($content),
             ExpertiseArea::class => $this->expertiseArea($content),
             WorkPrinciple::class => $this->workPrinciple($content),
+            EducationEntry::class => $this->educationEntry($content),
             ProfessionalLink::class => $this->professionalLink($content),
             CvDocument::class => $this->cvDocument($content),
             default => throw new \InvalidArgumentException('No publication review presenter is defined for ['.$content::class.'].'),
@@ -102,6 +104,7 @@ final class PublicationReviewPresenter
                 $this->statusBreakdown('Professional links', ProfessionalLink::query()),
                 $this->statusBreakdown('Expertise areas', ExpertiseArea::query()),
                 $this->statusBreakdown('Work principles', WorkPrinciple::query()),
+                $this->statusBreakdown('Education entries', EducationEntry::query()),
                 $this->cvBreakdown(),
             ],
             'issues' => $this->issues($configuration),
@@ -239,6 +242,25 @@ final class PublicationReviewPresenter
                 ['label' => 'Statement', 'es' => $principle->statement_es, 'en' => $principle->statement_en],
             ],
             'issues' => $this->issues($principle),
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function educationEntry(EducationEntry $entry): array
+    {
+        return array_merge($this->base('Education entry', $entry->key, $entry->position, $entry->status->value, $entry->is_visible, $entry->published_at?->toDateTimeString()), [
+            'dates' => [
+                ['label' => 'Start year', 'value' => $entry->start_year === null ? 'Not set' : (string) $entry->start_year],
+                ['label' => 'End year', 'value' => $entry->end_year === null ? 'Not set' : (string) $entry->end_year],
+            ],
+            'bilingual' => [
+                ['label' => 'Program', 'es' => $entry->program_es, 'en' => $entry->program_en],
+                ['label' => 'Detail', 'es' => $entry->detail_es, 'en' => $entry->detail_en],
+            ],
+            'fields' => [
+                ['label' => 'Institution', 'value' => $entry->institution],
+            ],
+            'issues' => $this->issues($entry),
         ]);
     }
 

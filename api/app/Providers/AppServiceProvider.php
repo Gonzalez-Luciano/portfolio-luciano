@@ -6,6 +6,7 @@ use App\Domain\Publishing\EditorialMutationContext;
 use App\Domain\Publishing\EditorialMutationGuard;
 use App\Http\Responses\ApiErrorResponse;
 use App\Models\CvDocument;
+use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExperienceHighlight;
 use App\Models\ExpertiseArea;
@@ -40,7 +41,7 @@ class AppServiceProvider extends ServiceProvider
         foreach ([
             Profile::class, SiteConfiguration::class, Experience::class, ExperienceHighlight::class,
             WorkCase::class, Project::class, ProjectImage::class, Technology::class, ExpertiseArea::class,
-            WorkPrinciple::class, ProfessionalLink::class, CvDocument::class,
+            WorkPrinciple::class, ProfessionalLink::class, CvDocument::class, EducationEntry::class,
         ] as $model) {
             $model::observe(EditorialMutationGuard::class);
         }

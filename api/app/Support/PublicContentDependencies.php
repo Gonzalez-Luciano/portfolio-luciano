@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Enums\PublicEndpoint;
 use App\Models\CvDocument;
+use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExperienceHighlight;
 use App\Models\ExpertiseArea;
@@ -30,7 +31,8 @@ final class PublicContentDependencies
             ProfessionalLink::class,
             ExpertiseArea::class,
             WorkPrinciple::class,
-            CvDocument::class => [PublicEndpoint::Site],
+            CvDocument::class,
+            EducationEntry::class => [PublicEndpoint::Site],
             Experience::class => [PublicEndpoint::Experiences, PublicEndpoint::WorkCases],
             ExperienceHighlight::class => [PublicEndpoint::Experiences],
             WorkCase::class => [PublicEndpoint::WorkCases],

@@ -8,6 +8,7 @@ use App\Domain\Publishing\PublicationValidator;
 use App\Enums\ProjectKind;
 use App\Enums\PublicationStatus;
 use App\Models\CvDocument;
+use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExperienceHighlight;
 use App\Models\ExpertiseArea;
@@ -167,6 +168,26 @@ final class PublicationValidatorTest extends TestCase
             ['code' => 'invalid_date_range', 'path' => 'end_year'],
             ['code' => 'required_translation', 'path' => 'highlights.0.content_en'],
         ], array_map(static fn ($issue): array => ['code' => $issue->code, 'path' => $issue->path], $issues));
+    }
+
+    public function test_it_validates_education_entries(): void
+    {
+        $entry = EducationEntry::factory()->publishedHidden()->make([
+            'institution' => ' ',
+            'program_en' => null,
+            'detail_es' => 'Detalle sintético',
+            'detail_en' => null,
+            'start_year' => 2023,
+            'end_year' => 2022,
+        ]);
+
+        $this->assertSame([
+            ['code' => 'required', 'path' => 'institution'],
+            ['code' => 'required_translation', 'path' => 'program_en'],
+            ['code' => 'translation_pair', 'path' => 'detail'],
+            ['code' => 'invalid_date_range', 'path' => 'end_year'],
+        ], array_map(static fn ($issue): array => ['code' => $issue->code, 'path' => $issue->path], app(PublicationValidator::class)->issues($entry)));
+        $this->assertSame([], app(PublicationValidator::class)->issues(EducationEntry::factory()->publishedHidden()->make()));
     }
 
     public function test_it_validates_professional_link_destinations_and_technology_canonical_content(): void

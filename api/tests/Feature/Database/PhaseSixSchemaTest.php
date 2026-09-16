@@ -51,6 +51,19 @@ final class PhaseSixSchemaTest extends TestCase
         $this->assertDatabaseHas('work_cases', ['id' => $workCaseId, 'experience_id' => null]);
     }
 
+    public function test_education_years_must_be_valid_and_chronological(): void
+    {
+        DB::table('education_entries')->insert([...$this->projectRow('open-dates'), 'start_year' => null, 'end_year' => 2021]);
+        $this->assertDatabaseHas('education_entries', ['key' => 'open-dates', 'end_year' => 2021]);
+
+        $this->assertDatabaseRejects(fn () => DB::table('education_entries')->insert([
+            ...$this->projectRow('backward-years'), 'start_year' => 2022, 'end_year' => 2021,
+        ]));
+        $this->assertDatabaseRejects(fn () => DB::table('education_entries')->insert([
+            ...$this->projectRow('short-year'), 'end_year' => 21,
+        ]));
+    }
+
     /** @param callable(): mixed $operation */
     private function assertDatabaseRejects(callable $operation): void
     {

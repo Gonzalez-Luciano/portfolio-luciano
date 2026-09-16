@@ -4,6 +4,7 @@ namespace App\Filament\Support;
 
 use App\Filament\Pages\ReviewContent;
 use App\Models\CvDocument;
+use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExpertiseArea;
 use App\Models\ProfessionalLink;
@@ -39,6 +40,7 @@ final class ReviewLink
         Technology::class => 'technology',
         ExpertiseArea::class => 'expertise-area',
         WorkPrinciple::class => 'work-principle',
+        EducationEntry::class => 'education-entry',
         ProfessionalLink::class => 'professional-link',
         CvDocument::class => 'cv-document',
     ];
