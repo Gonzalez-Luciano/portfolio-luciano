@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Database;
 
+use App\Enums\LanguageLevel;
 use App\Enums\ProjectDeliveryStatus;
 use App\Enums\ProjectKind;
 use Illuminate\Database\QueryException;
@@ -62,6 +63,16 @@ final class PhaseSixSchemaTest extends TestCase
         $this->assertDatabaseRejects(fn () => DB::table('education_entries')->insert([
             ...$this->projectRow('short-year'), 'end_year' => 21,
         ]));
+    }
+
+    public function test_language_levels_are_a_closed_set(): void
+    {
+        $this->assertSame(['native', 'a1', 'a2', 'b1', 'b2', 'c1', 'c2'], array_column(LanguageLevel::cases(), 'value'));
+
+        DB::table('languages')->insert([...$this->projectRow('english'), 'level' => 'b2']);
+        $this->assertDatabaseHas('languages', ['key' => 'english', 'level' => 'b2']);
+
+        $this->assertDatabaseRejects(fn () => DB::table('languages')->insert([...$this->projectRow('fluent'), 'level' => 'fluent']));
     }
 
     /** @param callable(): mixed $operation */

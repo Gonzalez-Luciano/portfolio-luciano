@@ -9,6 +9,7 @@ use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExperienceHighlight;
 use App\Models\ExpertiseArea;
+use App\Models\Language;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
@@ -71,6 +72,7 @@ final class PublicationValidator
             ExpertiseArea::class => $this->expertiseAreaIssues($content),
             WorkPrinciple::class => $this->workPrincipleIssues($content),
             EducationEntry::class => $this->educationEntryIssues($content),
+            Language::class => $this->languageIssues($content),
             ProfessionalLink::class => $this->professionalLinkIssues($content),
             CvDocument::class => $this->cvDocumentIssues($content),
             default => throw new \InvalidArgumentException("No publication validator is defined for [{$class}]."),
@@ -281,6 +283,17 @@ final class PublicationValidator
         }
 
         return $issues;
+    }
+
+    /** @return list<PublicationIssue> */
+    private function languageIssues(Language $language): array
+    {
+        return [
+            ...$this->keyIssues($language),
+            ...$this->requiredPairs($language, ['name']),
+            ...$this->required($language, ['level']),
+            ...$this->maxLengthPairs($language, ['name'], self::BOUNDED_MAX_LENGTH),
+        ];
     }
 
     /** @return list<PublicationIssue> */

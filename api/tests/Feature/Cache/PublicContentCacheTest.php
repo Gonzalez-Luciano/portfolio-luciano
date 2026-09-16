@@ -10,6 +10,7 @@ use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExperienceHighlight;
 use App\Models\ExpertiseArea;
+use App\Models\Language;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
@@ -99,6 +100,7 @@ final class PublicContentCacheTest extends TestCase
         $this->assertSame([PublicEndpoint::Site], $dependencies->for(WorkPrinciple::class));
         $this->assertSame([PublicEndpoint::Site], $dependencies->for(CvDocument::class));
         $this->assertSame([PublicEndpoint::Site], $dependencies->for(EducationEntry::class));
+        $this->assertSame([PublicEndpoint::Site], $dependencies->for(Language::class));
         $this->assertSame([PublicEndpoint::Experiences, PublicEndpoint::WorkCases], $dependencies->for(Experience::class));
         $this->assertSame([PublicEndpoint::Experiences], $dependencies->for(ExperienceHighlight::class));
         $this->assertSame([PublicEndpoint::WorkCases], $dependencies->for(WorkCase::class));

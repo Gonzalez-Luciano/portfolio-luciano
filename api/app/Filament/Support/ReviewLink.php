@@ -7,6 +7,7 @@ use App\Models\CvDocument;
 use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExpertiseArea;
+use App\Models\Language;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
@@ -41,6 +42,7 @@ final class ReviewLink
         ExpertiseArea::class => 'expertise-area',
         WorkPrinciple::class => 'work-principle',
         EducationEntry::class => 'education-entry',
+        Language::class => 'language',
         ProfessionalLink::class => 'professional-link',
         CvDocument::class => 'cv-document',
     ];

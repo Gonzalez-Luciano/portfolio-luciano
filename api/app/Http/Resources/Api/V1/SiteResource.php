@@ -9,7 +9,7 @@ use App\Models\SiteConfiguration;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** @mixin array{site: SiteConfiguration, locale: SupportedLocale, professional_links: iterable, expertise_areas: iterable, work_principles: iterable, education: iterable, cv: ?array{url: string, label: string}} */
+/** @mixin array{site: SiteConfiguration, locale: SupportedLocale, professional_links: iterable, expertise_areas: iterable, work_principles: iterable, education: iterable, languages: iterable, cv: ?array{url: string, label: string}} */
 final class SiteResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -49,6 +49,11 @@ final class SiteResource extends JsonResource
                 'detail' => $entry->{"detail_{$suffix}"},
                 'start_year' => $entry->start_year,
                 'end_year' => $entry->end_year,
+            ])->values()->all(),
+            'languages' => collect($this['languages'])->map(fn ($language): array => [
+                'key' => $language->key,
+                'name' => $language->{"name_{$suffix}"},
+                'level' => $language->level->value,
             ])->values()->all(),
             'cv' => $this['cv'],
         ];

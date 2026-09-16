@@ -16,6 +16,7 @@ use App\Filament\Resources\Experiences\Pages\EditExperience;
 use App\Filament\Resources\Experiences\Pages\ListExperiences;
 use App\Filament\Resources\ExpertiseAreas\Pages\EditExpertiseArea;
 use App\Filament\Resources\ExpertiseAreas\Pages\ListExpertiseAreas;
+use App\Filament\Resources\Languages\Pages\EditLanguage;
 use App\Filament\Resources\ProfessionalLinks\Pages\EditProfessionalLink;
 use App\Filament\Resources\ProfessionalLinks\Pages\ListProfessionalLinks;
 use App\Filament\Resources\Projects\Pages\EditProject;
@@ -31,6 +32,7 @@ use App\Models\CvDocument;
 use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExpertiseArea;
+use App\Models\Language;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
@@ -97,6 +99,7 @@ final class PublicationReviewPageTest extends TestCase
             'expertise-area' => ['expertise-area', fn () => ExpertiseArea::factory()->create()],
             'work-principle' => ['work-principle', fn () => WorkPrinciple::factory()->create()],
             'education-entry' => ['education-entry', fn () => EducationEntry::factory()->create()],
+            'language' => ['language', fn () => Language::factory()->create()],
             'professional-link' => ['professional-link', fn () => ProfessionalLink::factory()->create()],
             'cv-document' => ['cv-document', fn () => CvDocument::factory()->create()],
         ];
@@ -596,6 +599,7 @@ final class PublicationReviewPageTest extends TestCase
             'expertise-area' => ['expertise-area', fn () => ExpertiseArea::factory()->create(), fn ($record) => EditExpertiseArea::getUrl(['record' => $record])],
             'work-principle' => ['work-principle', fn () => WorkPrinciple::factory()->create(), fn ($record) => EditWorkPrinciple::getUrl(['record' => $record])],
             'education-entry' => ['education-entry', fn () => EducationEntry::factory()->create(), fn ($record) => EditEducationEntry::getUrl(['record' => $record])],
+            'language' => ['language', fn () => Language::factory()->create(), fn ($record) => EditLanguage::getUrl(['record' => $record])],
             'professional-link' => ['professional-link', fn () => ProfessionalLink::factory()->create(), fn ($record) => EditProfessionalLink::getUrl(['record' => $record])],
             'cv-document' => ['cv-document', fn () => CvDocument::factory()->create(), fn ($record) => EditCvDocument::getUrl(['record' => $record])],
         ];

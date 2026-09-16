@@ -12,6 +12,7 @@ use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExperienceHighlight;
 use App\Models\ExpertiseArea;
+use App\Models\Language;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
@@ -188,6 +189,17 @@ final class PublicationValidatorTest extends TestCase
             ['code' => 'invalid_date_range', 'path' => 'end_year'],
         ], array_map(static fn ($issue): array => ['code' => $issue->code, 'path' => $issue->path], app(PublicationValidator::class)->issues($entry)));
         $this->assertSame([], app(PublicationValidator::class)->issues(EducationEntry::factory()->publishedHidden()->make()));
+    }
+
+    public function test_it_validates_languages(): void
+    {
+        $language = Language::factory()->publishedHidden()->make(['name_en' => ' ', 'level' => null]);
+
+        $this->assertSame([
+            ['code' => 'required_translation', 'path' => 'name_en'],
+            ['code' => 'required', 'path' => 'level'],
+        ], array_map(static fn ($issue): array => ['code' => $issue->code, 'path' => $issue->path], app(PublicationValidator::class)->issues($language)));
+        $this->assertSame([], app(PublicationValidator::class)->issues(Language::factory()->publishedHidden()->make()));
     }
 
     public function test_it_validates_professional_link_destinations_and_technology_canonical_content(): void

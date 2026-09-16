@@ -8,6 +8,7 @@ use App\Models\CvDocument;
 use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExpertiseArea;
+use App\Models\Language;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
@@ -51,6 +52,7 @@ final class PublicationReviewPresenter
             ExpertiseArea::class => $this->expertiseArea($content),
             WorkPrinciple::class => $this->workPrinciple($content),
             EducationEntry::class => $this->educationEntry($content),
+            Language::class => $this->language($content),
             ProfessionalLink::class => $this->professionalLink($content),
             CvDocument::class => $this->cvDocument($content),
             default => throw new \InvalidArgumentException('No publication review presenter is defined for ['.$content::class.'].'),
@@ -105,6 +107,7 @@ final class PublicationReviewPresenter
                 $this->statusBreakdown('Expertise areas', ExpertiseArea::query()),
                 $this->statusBreakdown('Work principles', WorkPrinciple::query()),
                 $this->statusBreakdown('Education entries', EducationEntry::query()),
+                $this->statusBreakdown('Languages', Language::query()),
                 $this->cvBreakdown(),
             ],
             'issues' => $this->issues($configuration),
@@ -261,6 +264,20 @@ final class PublicationReviewPresenter
                 ['label' => 'Institution', 'value' => $entry->institution],
             ],
             'issues' => $this->issues($entry),
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function language(Language $language): array
+    {
+        return array_merge($this->base('Language', $language->key, $language->position, $language->status->value, $language->is_visible, $language->published_at?->toDateTimeString()), [
+            'bilingual' => [
+                ['label' => 'Name', 'es' => $language->name_es, 'en' => $language->name_en],
+            ],
+            'fields' => [
+                ['label' => 'Level', 'value' => $language->level?->value],
+            ],
+            'issues' => $this->issues($language),
         ]);
     }
 

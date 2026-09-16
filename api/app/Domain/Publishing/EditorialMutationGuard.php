@@ -8,6 +8,7 @@ use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExperienceHighlight;
 use App\Models\ExpertiseArea;
+use App\Models\Language;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
@@ -163,7 +164,7 @@ final class EditorialMutationGuard implements ShouldHandleEventsAfterCommit
         return in_array($content::class, [
             Profile::class, SiteConfiguration::class, Experience::class, ExperienceHighlight::class,
             WorkCase::class, Project::class, ProjectImage::class, Technology::class, ExpertiseArea::class,
-            WorkPrinciple::class, ProfessionalLink::class, CvDocument::class, EducationEntry::class,
+            WorkPrinciple::class, ProfessionalLink::class, CvDocument::class, EducationEntry::class, Language::class,
         ], true);
     }
 }

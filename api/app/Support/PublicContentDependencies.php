@@ -8,6 +8,7 @@ use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExperienceHighlight;
 use App\Models\ExpertiseArea;
+use App\Models\Language;
 use App\Models\ProfessionalLink;
 use App\Models\Profile;
 use App\Models\Project;
@@ -32,7 +33,8 @@ final class PublicContentDependencies
             ExpertiseArea::class,
             WorkPrinciple::class,
             CvDocument::class,
-            EducationEntry::class => [PublicEndpoint::Site],
+            EducationEntry::class,
+            Language::class => [PublicEndpoint::Site],
             Experience::class => [PublicEndpoint::Experiences, PublicEndpoint::WorkCases],
             ExperienceHighlight::class => [PublicEndpoint::Experiences],
             WorkCase::class => [PublicEndpoint::WorkCases],

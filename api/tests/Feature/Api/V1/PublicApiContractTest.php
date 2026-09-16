@@ -12,6 +12,7 @@ use App\Models\CvDocument;
 use App\Models\EducationEntry;
 use App\Models\Experience;
 use App\Models\ExpertiseArea;
+use App\Models\Language;
 use App\Models\ProfessionalLink;
 use App\Models\Project;
 use App\Models\Technology;
@@ -197,6 +198,7 @@ final class PublicApiContractTest extends TestCase
             'expertise_areas' => [['key' => 'apis', 'title' => 'Área técnica sintética', 'description' => null]],
             'work_principles' => [['key' => 'quality', 'statement' => 'Principio técnico sintético.']],
             'education' => [],
+            'languages' => [],
             'cv' => null,
         ]]);
 
@@ -219,6 +221,20 @@ final class PublicApiContractTest extends TestCase
         $this->getJson('/api/v1/en/site')->assertJsonPath('data.education', [
             ['key' => 'school', 'institution' => 'Instituto sintético', 'program' => 'Synthetic diploma', 'detail' => null, 'start_year' => null, 'end_year' => 2021],
             ['key' => 'course', 'institution' => 'Centro sintético', 'program' => 'Synthetic course', 'detail' => 'Detail', 'start_year' => 2022, 'end_year' => 2022],
+        ]);
+    }
+
+    public function test_site_resource_exposes_public_languages_in_order(): void
+    {
+        $this->publishSite();
+        $english = Language::factory()->create(['key' => 'english', 'position' => 1]);
+        $spanish = Language::factory()->create(['key' => 'spanish', 'position' => 0]);
+        $this->makePublic($english, ['name_es' => 'Inglés', 'name_en' => 'English', 'level' => 'b2']);
+        $this->makePublic($spanish, ['name_es' => 'Español', 'name_en' => 'Spanish', 'level' => 'native']);
+
+        $this->getJson('/api/v1/es/site')->assertJsonPath('data.languages', [
+            ['key' => 'spanish', 'name' => 'Español', 'level' => 'native'],
+            ['key' => 'english', 'name' => 'Inglés', 'level' => 'b2'],
         ]);
     }
 
@@ -320,7 +336,7 @@ final class PublicApiContractTest extends TestCase
             ...$attributes,
         ];
 
-        if (in_array($model::class, [Experience::class, ExpertiseArea::class, Project::class, Technology::class, WorkCase::class, WorkPrinciple::class, EducationEntry::class], true)) {
+        if (in_array($model::class, [Experience::class, ExpertiseArea::class, Project::class, Technology::class, WorkCase::class, WorkPrinciple::class, EducationEntry::class, Language::class], true)) {
             $values['key_locked'] = true;
         }
 

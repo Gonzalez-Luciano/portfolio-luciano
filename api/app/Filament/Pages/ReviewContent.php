@@ -6,6 +6,7 @@ use App\Filament\Resources\CvDocuments\Pages\EditCvDocument;
 use App\Filament\Resources\EducationEntries\Pages\EditEducationEntry;
 use App\Filament\Resources\Experiences\Pages\EditExperience;
 use App\Filament\Resources\ExpertiseAreas\Pages\EditExpertiseArea;
+use App\Filament\Resources\Languages\Pages\EditLanguage;
 use App\Filament\Resources\ProfessionalLinks\Pages\EditProfessionalLink;
 use App\Filament\Resources\Projects\Pages\EditProject;
 use App\Filament\Resources\Technologies\Pages\EditTechnology;
@@ -85,6 +86,7 @@ final class ReviewContent extends Page
             'expertise-area' => EditExpertiseArea::getUrl(['record' => $content]),
             'work-principle' => EditWorkPrinciple::getUrl(['record' => $content]),
             'education-entry' => EditEducationEntry::getUrl(['record' => $content]),
+            'language' => EditLanguage::getUrl(['record' => $content]),
             'professional-link' => EditProfessionalLink::getUrl(['record' => $content]),
             'cv-document' => EditCvDocument::getUrl(['record' => $content]),
             default => null,
