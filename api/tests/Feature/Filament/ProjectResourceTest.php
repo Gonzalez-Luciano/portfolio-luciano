@@ -508,6 +508,77 @@ final class ProjectResourceTest extends TestCase
         Storage::disk('local')->assertExists($image->private_path);
     }
 
+    /**
+     * Regression: `EditRecord::save()` never refills the form after
+     * `handleRecordUpdate()`, so without an explicit refresh the repeater
+     * keeps the just-uploaded item's hidden `id` at null and its `file` at
+     * the now-consumed temporary upload. A second save would otherwise see
+     * an id-less item with an upload and delete/recreate the row (and, on a
+     * visible project, mint a new public path) instead of just updating its
+     * alt text.
+     */
+    public function test_saving_twice_keeps_the_same_screenshot_row_and_does_not_restage_the_upload(): void
+    {
+        Repeater::fake();
+        Storage::fake('local');
+        Storage::fake('public');
+        $project = Project::factory()->create();
+        $this->authenticateAdmin();
+
+        $test = Livewire::test(EditProject::class, ['record' => $project->getKey()])
+            ->callFormComponentAction('images', 'add')
+            ->fillForm([
+                'images.0.file' => $this->png('first.png'),
+                'images.0.alt_es' => 'Primera', 'images.0.alt_en' => 'First',
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $image = $project->images()->sole();
+
+        $test->fillForm(['images.0.alt_en' => 'First updated'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $images = $project->images()->get();
+        $this->assertCount(1, $images);
+        $this->assertSame($image->id, $images[0]->id);
+        $this->assertSame($image->private_path, $images[0]->private_path);
+        $this->assertSame('First updated', $images[0]->alt_en);
+    }
+
+    /**
+     * The panel has no outer database transaction (`UpdateContentWithTechnologies`
+     * commits on its own), so by the time a gallery sync fails, the
+     * field/technology update is already persisted. The admin must be told
+     * the save was only partial, and the page's record must reflect the
+     * persisted field change rather than silently reverting it in the UI.
+     */
+    public function test_a_gallery_failure_reports_a_partial_save_and_keeps_the_field_edit(): void
+    {
+        Repeater::fake();
+        Storage::fake('local');
+        Storage::fake('public');
+        $project = Project::factory()->create($this->completeAttributes());
+        $this->forcePublished($project, visible: true);
+        $this->authenticateAdmin();
+
+        $test = Livewire::test(EditProject::class, ['record' => $project->getKey()])
+            ->callFormComponentAction('images', 'add')
+            ->fillForm([
+                'summary_es' => 'Resumen actualizado sintético',
+                'images.0.file' => $this->png('shot.png'),
+                'images.0.alt_es' => 'Captura',
+                'images.0.alt_en' => null,
+            ])
+            ->call('save')
+            ->assertNotified('Save partially failed');
+
+        $this->assertSame('Resumen actualizado sintético', $project->refresh()->summary_es);
+        $this->assertSame(0, $project->images()->count());
+        $this->assertSame('Resumen actualizado sintético', $test->instance()->getRecord()->summary_es);
+    }
+
     private function png(string $name): UploadedFile
     {
         return UploadedFile::fake()->createWithContent(

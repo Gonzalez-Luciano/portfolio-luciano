@@ -117,15 +117,18 @@ final class EditorialActions
 
     private static function notifyIssues(string $label, PublicationValidationException $exception): void
     {
-        $body = collect($exception->issues())
-            ->map(fn ($issue): string => "[{$issue->code}] {$issue->path}: {$issue->message}")
-            ->implode("\n");
-
         Notification::make()
             ->danger()
             ->title("{$label} failed")
-            ->body($body)
+            ->body(self::formatIssues($exception))
             ->send();
+    }
+
+    private static function formatIssues(PublicationValidationException $exception): string
+    {
+        return collect($exception->issues())
+            ->map(fn ($issue): string => "[{$issue->code}] {$issue->path}: {$issue->message}")
+            ->implode("\n");
     }
 
     /**
@@ -149,6 +152,27 @@ final class EditorialActions
             ->danger()
             ->title("{$label} failed")
             ->body($exception->getMessage())
+            ->send();
+    }
+
+    /**
+     * Same failure-formatting as `notifyAssetFailure()`, but for a call site
+     * where the record's own fields have already been committed and only a
+     * later, separate asset-owning step (a project's screenshot gallery)
+     * failed. The panel runs without a database transaction, so that field
+     * commit is real and permanent; the notification makes that partial
+     * success explicit instead of implying nothing was saved.
+     */
+    public static function notifyPartialAssetFailure(string $label, \Throwable $exception): void
+    {
+        $detail = $exception instanceof PublicationValidationException
+            ? self::formatIssues($exception)
+            : $exception->getMessage();
+
+        Notification::make()
+            ->danger()
+            ->title("{$label} partially failed")
+            ->body("The other changes were saved. The screenshots were not:\n{$detail}")
             ->send();
     }
 }

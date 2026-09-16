@@ -44,14 +44,28 @@ class EditProject extends EditRecord
             'technology_id' => $technology->getKey(),
         ])->all();
 
-        $data['images'] = $record->images->map(fn (ProjectImage $image): array => [
+        $data['images'] = self::imagesFormData($record);
+
+        return $data;
+    }
+
+    /**
+     * The repeater's item shape: a saved image keeps its id and a null file
+     * (a new upload is required only for an id-less item); alt text mirrors
+     * the stored value. Shared by the initial fill above and the post-save
+     * refill in handleRecordUpdate(), which needs the same mapping after a
+     * successful gallery sync (see the comment there for why).
+     *
+     * @return list<array{id: int, file: null, alt_es: ?string, alt_en: ?string}>
+     */
+    private static function imagesFormData(Project $record): array
+    {
+        return $record->images->map(fn (ProjectImage $image): array => [
             'id' => $image->getKey(),
             'file' => null,
             'alt_es' => $image->alt_es,
             'alt_en' => $image->alt_en,
         ])->all();
-
-        return $data;
     }
 
     /** @return array<Action> */
@@ -159,13 +173,31 @@ class EditProject extends EditRecord
             try {
                 $updated = app(SyncProjectImages::class)($updated, self::galleryItems($imagesInput));
             } catch (\Throwable $exception) {
-                EditorialActions::notifyAssetFailure('Save', $exception);
+                // The panel runs without a database transaction, so the
+                // field/technology update above is already committed: the
+                // record on the page must reflect it, and the notification
+                // must say the save was only partial rather than implying
+                // nothing was saved.
+                $this->record = $updated;
+                EditorialActions::notifyPartialAssetFailure('Save', $exception);
 
                 throw new Halt;
             }
-        }
 
-        $this->record = $updated;
+            // `save()` never refills the form after handleRecordUpdate(), so
+            // without this the repeater would keep the just-uploaded item's
+            // hidden id at null and its file at the now-consumed temporary
+            // upload: a second save would see an id-less item with an
+            // upload and delete/recreate the row instead of updating it.
+            // `refreshFormData()` cannot be used here: its `fillPartially()`
+            // matches state paths by exact key against `Arr::dot()`'d state,
+            // which never equals a bare top-level key ("images") once that
+            // key holds a non-empty nested array, so it would silently no-op.
+            $this->record = $updated;
+            $this->data['images'] = self::imagesFormData($updated);
+        } else {
+            $this->record = $updated;
+        }
 
         if ($updated->status === PublicationStatus::Published && $updated->is_visible) {
             Notification::make()
