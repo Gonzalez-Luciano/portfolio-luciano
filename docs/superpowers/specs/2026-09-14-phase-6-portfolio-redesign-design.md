@@ -290,7 +290,7 @@ Todas con encabezado "0N · Sección" (Plex Mono, acento) y H2 en Fraunces.
 - **01 Experiencia (D20):** línea vertical de 1px color nodo con un nodo por rol (en oscuro con el halo del árbol). Organización en Fraunces; por rol: fechas (Mono), título, resumen y logros. Debajo, casos como acordeón: botón con título y `+`/`−`; al abrir, grilla de 2 columnas (1 en móvil) con Problema, Aporte, Enfoque técnico, Resultado y chips de tecnologías. Se pueden abrir varios. Casos sin vínculo al final, bajo "Otros casos".
 - **02 Proyectos (D19):** subsección "Para clientes" y luego "Personales". Cada proyecto es un dossier de dos columnas:
   - Texto a la izquierda: meta (`Para cliente · Cliente · Rol · Estado`), título, resumen, Problema / Solución / Resultado, chips de stack, enlaces a demo y repositorio.
-  - Galería a la derecha: captura principal 16:10 y miniaturas (hasta 4 visibles y `+N`). Las miniaturas son botones; "Ver en tamaño completo" abre un `<dialog>` con anterior/siguiente y cierre con Escape.
+  - Galería a la derecha: captura principal 16:10 y, debajo, una fila de **4 casillas como máximo**. Las casillas representan todas las imágenes del proyecto, incluida la principal. Con 2 a 4 imágenes hay una miniatura por imagen. Con 5 o más se muestran 3 miniaturas y la cuarta casilla es `+N`, donde N es la cantidad total menos 3; abre el visor. Ejemplos: 4 imágenes → 4 miniaturas; 5 → 3 miniaturas + `+2`; 12 → 3 miniaturas + `+9`. Con una sola imagen no hay casillas. Las miniaturas y `+N` son botones; "Ver en tamaño completo" abre un `<dialog>` con anterior/siguiente y cierre con Escape.
   - En móvil: texto arriba, galería abajo con miniaturas en carrusel horizontal.
   - Los primeros 3 proyectos por grupo se muestran; el resto aparece con "Ver más proyectos" en el mismo lugar.
 - **03 Stack (D21):** 4 columnas en el orden `backend`, `data`, `integration`, `collaboration` con las etiquetas de `site.technology_groups`; 2 columnas en móvil. Solo nombres.
@@ -358,3 +358,22 @@ Sigue pendiente solo el contenido que aporta Luciano: textos de problema, soluci
 ## 14. Fuera de alcance
 
 SEO, metadata y Open Graph (Fase 8); despliegue y runtime productivo (Fase 11); regenerar el video; nuevos proyectos más allá de los listados.
+
+## 15. Confirmación de maquetas (2026-09-16)
+
+Luciano volvió a elegir cada maqueta del brainstorming y confirmó las decisiones de este documento. Las maquetas son solo referencia visual; si alguna difiere de este documento, manda este documento.
+
+| Tema | Opción elegida | Decisión y sección |
+|---|---|---|
+| Paleta | Terracota | D12, §8.1 (bordes ajustados a `#86705E` / `#8C7462` por contraste) |
+| Tipografía | Editorial cálida: Fraunces, Instrument Sans, IBM Plex Mono | D13, §8.2 |
+| Ilustración del video | Línea de tinta que se dibuja | D14, §7.1 |
+| Detalle del fondo | **Combinación:** paisaje esbozado en la mitad clara + constelación al final | D15, §7.4 |
+| Ajustes del fondo | Aprobado: corrección de contraste en la mezcla y constelación liviana con el color de los nodos | D15, D16, §7.2, §7.4 |
+| Textos sobre el video | Columna izquierda en los tres momentos | D17, §7.5 |
+| Empalme escena → secciones | Amanecer según el tema | D18, §8.3 |
+| Experiencia | Línea de tiempo con casos desplegables | D20, §8.4 |
+| Proyectos | Dossier completo; galería con 4 casillas como máximo y `+N` como cuarta casilla cuando no entran | D19, §8.4 |
+| Stack, Sobre mí y Contacto | Tres secciones separadas con aire; Contacto sin título editable | D21, §8.4 |
+| Navegación | **Combinación:** en ≥1024px barra transparente sobre la escena y sólida en las secciones; en <1024px nombre + "Menú" que abre un índice a pantalla completa | D23, D26, §8.5 |
+| Modo oscuro | Aprobado para todas las secciones | D22, §8.1 |
