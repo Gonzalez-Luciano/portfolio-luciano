@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Database;
 
+use App\Domain\Content\Actions\UpdateContent;
 use App\Enums\LanguageLevel;
 use App\Enums\ProjectKind;
 use App\Enums\PublicationStatus;
@@ -58,5 +59,20 @@ final class PhaseSixDraftContentSeederTest extends TestCase
         foreach ([Experience::class, Project::class, EducationEntry::class, Language::class, Technology::class] as $model) {
             $this->assertSame(0, $model::query()->where('status', PublicationStatus::Published)->count(), "{$model} must stay draft.");
         }
+    }
+
+    public function test_it_never_overwrites_work_modes_an_admin_already_set_while_still_filling_a_missing_location(): void
+    {
+        $this->seed(PortfolioContentSeeder::class);
+
+        $profile = Profile::query()->where('singleton_key', 'default')->firstOrFail();
+        $this->assertNull($profile->location, 'This test requires a profile with no location yet.');
+        app(UpdateContent::class)($profile, ['work_modes' => ['remote']]);
+
+        $this->seed(PhaseSixDraftContentSeeder::class);
+
+        $profile = $profile->fresh();
+        $this->assertSame('Mar del Plata, Argentina', $profile->location);
+        $this->assertSame(['remote'], $profile->work_modes);
     }
 }

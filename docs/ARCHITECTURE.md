@@ -476,7 +476,7 @@ Spec: `docs/superpowers/specs/2026-09-14-phase-6-portfolio-redesign-design.md` (
 - **WorkCase** tiene `experience_id` opcional (`ON DELETE SET NULL`); la API expone `experience_key` solo si la experiencia es pública. Cambiar una Experience invalida `experiences` y `work-cases`.
 - **EducationEntry** y **Language** son recursos Filament propios en "Profile and site", con revisión, reorden, cambio de clave y borrado como las demás colecciones; invalidan `site`.
 - **Profile** suma `location` (sin traducir) y `work_modes` (JSON de `on_site`, `hybrid`, `remote`; la API los emite en ese orden).
-- **Contenido inicial de Fase 6**: `php artisan db:seed --class=PhaseSixDraftContentSeeder` crea borradores (experiencias de Coned, vínculo de casos, ReservaHub, Trucks and Drinks sin textos ni capturas, formación, idiomas, tecnologías del CV, ubicación y modalidades) mediante acciones de dominio. Es idempotente, nunca publica y nunca pisa datos existentes.
+- **Contenido inicial de Fase 6**: `php artisan db:seed --class=PhaseSixDraftContentSeeder` crea borradores (experiencias de Coned, vínculo de casos, ReservaHub, Trucks and Drinks sin textos ni capturas, formación, idiomas, tecnologías del CV, ubicación y modalidades) mediante acciones de dominio. Es idempotente: nunca cambia el estado de publicación de nada y todo contenido nuevo se crea en borrador, sin pisar lo existente (`location` y `work_modes` del Profile solo se completan si están vacíos, cada uno por separado). El Profile no tiene borrador por campo, así que si ya está publicado, la ubicación o las modalidades que el seeder complete quedan visibles de inmediato.
 
 ## Fase 5 — Sitio público (implementado; reemplazado en Fase 6)
 

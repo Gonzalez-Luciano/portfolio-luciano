@@ -24,10 +24,13 @@ use Illuminate\Database\Seeder;
 /**
  * Phase 6 draft content (spec 2026-09-14-phase-6-portfolio-redesign-design.md §9).
  *
- * Every row is created as draft, hidden, unpublished through the same domain
- * actions Filament uses, and nothing is ever overwritten: an existing key is
- * skipped, a work case keeps a link someone already set, and the profile keeps
- * a location someone already typed. Publication is a human review step.
+ * Every new row is created as draft, hidden, unpublished through the same
+ * domain actions Filament uses, and nothing is ever overwritten: an existing
+ * key is skipped, a work case keeps a link someone already set, and the
+ * profile keeps a location or a set of work modes someone already set,
+ * field by field. Publication is a human review step; the Profile singleton
+ * has no per-field draft, so filling one of its blank fields on an
+ * already-published Profile takes effect immediately.
  *
  * Sources: approved CVs (docs/content/approved-assets/cv-*.pdf), the LinkedIn
  * role names and dates recorded as decision D27, and the public ReservaHub
@@ -192,14 +195,20 @@ final class PhaseSixDraftContentSeeder extends Seeder
     private function profile(): void
     {
         $profile = Profile::query()->where('singleton_key', 'default')->firstOrFail();
-        if ($profile->location !== null) {
+
+        $attributes = [];
+        if ($profile->location === null) {
+            $attributes['location'] = 'Mar del Plata, Argentina';
+        }
+        if ($profile->work_modes === null || $profile->work_modes === []) {
+            $attributes['work_modes'] = array_map(static fn (WorkMode $mode): string => $mode->value, WorkMode::cases());
+        }
+
+        if ($attributes === []) {
             return;
         }
 
-        app(UpdateContent::class)($profile, [
-            'location' => 'Mar del Plata, Argentina',
-            'work_modes' => array_map(static fn (WorkMode $mode): string => $mode->value, WorkMode::cases()),
-        ]);
+        app(UpdateContent::class)($profile, $attributes);
     }
 
     /**
