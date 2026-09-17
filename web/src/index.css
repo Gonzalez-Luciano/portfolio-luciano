@@ -2,13 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-canvas: 245 239 230;
+  --color-surface: 234 223 209;
+  --color-text: 45 37 27;
+  --color-text-muted: 102 82 68;
+  --color-accent: 154 78 42;
+  --color-border: 134 112 94;
+  --color-node: 154 78 42;
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --color-canvas: 26 20 17;
+  --color-surface: 40 31 26;
+  --color-text: 243 233 221;
+  --color-text-muted: 199 179 161;
+  --color-accent: 224 142 94;
+  --color-border: 140 116 98;
+  --color-node: 227 139 80;
+  color-scheme: dark;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  font-family: 'Helvetica Neue ME', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  @apply bg-canvas font-sans text-ink antialiased;
   overflow-x: hidden;
+}
+
+:focus-visible {
+  outline: 3px solid rgb(var(--color-accent));
+  outline-offset: 2px;
+}
+
+.label {
+  @apply font-mono text-xs font-medium uppercase tracking-[0.18em];
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -3,11 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Scroll Tied Video Section</title>
-    <link
-      href="https://db.onlinewebfonts.com/c/95cecf452d3208890088a5b4c19c7ecf?family=Helvetica+Neue+ME"
-      rel="stylesheet"
-    />
+    <meta name="color-scheme" content="light dark" />
+    <title>Portfolio</title>
+    <script>
+      // Applies the saved or system theme before the first paint to avoid a flash.
+      ;(function () {
+        var prefersDark = false
+        try {
+          prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        } catch (error) {}
+        var stored = null
+        try {
+          stored = window.localStorage.getItem('portfolio-theme')
+        } catch (error) {}
+        var theme = stored === 'light' || stored === 'dark' ? stored : prefersDark ? 'dark' : 'light'
+        document.documentElement.setAttribute('data-theme', theme)
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
