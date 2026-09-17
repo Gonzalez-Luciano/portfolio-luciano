@@ -8,7 +8,7 @@ Source record for `web/public/media/scroll/ink-tree-network-v1.mp4`. The two fra
 | Video model | Wan 2.2 First-Last Frame (Apache 2.0), public Hugging Face demo |
 | Settings | Duration 5.1 s (81 frames at 16 fps), inference steps 8, guidance scale high/low noise 1, randomized seed |
 | Seed | Kept by Luciano; add it here when regenerating |
-| Output | 848×480, 81 frames, 5.06 s, no audio, 246 KB |
+| Output | 848×480, 81 frames, 5.06 s, no audio, 246 KB. Served as `ink-tree-network-v2.mp4`, an all-intra re-encode of this same-frame source (H.264, `-g 1`, CRF 20, `+faststart`, 868 KB) so the `currentTime` fallback seeks to any frame; poster `ink-tree-network-v2-poster.webp` is frame 0 (3 KB) |
 
 ## Video prompt
 
