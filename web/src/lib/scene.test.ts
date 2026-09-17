@@ -1,21 +1,31 @@
 import { describe, expect, it } from 'vitest'
-import type { PublicContent } from '@/lib/api'
-import { buildScene } from '@/lib/scene'
+import { buildScene, type SceneInput } from '@/lib/scene'
 
-const content: PublicContent = {
+const content: SceneInput = {
   profile: {
     name: 'Synthetic Engineer',
+    location: null,
+    work_modes: [],
     headline: 'Synthetic headline',
     short_summary: 'Synthetic summary.',
+    introduction: 'Synthetic introduction.',
     availability: 'Synthetic availability.',
     statement: { lead: 'Lead', emphasis: 'Emphasis', tail: 'Tail' },
     closing: { line_one: 'Line one', line_two: 'Line two' },
+    cta: 'Synthetic CTA',
+    photo: null,
   },
   site: {
+    projects_empty_message: 'Empty.',
+    contact_intro: 'Intro.',
+    technology_groups: [],
     professional_links: [
       { key: 'linkedin', label: 'LinkedIn', href: 'https://linkedin.test/synthetic' },
       { key: 'email', label: 'Email me', href: 'mailto:synthetic@example.test' },
     ],
+    work_principles: [],
+    education: [],
+    languages: [],
     cv: { url: '/cv/luciano-gonzalez-en.pdf', label: 'Download CV' },
   },
   technologies: [
@@ -43,7 +53,7 @@ describe('buildScene', () => {
     const scene = buildScene({
       ...content,
       profile: { ...content.profile, statement: null, closing: null },
-      site: { professional_links: [], cv: null },
+      site: { ...content.site, professional_links: [], cv: null },
       technologies: [],
     })
 

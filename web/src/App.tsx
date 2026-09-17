@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { ArrowDown, ArrowRight, ChevronUp, Info, X } from 'lucide-react'
 import { resolveLocale, uiCopy, type UiCopy } from '@/content'
-import { loadPublicContent } from '@/lib/api'
+import { loadRegion, loadStructuralContent } from '@/lib/api'
 import { buildScene, type SceneContent } from '@/lib/scene'
 import {
   NAV_LIGHT_THRESHOLD,
@@ -309,11 +309,18 @@ export default function App() {
 
   useEffect(() => {
     const controller = new AbortController()
+    const { signal } = controller
     setState({ status: 'loading' })
-    loadPublicContent(locale, controller.signal)
-      .then((content) => setState({ status: 'ready', scene: buildScene(content) }))
+    Promise.all([
+      loadStructuralContent(locale, signal),
+      loadRegion(locale, 'technologies', signal).catch((error: unknown) => {
+        if (signal.aborted) throw error
+        return []
+      }),
+    ])
+      .then(([structural, technologies]) => setState({ status: 'ready', scene: buildScene({ ...structural, technologies }) }))
       .catch(() => {
-        if (!controller.signal.aborted) setState({ status: 'error' })
+        if (!signal.aborted) setState({ status: 'error' })
       })
     return () => controller.abort()
   }, [locale, attempt])

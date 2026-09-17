@@ -1,4 +1,4 @@
-import type { CvLink, ProfessionalLink, PublicContent, Statement } from '@/lib/api'
+import type { CvLink, ProfessionalLink, Statement, StructuralContent, Technology } from '@/lib/api'
 
 /** Presentation model for the scroll scene, derived only from published CMS content. */
 export type SceneContent = {
@@ -15,7 +15,9 @@ export type SceneContent = {
   cv: CvLink | null
 }
 
-export function buildScene({ profile, site, technologies }: PublicContent): SceneContent {
+export type SceneInput = StructuralContent & { technologies: Technology[] }
+
+export function buildScene({ profile, site, technologies }: SceneInput): SceneContent {
   const backend = technologies.filter((technology) => technology.category === 'backend').map((technology) => technology.name)
 
   return {

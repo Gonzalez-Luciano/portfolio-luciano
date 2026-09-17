@@ -1,8 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, isProfile, isSite, isTechnologyList, loadPublicContent } from '@/lib/api'
+import {
+  ApiError,
+  isExperienceList,
+  isProfile,
+  isProjectList,
+  isSite,
+  isTechnologyList,
+  isWorkCaseList,
+  loadRegion,
+  loadStructuralContent,
+} from '@/lib/api'
+
+const technology = { key: 'php', name: 'PHP', category: 'backend', icon: null }
 
 const profile = {
   name: 'Synthetic Engineer',
+  location: 'Synthetic City',
+  work_modes: ['on_site', 'remote'],
   headline: 'Synthetic headline',
   short_summary: 'Synthetic summary.',
   introduction: 'Synthetic introduction.',
@@ -10,26 +24,66 @@ const profile = {
   statement: { lead: 'Lead', emphasis: 'Emphasis', tail: 'Tail' },
   closing: null,
   cta: 'Synthetic CTA',
-  photo: null,
+  photo: { url: '/storage/profiles/photo.png', alt: 'Synthetic portrait' },
 }
 
 const site = {
   projects_empty_message: 'Empty.',
   contact_intro: 'Intro.',
-  technology_groups: [],
-  professional_links: [
-    { key: 'github', label: 'GitHub', href: 'https://github.test/synthetic' },
-    { key: 'email', label: 'Email me', href: 'mailto:synthetic@example.test' },
+  technology_groups: [
+    { key: 'backend', label: 'Backend' },
+    { key: 'data', label: 'Data' },
+    { key: 'integration', label: 'Integrations' },
+    { key: 'collaboration', label: 'Collaboration' },
   ],
+  professional_links: [{ key: 'email', label: 'Email me', href: 'mailto:synthetic@example.test' }],
   expertise_areas: [],
-  work_principles: [],
+  work_principles: [{ key: 'quality', statement: 'Synthetic principle.' }],
+  education: [{ key: 'school', institution: 'Synthetic School', program: 'Diploma', detail: null, start_year: null, end_year: 2021 }],
+  languages: [{ key: 'english', name: 'English', level: 'b2' }],
   cv: null,
 }
 
-const technologies = [
-  { key: 'php', name: 'PHP', category: 'backend', icon: null },
-  { key: 'mysql', name: 'MySQL', category: 'data', icon: null },
-]
+const experience = {
+  key: 'role',
+  organization: 'Synthetic Org',
+  role: 'Engineer',
+  start: '2025-09',
+  end: null,
+  summary: 'Summary.',
+  highlights: ['Highlight.'],
+  technologies: [technology],
+}
+
+const workCase = {
+  key: 'case',
+  experience_key: 'role',
+  title: 'Case',
+  context: 'Context.',
+  problem: 'Problem.',
+  contribution: 'Contribution.',
+  technical_approach: 'Approach.',
+  outcome: 'Outcome.',
+  technologies: [],
+}
+
+const project = {
+  key: 'project',
+  kind: 'client',
+  client_name: 'Synthetic Client',
+  title: 'Project',
+  role: 'Backend',
+  status: 'in_use',
+  summary: 'Summary.',
+  problem: 'Problem.',
+  solution: 'Solution.',
+  result: 'Result.',
+  featured: false,
+  images: [{ url: '/storage/projects/a.webp', alt: 'Screenshot' }],
+  demo_url: null,
+  repository_url: 'https://example.test/repo',
+  technologies: [technology],
+}
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json' } })
@@ -40,88 +94,72 @@ afterEach(() => {
 })
 
 describe('validators', () => {
-  it('accepts the documented profile shape and tolerates extra fields', () => {
+  it('accept the documented shapes and tolerate extra fields', () => {
     expect(isProfile(profile)).toBe(true)
-    expect(isProfile({ ...profile, statement: null, closing: { line_one: 'One', line_two: 'Two' } })).toBe(true)
-  })
-
-  it('rejects missing, wrong, or partial profile groups', () => {
-    expect(isProfile({ ...profile, headline: null })).toBe(false)
-    expect(isProfile({ ...profile, statement: { lead: 'Lead' } })).toBe(false)
-    const { closing: _closing, ...withoutClosing } = profile
-    expect(isProfile(withoutClosing)).toBe(false)
-  })
-
-  it('validates site links and cv', () => {
+    expect(isProfile({ ...profile, photo: null, location: null, work_modes: [] })).toBe(true)
     expect(isSite(site)).toBe(true)
-    expect(isSite({ ...site, cv: { url: '/cv/luciano-gonzalez-es.pdf', label: 'Descargar CV' } })).toBe(true)
-    expect(isSite({ ...site, professional_links: [{ key: 'twitter', label: 'X', href: 'https://x.test' }] })).toBe(false)
-    expect(isSite({ ...site, cv: { url: '/cv.pdf' } })).toBe(false)
+    expect(isTechnologyList([technology])).toBe(true)
+    expect(isExperienceList([experience, { ...experience, organization: null, end: '2025-09' }])).toBe(true)
+    expect(isWorkCaseList([workCase, { ...workCase, experience_key: null }])).toBe(true)
+    expect(isProjectList([project, { ...project, kind: 'personal', client_name: null, images: [] }])).toBe(true)
   })
 
-  it('validates technology categories', () => {
-    expect(isTechnologyList(technologies)).toBe(true)
-    expect(isTechnologyList([{ key: 'x', name: 'X', category: 'frontend' }])).toBe(false)
+  it('reject missing, mistyped, or out-of-contract values', () => {
+    expect(isProfile({ ...profile, work_modes: ['office'] })).toBe(false)
+    expect(isProfile({ ...profile, photo: { url: '/x.png' } })).toBe(false)
+    expect(isSite({ ...site, languages: [{ key: 'x', name: 'X', level: 'fluent' }] })).toBe(false)
+    expect(isSite({ ...site, education: [{ ...site.education[0], end_year: '2021' }] })).toBe(false)
+    expect(isTechnologyList([{ ...technology, category: 'frontend' }])).toBe(false)
+    expect(isExperienceList([{ ...experience, start: '2025-9' }])).toBe(false)
+    expect(isWorkCaseList([{ ...workCase, experience_key: 3 }])).toBe(false)
+    expect(isProjectList([{ ...project, status: 'archived' }])).toBe(false)
+    expect(isProjectList([{ ...project, images: [{ url: '/a.webp' }] }])).toBe(false)
   })
 })
 
-describe('loadPublicContent', () => {
-  it('requests the three locale endpoints and returns validated data', async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-      const path = String(input)
-      if (path.endsWith('/profile')) return json({ data: profile })
-      if (path.endsWith('/site')) return json({ data: site })
-      return json({ data: technologies })
-    })
+describe('loadStructuralContent', () => {
+  it('requests profile and site for the locale', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).endsWith('/profile') ? json({ data: profile }) : json({ data: site }),
+    )
     vi.stubGlobal('fetch', fetchMock)
 
-    const content = await loadPublicContent('en', new AbortController().signal)
+    const content = await loadStructuralContent('en', new AbortController().signal)
 
-    expect(fetchMock.mock.calls.map(([path]) => String(path)).sort()).toEqual([
-      '/api/v1/en/profile',
-      '/api/v1/en/site',
-      '/api/v1/en/technologies',
-    ])
+    expect(fetchMock.mock.calls.map(([path]) => String(path)).sort()).toEqual(['/api/v1/en/profile', '/api/v1/en/site'])
     expect(content.profile.name).toBe('Synthetic Engineer')
-    expect(content.technologies).toHaveLength(2)
+    expect(content.site.languages).toHaveLength(1)
   })
 
-  it('degrades a technologies failure to an empty list', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const path = String(input)
-        if (path.endsWith('/profile')) return json({ data: profile })
-        if (path.endsWith('/site')) return json({ data: site })
-        return json({ error: { code: 'content_temporarily_unavailable' } }, 503)
-      }),
-    )
+  it('rejects when either structural resource fails or is malformed', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) =>
+      String(input).endsWith('/profile') ? json({ error: { code: 'not_found' } }, 404) : json({ data: site }),
+    ))
+    await expect(loadStructuralContent('es', new AbortController().signal)).rejects.toBeInstanceOf(ApiError)
 
-    const content = await loadPublicContent('es', new AbortController().signal)
-    expect(content.technologies).toEqual([])
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) =>
+      String(input).endsWith('/profile') ? json({ data: profile }) : json({ data: { ...site, education: null } }),
+    ))
+    await expect(loadStructuralContent('es', new AbortController().signal)).rejects.toBeInstanceOf(ApiError)
+  })
+})
+
+describe('loadRegion', () => {
+  it('requests one collection and returns validated data', async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => json({ data: [project] }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const projects = await loadRegion('es', 'projects', new AbortController().signal)
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe('/api/v1/es/projects')
+    expect(projects[0]?.client_name).toBe('Synthetic Client')
   })
 
-  it('fails when a structural resource is missing or malformed', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const path = String(input)
-        if (path.endsWith('/profile')) return json({ error: { code: 'not_found' } }, 404)
-        if (path.endsWith('/site')) return json({ data: site })
-        return json({ data: technologies })
-      }),
-    )
-    await expect(loadPublicContent('es', new AbortController().signal)).rejects.toBeInstanceOf(ApiError)
+  it('rejects a failed or malformed collection', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json({ error: { code: 'content_temporarily_unavailable' } }, 503)))
+    await expect(loadRegion('es', 'work-cases', new AbortController().signal)).rejects.toBeInstanceOf(ApiError)
 
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const path = String(input)
-        if (path.endsWith('/site')) return json({ data: { ...site, professional_links: null } })
-        if (path.endsWith('/profile')) return json({ data: profile })
-        return json({ data: technologies })
-      }),
-    )
-    await expect(loadPublicContent('es', new AbortController().signal)).rejects.toBeInstanceOf(ApiError)
+    vi.stubGlobal('fetch', vi.fn(async () => json({ data: [{ key: 'bad' }] })))
+    await expect(loadRegion('es', 'experiences', new AbortController().signal)).rejects.toBeInstanceOf(ApiError)
   })
 })
