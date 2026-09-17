@@ -190,6 +190,24 @@ final class PublicApiContractTest extends TestCase
         ]);
     }
 
+    public function test_a_published_visible_personal_project_emits_kind_personal_and_a_null_client_name(): void
+    {
+        $project = Project::factory()->create(['key' => 'personal-project']);
+        $this->makePublic($project, [
+            'title_es' => 'Proyecto personal sintético', 'title_en' => 'Synthetic personal project',
+            'role_es' => 'Rol técnico sintético', 'role_en' => 'Synthetic technical role', 'delivery_status' => 'in_development',
+            'summary_es' => 'Resumen técnico sintético.', 'summary_en' => 'Synthetic technical summary.',
+            'problem_es' => 'Problema técnico sintético.', 'problem_en' => 'Synthetic technical problem.',
+            'solution_es' => 'Solución técnica sintética.', 'solution_en' => 'Synthetic technical solution.',
+            'result_es' => 'Resultado técnico sintético.', 'result_en' => 'Synthetic technical result.',
+        ]);
+
+        $this->getJson('/api/v1/es/projects')
+            ->assertJsonStructure(['data' => [['kind', 'client_name']]])
+            ->assertJsonPath('data.0.kind', 'personal')
+            ->assertJsonPath('data.0.client_name', null);
+    }
+
     public function test_site_resource_has_ordered_groups_independently_filtered_collections_and_a_private_cv_contract(): void
     {
         $this->publishSite();

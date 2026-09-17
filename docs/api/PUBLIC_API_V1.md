@@ -101,8 +101,8 @@ routes below).
 Every mapped field is read straight from the named database column via the
 locale suffix; no field name derived from a database `_es`/`_en` suffix is
 ever used as a public JSON key, and no internal ID, position, pivot column,
-timestamp, `status`, `is_visible`, or `key_locked` value is ever emitted (see
-"Never exposed" below).
+timestamp, the publication `status`, `is_visible`, or `key_locked` value is
+ever emitted (see "Never exposed" below).
 
 ### `GET /api/v1/{locale}/profile` — `ProfileResource`
 
