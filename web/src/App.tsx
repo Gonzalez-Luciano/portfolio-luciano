@@ -11,6 +11,7 @@ import { ArrowDown, ArrowRight, ChevronUp, Info, X } from 'lucide-react'
 import { resolveLocale, uiCopy, type UiCopy } from '@/content'
 import { loadRegion, loadStructuralContent } from '@/lib/api'
 import { buildScene, type SceneContent } from '@/lib/scene'
+import { SCROLL_POSTER_SRC, SCROLL_VIDEO_SRC } from '@/lib/scene-timeline'
 import {
   NAV_LIGHT_THRESHOLD,
   STAGGER_THRESHOLD,
@@ -21,8 +22,6 @@ import {
 import { useVideoScrub } from '@/useVideoScrub'
 
 const DARK = '#1D3045'
-const VIDEO_SRC =
-  'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260821_114821_a8ca298f-be2c-4613-a4dd-51b69e16bbde.mp4'
 
 const ENTRANCE_EASE = 'cubic-bezier(0.16,1,0.3,1)'
 const MENU_EASE = 'cubic-bezier(0.4,0,0.2,1)'
@@ -298,7 +297,7 @@ function MobileMenu({
 export default function App() {
   const locale = useMemo(() => resolveLocale(window.location.pathname), [])
   const ui = uiCopy(locale)
-  const { containerRef, videoRef, canvasRef, scrollProgress, canvasLive } = useVideoScrub(VIDEO_SRC)
+  const { containerRef, videoRef, canvasRef, scrollProgress, canvasLive } = useVideoScrub(SCROLL_VIDEO_SRC)
   const [menuOpen, setMenuOpen] = useState(false)
   const [state, setState] = useState<SceneState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
@@ -351,7 +350,8 @@ export default function App() {
         <div className="sticky top-0 h-screen w-full overflow-hidden">
           <video
             ref={videoRef}
-            src={VIDEO_SRC}
+            src={SCROLL_VIDEO_SRC}
+            poster={SCROLL_POSTER_SRC}
             muted
             playsInline
             preload="auto"

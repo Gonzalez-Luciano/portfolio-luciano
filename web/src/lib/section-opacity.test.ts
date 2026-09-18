@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  NAV_LIGHT_THRESHOLD,
   sectionOneOpacity,
   sectionThreeOpacity,
   sectionTwoOpacity,
 } from '@/lib/section-opacity'
+import { navLightText } from '@/lib/scene-timeline'
 
 describe('section opacity curves', () => {
   it('section 1 holds, then fades out between 0.20 and 0.28', () => {
@@ -37,5 +39,17 @@ describe('section opacity curves', () => {
       )
       expect(visible.length).toBeLessThanOrEqual(1)
     }
+  })
+})
+
+describe('navigation color', () => {
+  it('switches to light text only once dark text stops passing contrast', () => {
+    expect(NAV_LIGHT_THRESHOLD).toBe(0.7)
+  })
+
+  it('flips nav text light at exactly the same point the nav veil appears', () => {
+    expect(navLightText(0.69)).toBe(false)
+    expect(navLightText(0.7)).toBe(true)
+    expect(navLightText(0.71)).toBe(true)
   })
 })

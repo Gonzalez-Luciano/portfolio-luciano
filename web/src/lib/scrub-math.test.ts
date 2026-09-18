@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clampProgress, nearestIndex, stepTowards } from '@/lib/scrub-math'
+import { blendFrames, clampProgress, nearestIndex, stepTowards } from '@/lib/scrub-math'
 
 describe('clampProgress', () => {
   it('maps scroll position onto the track span', () => {
@@ -50,5 +50,23 @@ describe('nearestIndex', () => {
   it('clamps outside the bank range', () => {
     expect(nearestIndex(frames, -1)).toBe(0)
     expect(nearestIndex(frames, 10)).toBe(3)
+  })
+})
+
+describe('blendFrames', () => {
+  const frames = [{ ts: 0 }, { ts: 62_500 }, { ts: 125_000 }]
+
+  it('returns null for an empty bank', () => {
+    expect(blendFrames([], 1)).toBeNull()
+  })
+
+  it('weights the two neighbours by the fractional position', () => {
+    expect(blendFrames(frames, 0.03125)).toEqual({ index: 0, next: 1, weight: 0.5 })
+    expect(blendFrames(frames, 0.0625)).toEqual({ index: 1, next: 2, weight: 0 })
+  })
+
+  it('clamps before the first and after the last frame', () => {
+    expect(blendFrames(frames, -1)).toEqual({ index: 0, next: 0, weight: 0 })
+    expect(blendFrames(frames, 9)).toEqual({ index: 2, next: 2, weight: 0 })
   })
 })

@@ -34,3 +34,30 @@ export function nearestIndex(frames: ReadonlyArray<{ ts: number }>, seconds: num
   if (lo > 0 && t - frames[lo - 1].ts <= frames[lo].ts - t) return lo - 1
   return lo
 }
+
+/**
+ * The two frames around `seconds` and how far between them it sits, so an
+ * 81-frame bank can be drawn as a continuous cross-fade.
+ */
+export function blendFrames(
+  frames: ReadonlyArray<{ ts: number }>,
+  seconds: number,
+): { index: number; next: number; weight: number } | null {
+  const count = frames.length
+  if (count === 0) return null
+
+  const t = seconds * 1e6
+  if (t <= frames[0].ts) return { index: 0, next: 0, weight: 0 }
+  if (t >= frames[count - 1].ts) return { index: count - 1, next: count - 1, weight: 0 }
+
+  let lo = 0
+  let hi = count - 1
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1
+    if (frames[mid].ts <= t) lo = mid
+    else hi = mid
+  }
+
+  const span = frames[hi].ts - frames[lo].ts
+  return { index: lo, next: hi, weight: span > 0 ? (t - frames[lo].ts) / span : 0 }
+}

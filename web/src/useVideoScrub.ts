@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import MP4Box, { type MP4ArrayBuffer, type MP4File, type MP4Sample, type MP4VideoTrack } from 'mp4box'
-import { clampProgress, nearestIndex, stepTowards } from '@/lib/scrub-math'
+import { blendFrames, clampProgress, stepTowards } from '@/lib/scrub-math'
 
 const LERP_TAU = 8
 const SNAP = 0.002
@@ -218,14 +218,34 @@ export function useVideoScrub(videoSrc: string) {
     }
 
     const draw = () => {
-      const index = nearestIndex(bank, current)
-      if (index < 0) return
-      warmLRU(index)
-      if (index === lastDrawn) return
-      const bitmap = lru.get(index)
-      if (!bitmap || !ctx) return
-      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-      lastDrawn = index
+      const blend = blendFrames(bank, current)
+      if (!blend || !ctx) return
+      warmLRU(blend.index)
+
+      // 5 % weight steps: smooth to the eye without redrawing on every tick.
+      const weight = Math.round(blend.weight * 20) / 20
+      const key = blend.index + weight
+      if (key === lastDrawn) return
+
+      const base = lru.get(blend.index)
+      if (!base) return
+      if (canvas.width !== base.width || canvas.height !== base.height) {
+        canvas.width = base.width
+        canvas.height = base.height
+      }
+
+      const overlay = weight > 0 ? lru.get(blend.next) : null
+      ctx.globalAlpha = 1
+      ctx.drawImage(base, 0, 0, canvas.width, canvas.height)
+      if (overlay) {
+        ctx.globalAlpha = weight
+        ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height)
+        ctx.globalAlpha = 1
+      }
+      // Without the neighbour bitmap yet, draw the base now and blend on a later tick.
+      if (weight > 0 && !overlay) return
+
+      lastDrawn = key
       if (!painted) {
         painted = true
         setCanvasLive(true)
