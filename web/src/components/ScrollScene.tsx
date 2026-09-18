@@ -44,14 +44,24 @@ export function ScrollScene({ scrub, scene, status, ui, onRetry }: Props) {
 
         <SceneBackdrop progress={p} reducedMotion={reducedMotion} />
 
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-0 w-full lg:w-1/2"
-          style={{
-            opacity: columnVeilOpacity(p),
-            background: 'linear-gradient(to right, #1A1411 0%, #1A1411 62%, rgba(26, 20, 17, 0) 100%)',
-          }}
-        />
+        {/*
+          The solid stop tracks the text column's own right edge exactly: the column sits
+          `--scene-gutter` in from this box's edge and is `--scene-col` of the remaining width
+          (1 = full width below lg, 0.4 = the lg:max-w-[40%] column), so `gutter + col * (100% -
+          2 * gutter)` is that edge in this element's own coordinate space, with a small buffer
+          past it. Nesting in the same `mx-auto max-w-content` box as the text row (below) keeps
+          both aligned at any viewport width, not just the 375/1440px points this was measured at.
+        */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 mx-auto max-w-content">
+          <div
+            className="h-full w-full [--scene-col:1] [--scene-gutter:1.5rem] sm:[--scene-gutter:2.5rem] lg:[--scene-col:0.4] lg:[--scene-gutter:4rem]"
+            style={{
+              opacity: columnVeilOpacity(p),
+              background:
+                'linear-gradient(to right, #1A1411 0%, #1A1411 calc(var(--scene-gutter) + var(--scene-col) * (100% - 2 * var(--scene-gutter)) + 0.5rem), rgba(26, 20, 17, 0) 100%)',
+            }}
+          />
+        </div>
 
         {scene && (
           <div className="sr-only">
@@ -61,8 +71,20 @@ export function ScrollScene({ scrub, scene, status, ui, onRetry }: Props) {
             <p>{scene.statement ? `${scene.statement.lead} ${scene.statement.emphasis} ${scene.statement.tail}` : scene.summary}</p>
             {scene.eyebrow && <p>{scene.eyebrow}</p>}
             <h2>{scene.closing.lineTwo ? `${scene.closing.lineOne} ${scene.closing.lineTwo}` : scene.closing.lineOne}</h2>
-            {scene.email && <a href={scene.email.href}>{scene.email.label}</a>}
           </div>
+        )}
+
+        {!scene && <h1 className="sr-only">{status === 'error' ? ui.failure : ui.loading}</h1>}
+
+        {scene?.email && (
+          // A real, keyboard-focusable link (unlike the decorative one in beat 3): reveals
+          // itself on focus instead of staying clipped, per WCAG 2.4.7.
+          <a
+            href={scene.email.href}
+            className="sr-only focus:not-sr-only focus:absolute focus:left-6 focus:top-6 focus:z-50 focus:rounded-full focus:bg-scene-veil focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-scene-light"
+          >
+            {scene.email.label}
+          </a>
         )}
 
         <div className="pointer-events-none relative mx-auto flex h-full max-w-content items-center px-6 sm:px-10 lg:px-16">
