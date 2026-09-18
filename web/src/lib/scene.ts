@@ -1,4 +1,6 @@
-import type { CvLink, ProfessionalLink, Statement, StructuralContent, Technology } from '@/lib/api'
+import type { Photo, ProfessionalLink, Statement, StructuralContent, Technology } from '@/lib/api'
+
+export type SceneInput = StructuralContent & { technologies: Technology[] }
 
 /** Presentation model for the scroll scene, derived only from published CMS content. */
 export type SceneContent = {
@@ -10,12 +12,9 @@ export type SceneContent = {
   /** Closing title; without the CMS closing group it falls back to availability on one line. */
   closing: { lineOne: string; lineTwo: string | null }
   eyebrow: string | null
-  links: ProfessionalLink[]
+  photo: Photo | null
   email: ProfessionalLink | null
-  cv: CvLink | null
 }
-
-export type SceneInput = StructuralContent & { technologies: Technology[] }
 
 export function buildScene({ profile, site, technologies }: SceneInput): SceneContent {
   const backend = technologies.filter((technology) => technology.category === 'backend').map((technology) => technology.name)
@@ -29,8 +28,7 @@ export function buildScene({ profile, site, technologies }: SceneInput): SceneCo
       ? { lineOne: profile.closing.line_one, lineTwo: profile.closing.line_two }
       : { lineOne: profile.availability, lineTwo: null },
     eyebrow: backend.length > 0 ? backend.join(' | ') : null,
-    links: site.professional_links,
+    photo: profile.photo,
     email: site.professional_links.find((link) => link.key === 'email') ?? null,
-    cv: site.cv,
   }
 }
