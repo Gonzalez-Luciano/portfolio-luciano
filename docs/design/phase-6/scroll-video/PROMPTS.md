@@ -9,6 +9,7 @@ Source record for `web/public/media/scroll/ink-tree-network-v1.mp4`. The two fra
 | Settings | Duration 5.1 s (81 frames at 16 fps), inference steps 8, guidance scale high/low noise 1, randomized seed |
 | Seed | Kept by Luciano; add it here when regenerating |
 | Output | 848×480, 81 frames, 5.06 s, no audio, 246 KB. Served as `ink-tree-network-v2.mp4`, an all-intra re-encode of this same-frame source (H.264, `-g 1`, CRF 20, `+faststart`, 868 KB) so the `currentTime` fallback seeks to any frame; poster `ink-tree-network-v2-poster.webp` is frame 0 (3 KB) |
+| Upscale | The 81 v1 frames were upscaled 4× with Real-ESRGAN (`x4plus-anime` model) to 3392×1920 PNGs, then downscaled 2× (Lanczos) to 1696×960 — exactly double the original resolution — and re-encoded all-intra: H.264, `libx264`, `-g 1`, no B-frames, `yuv420p`, CRF 20, `+faststart`, no audio, 81 frames at 16 fps. Served as `ink-tree-network-v3.mp4` (2.16 MB); poster `ink-tree-network-v3-poster.webp` is frame 0 at the same resolution (7 KB) |
 
 ## Video prompt
 

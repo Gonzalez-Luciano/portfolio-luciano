@@ -176,9 +176,9 @@ Autoalojadas con paquetes `@fontsource` (Fraunces variable, Instrument Sans, IBM
 
 | Aspecto | Valor |
 |---|---|
-| Archivo | `web/public/media/scroll/ink-tree-network-v1.mp4` (se reemplaza la URL externa) |
-| Origen | Wan 2.2 First-Last Frame, 81 cuadros a 16 fps, 848×480, 5,06 s, sin audio |
-| Póster | `ink-tree-network-v1-poster.webp` (cuadro 0), usado mientras carga y sin JavaScript |
+| Archivo | `web/public/media/scroll/ink-tree-network-v3.mp4` (se reemplaza la URL externa) |
+| Origen | Wan 2.2 First-Last Frame, 81 cuadros a 16 fps, 848×480, 5,06 s, sin audio; cuadros escalados 4× con Real-ESRGAN (`x4plus-anime`) a 3392×1920 y reescalados 2× (Lanczos) a 1696×960, el doble de la resolución original, servidos |
+| Póster | `ink-tree-network-v3-poster.webp` (cuadro 0, 1696×960), usado mientras carga y sin JavaScript |
 | Versionado | Un video nuevo se publica con sufijo `-v2`, nunca pisando el anterior |
 | Recodificación | H.264 todo intra (cada cuadro clave) para que el fallback con `currentTime` salte sin trabas; herramienta ffmpeg ejecutada en contenedor Docker de uso puntual |
 | Fuentes | Cuadros y prompts en `docs/design/phase-6/scroll-video/` (fuera de `public/`) |
@@ -340,7 +340,7 @@ Sigue pendiente solo el contenido que aporta Luciano: textos de problema, soluci
 - La foto del hero usa el alt de Profile; el avatar de la barra es decorativo.
 - Contraste AA en ambos temas (8.1) y sobre los cuadros de la escena.
 - Nada depende solo del hover; todo funciona con teclado y a 200 % de zoom.
-- Imágenes con `loading="lazy"`, `decoding="async"` y dimensiones explícitas. Video servido `ink-tree-network-v2.mp4` de 868 KB (v1, 246 KB, queda sin servir por la regla de versionado).
+- Imágenes con `loading="lazy"`, `decoding="async"` y dimensiones explícitas. Video servido `ink-tree-network-v3.mp4` (1696×960) de 2,16 MB (v1, 246 KB, y v2, 868 KB, quedan sin servir por la regla de versionado).
 - El fondo SVG y la corrección de filtro solo trabajan mientras la escena está en pantalla.
 
 ## 12. Verificación

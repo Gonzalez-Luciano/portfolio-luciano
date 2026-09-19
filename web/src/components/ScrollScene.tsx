@@ -35,8 +35,8 @@ export function ScrollScene({ scrub, scene, status, ui, onRetry }: Props) {
           <video ref={videoRef} src={SCROLL_VIDEO_SRC} poster={SCROLL_POSTER_SRC} muted playsInline preload="auto" aria-hidden="true" className={media} />
           <canvas
             ref={canvasRef}
-            width={848}
-            height={480}
+            width={1696}
+            height={960}
             aria-hidden="true"
             className={`${media} transition-opacity duration-300 ${canvasLive ? 'opacity-100' : 'opacity-0'}`}
           />
