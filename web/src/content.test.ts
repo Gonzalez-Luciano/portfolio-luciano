@@ -36,9 +36,9 @@ describe('uiCopy', () => {
     expect(shape(uiCopy('es'))).toEqual(shape(uiCopy('en')))
   })
 
-  it('pluralizes counters', () => {
-    expect(uiCopy('es').projects.showMore(1)).toBe('Ver 1 proyecto más')
-    expect(uiCopy('en').projects.showMore(3)).toBe('Show 3 more projects')
+  it('formats the show-more and gallery copy', () => {
+    expect(uiCopy('es').projects.showMore).toBe('Ver más proyectos')
+    expect(uiCopy('en').projects.showMore).toBe('Show more projects')
     expect(uiCopy('en').projects.gallery.more(2)).toBe('+2')
   })
 })

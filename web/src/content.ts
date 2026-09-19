@@ -29,7 +29,7 @@ export type UiCopy = {
     kind: Record<ProjectKind, string>
     status: Record<DeliveryStatus, string>
     labels: { problem: string; solution: string; result: string; stack: string; demo: string; repository: string }
-    showMore: (count: number) => string
+    showMore: string
     gallery: {
       viewFull: string
       previous: string
@@ -94,7 +94,7 @@ const COPY: Record<Locale, UiCopy> = {
       kind: { client: 'Para cliente', personal: 'Personal' },
       status: { in_production: 'En producción', in_use: 'En uso', public_demo: 'Demo pública', in_development: 'En desarrollo' },
       labels: { problem: 'Problema', solution: 'Solución', result: 'Resultado', stack: 'Stack', demo: 'Ver demo', repository: 'Ver código' },
-      showMore: (count) => `Ver ${count} ${count === 1 ? 'proyecto más' : 'proyectos más'}`,
+      showMore: 'Ver más proyectos',
       gallery: {
         viewFull: 'Ver en tamaño completo',
         previous: 'Captura anterior',
@@ -148,7 +148,7 @@ const COPY: Record<Locale, UiCopy> = {
       kind: { client: 'Client', personal: 'Personal' },
       status: { in_production: 'In production', in_use: 'In use', public_demo: 'Public demo', in_development: 'In development' },
       labels: { problem: 'Problem', solution: 'Solution', result: 'Result', stack: 'Stack', demo: 'View demo', repository: 'View code' },
-      showMore: (count) => `Show ${count} more ${count === 1 ? 'project' : 'projects'}`,
+      showMore: 'Show more projects',
       gallery: {
         viewFull: 'View full size',
         previous: 'Previous screenshot',
