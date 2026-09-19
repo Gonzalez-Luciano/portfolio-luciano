@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { pickActiveId } from '@/lib/active-section'
 import type { SectionId } from '@/lib/sections'
 
 /** The section crossing a band just above the middle of the viewport. */
@@ -19,9 +20,14 @@ export function useActiveSection(ids: readonly SectionId[]): SectionId | null {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) setActive(entry.target.id as SectionId)
-        }
+        // A scrollIntoView jump (e.g. from the mobile menu) can batch several threshold
+        // crossings into one callback; entries() order is not guaranteed, so the
+        // topmost intersecting section wins rather than whichever is last in the array.
+        const candidates = entries
+          .filter((entry) => entry.isIntersecting)
+          .map((entry) => ({ id: entry.target.id, top: entry.boundingClientRect.top }))
+        const next = pickActiveId(candidates)
+        if (next !== null) setActive(next as SectionId)
       },
       { rootMargin: '-40% 0px -55% 0px' },
     )

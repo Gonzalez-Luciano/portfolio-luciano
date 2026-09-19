@@ -30,7 +30,7 @@ export function LanguageSwitch({ ui, locale }: { ui: UiCopy; locale: Locale }) {
               onClick={(event) => {
                 event.currentTarget.href = localePath(target, window.location.hash)
               }}
-              className="flex min-h-11 min-w-9 items-center justify-center px-1.5 transition-opacity hover:opacity-70"
+              className="flex min-h-11 min-w-11 items-center justify-center px-1.5 transition-opacity hover:opacity-70"
             >
               {option.toUpperCase()}
             </a>
