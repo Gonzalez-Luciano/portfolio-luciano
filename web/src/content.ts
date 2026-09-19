@@ -107,7 +107,7 @@ const COPY: Record<Locale, UiCopy> = {
     about: {
       education: 'Formación',
       languages: 'Idiomas',
-      location: 'Ubicación',
+      location: 'Ubicación · Modalidades',
       modes: { on_site: 'Presencial', hybrid: 'Híbrido', remote: 'Remoto' },
       levels: { native: 'Nativo', ...LEVELS },
     },
@@ -161,7 +161,7 @@ const COPY: Record<Locale, UiCopy> = {
     about: {
       education: 'Education',
       languages: 'Languages',
-      location: 'Location',
+      location: 'Location · Work modes',
       modes: { on_site: 'On-site', hybrid: 'Hybrid', remote: 'Remote' },
       levels: { native: 'Native', ...LEVELS },
     },
