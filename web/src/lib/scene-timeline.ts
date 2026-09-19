@@ -1,7 +1,7 @@
 import { NAV_LIGHT_THRESHOLD } from '@/lib/section-opacity'
 
-export const SCROLL_VIDEO_SRC = '/media/scroll/ink-tree-network-v2.mp4'
-export const SCROLL_POSTER_SRC = '/media/scroll/ink-tree-network-v2-poster.webp'
+export const SCROLL_VIDEO_SRC = '/media/scroll/ink-tree-network-x4plus-anime.mp4'
+export const SCROLL_POSTER_SRC = '/media/scroll/ink-tree-network-x4plus-poster.png'
 
 /** Darkest opacity of both veils (#1A1411), measured to keep beat 3 and the nav above AA. */
 export const VEIL_OPACITY = 0.45
