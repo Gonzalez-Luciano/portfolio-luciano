@@ -200,7 +200,7 @@ Dirección (decisión humana del 2026-09-14, Fase 6; reemplaza al front Next.js 
 - Vite (SPA), alias `@` -> `src`.
 - TypeScript estricto.
 - Tailwind CSS 3.
-- lucide-react y mp4box 0.5.x.
+- lucide-react, mp4box 0.5.x y fuentes autoalojadas con Fontsource (Fraunces Variable, Instrument Sans, IBM Plex Mono).
 - Node.js 24 LTS.
 - `pnpm` 11.20.0 fijado en `web/package.json`.
 
@@ -208,7 +208,7 @@ Dirección (decisión humana del 2026-09-14, Fase 6; reemplaza al front Next.js 
 
 ### Renderizado y datos
 
-El front es una SPA sin render de servidor. `resolveLocale` toma el idioma del path (`/en` -> inglés; `/` y `/es` -> español). En el navegador, `loadPublicContent` pide en paralelo `/api/v1/{locale}/profile`, `/site` y `/technologies` al mismo origen, valida cada cuerpo como `unknown` y `buildScene` lo transforma en el modelo de la escena. Profile y Site son estructurales (su fallo muestra un error con Reintentar); Technologies solo alimenta el eyebrow y degrada a vacío. `web/src/content.ts` contiene solo textos de interfaz, nunca contenido profesional. Consecuencia conocida: sin render de servidor, el HTML inicial no contiene el contenido; SEO/metadata se resuelven en Fase 8.
+El front es una SPA sin render de servidor. `resolveLocale` toma el idioma del path (`/en` -> inglés; `/` y `/es` -> español). `loadStructuralContent` pide `profile` y `site`; si alguno falla, la página muestra solo el error general con Reintentar. `useRegion` carga en paralelo `experiences`, `work-cases`, `projects` y `technologies`: cada colección es regional y su fallo muestra un error con Reintentar solo en su sección. Todo cuerpo se valida como `unknown` en `web/src/lib/api.ts`. Las decisiones de presentación son funciones puras con tests en `web/src/lib/` (`groupExperience`, `groupProjects`, `groupTechnologies`, `visibleSections`, `formatPeriod`, `buildScene`, `thumbnailSlots`, `pickActiveId`, curvas de la escena); los componentes de `web/src/components/` solo las renderizan (por ejemplo `ExternalLink`, el enlace con flecha e hint `sr-only` para lo que abre en una pestaña nueva). `web/src/content.ts` contiene solo textos de interfaz, nunca contenido profesional. El tema (`light`/`dark`) se fija antes del primer pintado con `data-theme` desde `localStorage` (`portfolio-theme`) o `prefers-color-scheme`; los tokens viven en `docs/design/phase-6/DESIGN_TOKENS.md`. Consecuencia conocida: sin render de servidor, el HTML inicial no contiene el contenido; SEO/metadata se resuelven en Fase 8.
 
 La base de Fase 3 mantenía `/es` y `/en` prerenderizables porque la UI base todavía no hacía ningún fetch de contenido. Desde Fase 5, la ruta pública localizada hace fetch obligatorio a los seis endpoints públicos en cada request (ver sección "Fase 5 — Sitio público" más abajo) y por lo tanto renderiza dinámicamente (`dynamic = 'force-dynamic'` en `[locale]/layout.tsx`), no estáticamente. `next build` sigue completando sin Laravel, Caddy ni MySQL en ejecución — incluyendo con `INTERNAL_API_ORIGIN` inalcanzable — porque el build no ejecuta ese fetch; la única demostración real de contenido ocurre en runtime, con Laravel arriba. El tema no se resuelve con `cookies()` del servidor: un bootstrap mínimo, estable y previo al paint aplica `data-theme` desde una preferencia explícita `light`/`dark` en `localStorage` o, si no existe, desde `prefers-color-scheme`. Cualquier supresión de warning de hidratación queda limitada al elemento raíz cuya mutación previa es intencional.
 
@@ -606,11 +606,13 @@ Fallbacks:
 
 ### Escena de scroll con video (Fase 6, implementado)
 
-Decisión humana del 2026-09-14 (spec `docs/superpowers/specs/2026-09-14-phase-6-cinematic-scroll-design.md`): la escena "Scroll Tied Video Section" es la base del front público en `web/` (Vite + React 18 + TypeScript + Tailwind CSS 3 + lucide-react + mp4box 0.5.x). No usa Motion ni GSAP/Lenis, porque el prompt los excluye. La lógica de scroll es definitiva; la capa visual es provisoria y se rediseñará.
+Specs: `docs/superpowers/specs/2026-09-14-phase-6-cinematic-scroll-design.md` (lógica de scroll) y `docs/superpowers/specs/2026-09-14-phase-6-portfolio-redesign-design.md` (sección 7, visual). No usa Motion ni GSAP/Lenis.
 
-- Pista de 500vh con escena sticky de viewport completo: `<video>` (URL CloudFront fija, muted, playsInline, `preload="auto"`, nunca `play()`), `<canvas>` 1920×1080 y overlay con navbar y tres secciones secuenciales.
-- `useVideoScrub` sigue el progreso de scroll con lerp exponencial (`LERP_TAU = 8`, `SNAP = 0.002`). Si hay WebCodecs, arma tras `load` un banco de frames WebP (mp4box + `VideoDecoder`, throttle `LEAD = 24`, reintento `prefer-software`, watchdog de 60 s) y dibuja el frame más cercano con una LRU de `ImageBitmap` (`LRU_MAX = 24`). Sin WebCodecs, con movimiento reducido o ante un fallo, cae a `video.currentTime`.
-- El contenido viene de la API pública: `headline` y `name` (sección 1), `statement` o `short_summary` (sección 2), `closing` o `availability`, tecnologías backend y enlace de email (sección 3), enlaces profesionales (navegación) y `cv` (solo si está publicado). `statement` y `closing` son grupos bilingües opcionales de Profile editables en Filament.
+- Pista de 500vh con escena sticky: `<video>` local (`/media/scroll/ink-tree-network-v2.mp4`, H.264 todo intra, póster `ink-tree-network-v2-poster.webp`), `<canvas>` de 848×480 (tamaño nativo del cuadro), fondo SVG (`SceneBackdrop`) y tres beats en la columna izquierda. Mientras el contenido estructural carga o falla, un `<h1 className="sr-only">` de respaldo (texto de carga o de error) sustituye al `<h1>` real del bloque de copy completo.
+- `useVideoScrub` sigue el scroll con lerp (`LERP_TAU = 8`, `SNAP = 0.002`); con WebCodecs arma un banco de frames WebP (mp4box + `VideoDecoder`, `LEAD = 24`, reintento por software, watchdog de 60 s) y dibuja los dos cuadros vecinos mezclados según la posición fraccional (`blendFrames`), con una LRU de `ImageBitmap` (`LRU_MAX = 24`). Sin WebCodecs, con movimiento reducido o ante un fallo, cae a `video.currentTime`.
+- `web/src/lib/scene-timeline.ts` define la corrección de contraste de la transición (triángulo 0,55–0,75), el velo de la columna de texto (dimensionado al ancho real de esa columna, no a toda la escena) y el de la barra, el paso paisaje → constelación y `navLightText(p) = p >= NAV_LIGHT_THRESHOLD` (`0.70`), que decide a la vez el color del texto de la barra y la aparición de su velo, con valores medidos cuadro por cuadro (`docs/design/phase-6/scroll-video/PROMPTS.md`).
+- Beat 1: foto de Profile, nombre y headline; beat 2: frase en tres partes o `short_summary`; beat 3: tecnologías backend, cierre o `availability` y un enlace de correo real (`sr-only`, se revela al recibir foco) además de un CTA visual duplicado no enfocable. Los beats son decorativos para lectores de pantalla; el mismo copy está en un bloque `sr-only`.
+- La barra es transparente sobre la escena y sólida en las secciones, con sección activa, avatar, ES/EN, tema, CV y menú a pantalla completa en móvil.
 - No hay scroll-jacking: el scroll nativo nunca se intercepta.
 
 ---

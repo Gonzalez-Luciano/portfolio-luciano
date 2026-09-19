@@ -23,7 +23,7 @@ Leer:
 
 ## Estructura del repositorio
 
-- `web/` — portfolio público Vite + React 18 (SPA). Desde Fase 6 reemplaza al front Next.js de Fase 5: escena de scroll con video que lee Profile, Site y Technologies de la API pública de Laravel.
+- `web/` — portfolio público Vite + React 18 (SPA). Desde Fase 6 reemplaza al front Next.js de Fase 5: escena de scroll con video y secciones de experiencia, proyectos, stack, sobre mí y contacto, todo leído de la API pública de Laravel. Los medios estáticos de la escena viven en `web/public/media/scroll/`; `web/public/media/images/` y `web/public/media/loops/` quedan reservadas para medios decorativos futuros (nunca contenido profesional, que se sube desde Filament).
 - `api/` — Laravel API + administración.
 - `infra/` — Docker e infraestructura específica del portfolio.
 - `docs/` — documentación del producto, arquitectura y servidor.

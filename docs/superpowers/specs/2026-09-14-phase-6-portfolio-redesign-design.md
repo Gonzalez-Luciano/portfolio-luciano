@@ -340,7 +340,7 @@ Sigue pendiente solo el contenido que aporta Luciano: textos de problema, soluci
 - La foto del hero usa el alt de Profile; el avatar de la barra es decorativo.
 - Contraste AA en ambos temas (8.1) y sobre los cuadros de la escena.
 - Nada depende solo del hover; todo funciona con teclado y a 200 % de zoom.
-- Imágenes con `loading="lazy"`, `decoding="async"` y dimensiones explícitas. Video de 246 KB.
+- Imágenes con `loading="lazy"`, `decoding="async"` y dimensiones explícitas. Video servido `ink-tree-network-v2.mp4` de 868 KB (v1, 246 KB, queda sin servir por la regla de versionado).
 - El fondo SVG y la corrección de filtro solo trabajan mientras la escena está en pantalla.
 
 ## 12. Verificación

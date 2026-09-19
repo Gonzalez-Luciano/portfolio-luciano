@@ -543,7 +543,19 @@ Spec: `docs/superpowers/specs/2026-09-14-phase-6-cinematic-scroll-design.md`.
 - [x] Contenido desde la API pública (Profile, Site, Technologies) con validación en runtime.
 - [x] Campos opcionales de Profile `statement_*` y `closing_*` en Filament y en la API.
 - [ ] QA en navegador real con ventana visible (scrub del canvas, móvil, movimiento reducido).
-- [ ] Rediseño visual con la nueva foto (la lógica de scroll se conserva).
+- [x] Rediseño visual con la nueva foto (la lógica de scroll se conserva).
+
+### Portfolio completo (front)
+
+Plan: `docs/superpowers/plans/2026-09-14-phase-6-front-visual.md`.
+
+- [x] Paleta Terracota clara y oscura, fuentes autoalojadas y tema sin parpadeo.
+- [x] Video todo intra con póster, mezcla de cuadros, corrección de la transición, velos y fondo paisaje → constelación.
+- [x] Navegación transparente/sólida con sección activa, avatar, idioma, tema, CV y menú móvil.
+- [x] Experiencia en línea de tiempo con casos desplegables.
+- [x] Proyectos para clientes y personales en dossier con galería y visor.
+- [x] Stack, Sobre mí y Contacto.
+- [ ] QA en navegador real con ventana visible (`docs/testing/PHASE_6_BROWSER_QA.md`).
 
 ### CMS y API del portfolio
 
