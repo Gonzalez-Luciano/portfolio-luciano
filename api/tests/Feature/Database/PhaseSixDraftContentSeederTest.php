@@ -13,6 +13,7 @@ use App\Models\Profile;
 use App\Models\Project;
 use App\Models\Technology;
 use App\Models\WorkCase;
+use App\Models\WorkPrinciple;
 use Database\Seeders\PhaseSixDraftContentSeeder;
 use Database\Seeders\PortfolioContentSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -46,7 +47,14 @@ final class PhaseSixDraftContentSeederTest extends TestCase
         $this->assertCount(9, $reservaHub->technologies);
 
         $trucks = Project::query()->where('key', 'trucks-and-drinks')->firstOrFail();
-        $this->assertSame([ProjectKind::Client, 'Trucks and Drinks', 'in_use', null], [$trucks->kind, $trucks->client_name, $trucks->delivery_status->value, $trucks->problem_es]);
+        $this->assertSame(
+            [ProjectKind::Client, 'Trucks and Drinks', 'in_use', 'Desarrollador Backend', 'Backend Developer'],
+            [$trucks->kind, $trucks->client_name, $trucks->delivery_status->value, $trucks->role_es, $trucks->role_en],
+        );
+        $this->assertNotNull($trucks->problem_es);
+        $this->assertNotNull($trucks->solution_en);
+        $this->assertNotNull($trucks->result_es);
+        $this->assertSame(['php', 'symfony', 'postgresql', 'docker'], $trucks->technologies->pluck('key')->all());
 
         $this->assertSame(['instituto-argentino-modelo', 'cfp-401'], EducationEntry::query()->orderBy('position')->pluck('key')->all());
         $this->assertSame([LanguageLevel::Native, LanguageLevel::B2], Language::query()->orderBy('position')->pluck('level')->all());
@@ -54,9 +62,25 @@ final class PhaseSixDraftContentSeederTest extends TestCase
         $profile = Profile::query()->where('singleton_key', 'default')->firstOrFail();
         $this->assertSame('Mar del Plata, Argentina', $profile->location);
         $this->assertSame(['on_site', 'hybrid', 'remote'], $profile->work_modes);
+        $this->assertSame('Desarrollo backend orientado a APIs,', $profile->statement_lead_es);
+        $this->assertSame('Backend development focused on APIs,', $profile->statement_lead_en);
+        $this->assertSame('lógica de negocio, datos', $profile->statement_emphasis_es);
+        $this->assertSame('business logic, data,', $profile->statement_emphasis_en);
+        $this->assertSame('y mantenimiento de aplicaciones', $profile->statement_tail_es);
+        $this->assertSame('and application maintenance', $profile->statement_tail_en);
+        $this->assertSame('Disponible para conversar', $profile->closing_line_one_es);
+        $this->assertSame('Available to discuss', $profile->closing_line_one_en);
+        $this->assertSame('sobre oportunidades backend.', $profile->closing_line_two_es);
+        $this->assertSame('backend opportunities.', $profile->closing_line_two_en);
 
         $this->assertSame(1, Technology::query()->where('key', 'phpunit')->count());
-        foreach ([Experience::class, Project::class, EducationEntry::class, Language::class, Technology::class] as $model) {
+        $this->assertSame(1, Technology::query()->where('key', 'symfony')->count());
+
+        $aboutStatement = WorkPrinciple::query()->where('key', 'about-statement')->firstOrFail();
+        $this->assertStringContainsString('Symfony', $aboutStatement->statement_es);
+        $this->assertSame(PublicationStatus::Draft, $aboutStatement->status);
+
+        foreach ([Experience::class, Project::class, EducationEntry::class, Language::class, Technology::class, WorkPrinciple::class] as $model) {
             $this->assertSame(0, $model::query()->where('status', PublicationStatus::Published)->count(), "{$model} must stay draft.");
         }
     }

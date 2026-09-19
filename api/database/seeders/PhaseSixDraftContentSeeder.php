@@ -18,6 +18,7 @@ use App\Models\Profile;
 use App\Models\Project;
 use App\Models\Technology;
 use App\Models\WorkCase;
+use App\Models\WorkPrinciple;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 
@@ -35,6 +36,13 @@ use Illuminate\Database\Seeder;
  * Sources: approved CVs (docs/content/approved-assets/cv-*.pdf), the LinkedIn
  * role names and dates recorded as decision D27, and the public ReservaHub
  * README. Trucks and Drinks carries only its approved facts.
+ *
+ * The scene statement/closing pairs, the "about-statement" work principle,
+ * the Symfony technology, and the finalized Trucks and Drinks copy were
+ * authored directly in Filament by Luciano on the isolated dev stack; they
+ * are transcribed here verbatim from that reviewed content so a clean
+ * database offers the same draft baseline (2026-09-14-phase-6-cms-api
+ * seed-alignment review).
  *
  * Run explicitly, never from DatabaseSeeder::run():
  *   php artisan db:seed --class=PhaseSixDraftContentSeeder
@@ -54,6 +62,7 @@ final class PhaseSixDraftContentSeeder extends Seeder
         $this->projects();
         $this->education();
         $this->languages();
+        $this->workPrinciples();
         $this->profile();
     }
 
@@ -75,6 +84,7 @@ final class PhaseSixDraftContentSeeder extends Seeder
             ['css', 'CSS', TechnologyCategory::Collaboration],
             ['tailwindcss', 'TailwindCSS', TechnologyCategory::Collaboration],
             ['bootstrap', 'Bootstrap', TechnologyCategory::Collaboration],
+            ['symfony', 'Symfony', TechnologyCategory::Backend],
         ];
 
         foreach ($rows as [$key, $name, $category]) {
@@ -137,12 +147,23 @@ final class PhaseSixDraftContentSeeder extends Seeder
 
     private function projects(): void
     {
-        $this->createDraft(Project::class, 'trucks-and-drinks', [
+        $trucksAndDrinks = $this->createDraft(Project::class, 'trucks-and-drinks', [
             'kind' => ProjectKind::Client, 'client_name' => 'Trucks and Drinks',
             'title_es' => 'Trucks and Drinks', 'title_en' => 'Trucks and Drinks',
-            'role_es' => 'Backend', 'role_en' => 'Backend',
+            'role_es' => 'Desarrollador Backend', 'role_en' => 'Backend Developer',
             'delivery_status' => ProjectDeliveryStatus::InUse,
+            'summary_es' => 'Sistema de gestión a medida para centralizar el control de stock, eventos y presupuestos, adaptado al funcionamiento real del negocio.',
+            'summary_en' => 'A custom management system built to centralize inventory, event, and quotation workflows around the way the business actually operates.',
+            'problem_es' => 'El negocio operaba con planillas y herramientas genéricas que no representaban correctamente sus procesos internos, dificultando la gestión de stock, la planificación de eventos y la elaboración de presupuestos.',
+            'problem_en' => 'The business relied on spreadsheets and generic software that did not accurately reflect its internal processes, making inventory management, event planning, and quotation workflows difficult to maintain.',
+            'solution_es' => 'Desarrollé el backend con Symfony, modelando la lógica del sistema alrededor del flujo real del negocio. Implementé APIs y motores de cálculo propios para automatizar la gestión de stock, eventos y presupuestos, centralizando las reglas de negocio y los datos de la operación.',
+            'solution_en' => "I developed the backend with Symfony, modeling the system around the company's real operational workflow. I built APIs and custom calculation engines to automate inventory, event, and quotation management while centralizing business rules and operational data.",
+            'result_es' => 'El sistema fue desplegado y se encuentra en uso activo por el cliente. Continúa recibiendo mantenimiento y nuevas funcionalidades a medida que evolucionan las necesidades del negocio.',
+            'result_en' => 'The system was deployed and is actively used by the client. It continues to receive maintenance and new features as the business requirements evolve.',
         ]);
+        if ($trucksAndDrinks !== null) {
+            app(UpdateContentWithTechnologies::class)($trucksAndDrinks, [], $this->technologyPivot(['php', 'symfony', 'postgresql', 'docker']));
+        }
 
         $reservaHub = $this->createDraft(Project::class, 'reservahub', [
             'kind' => ProjectKind::Personal, 'client_name' => null,
@@ -192,6 +213,23 @@ final class PhaseSixDraftContentSeeder extends Seeder
         $this->createDraft(Language::class, 'english', ['name_es' => 'Inglés', 'name_en' => 'English', 'level' => LanguageLevel::B2]);
     }
 
+    /**
+     * The "about-statement" work principle is the specific sentence Luciano
+     * authored for the Sobre mí / About me phrase (spec §3: "El front solo
+     * usa el primer Work Principle publicado"). It does not replace the
+     * earlier approved "working-approach" principle seeded by
+     * PortfolioContentSeeder — that row is left untouched, per this
+     * seeder's non-destructive rule — it is added alongside it as a further
+     * draft for review.
+     */
+    private function workPrinciples(): void
+    {
+        $this->createDraft(WorkPrinciple::class, 'about-statement', [
+            'statement_es' => 'Soy un Desarrollador Backend especializado en PHP, Laravel y Symfony, enfocado en APIs, lógica de negocio e integraciones. Me gusta entender cómo funciona realmente un negocio y convertir esos procesos en soluciones claras, mantenibles y útiles.',
+            'statement_en' => 'I’m a Backend Developer specialized in PHP, Laravel, and Symfony, focused on APIs, business logic, and integrations. I enjoy understanding how a business actually works and turning those processes into clear, maintainable, and useful software.',
+        ]);
+    }
+
     private function profile(): void
     {
         $profile = Profile::query()->where('singleton_key', 'default')->firstOrFail();
@@ -202,6 +240,25 @@ final class PhaseSixDraftContentSeeder extends Seeder
         }
         if ($profile->work_modes === null || $profile->work_modes === []) {
             $attributes['work_modes'] = array_map(static fn (WorkMode $mode): string => $mode->value, WorkMode::cases());
+        }
+
+        // Phase 6 scene copy (2026-09-14-phase-6-cinematic-scroll-design.md):
+        // the professional statement split into three emphasis tiers and the
+        // closing title split into two lines. Optional bilingual pairs; each
+        // is only filled when both locale columns are still empty, so an
+        // admin's own edit is never overwritten.
+        $scenePairs = [
+            'statement_lead' => ['Desarrollo backend orientado a APIs,', 'Backend development focused on APIs,'],
+            'statement_emphasis' => ['lógica de negocio, datos', 'business logic, data,'],
+            'statement_tail' => ['y mantenimiento de aplicaciones', 'and application maintenance'],
+            'closing_line_one' => ['Disponible para conversar', 'Available to discuss'],
+            'closing_line_two' => ['sobre oportunidades backend.', 'backend opportunities.'],
+        ];
+        foreach ($scenePairs as $field => [$es, $en]) {
+            if ($profile->{"{$field}_es"} === null && $profile->{"{$field}_en"} === null) {
+                $attributes["{$field}_es"] = $es;
+                $attributes["{$field}_en"] = $en;
+            }
         }
 
         if ($attributes === []) {
