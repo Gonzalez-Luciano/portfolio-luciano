@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Profile, Site } from '@/lib/api'
-import { aboutStatement, hasAboutContent, hasContactContent, sectionNumber, visibleSections } from '@/lib/sections'
+import { aboutStatement, combineStatus, hasAboutContent, hasContactContent, sectionNumber, visibleSections } from '@/lib/sections'
 
 const profile: Profile = {
   name: 'Synthetic',
@@ -68,5 +68,13 @@ describe('section helpers', () => {
     expect(hasAboutContent(profile, { ...site, languages: [{ key: 'en', name: 'English', level: 'b2' }] })).toBe(true)
     expect(hasContactContent(site)).toBe(false)
     expect(hasContactContent({ ...site, cv: { url: '/cv.pdf', label: 'CV' } })).toBe(true)
+  })
+})
+
+describe('combineStatus', () => {
+  it('fails if any region failed, loads while any loads, and is ready only when all are', () => {
+    expect(combineStatus('ready', 'error', 'loading')).toBe('error')
+    expect(combineStatus('ready', 'loading')).toBe('loading')
+    expect(combineStatus('ready', 'ready')).toBe('ready')
   })
 })

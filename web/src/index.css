@@ -42,6 +42,28 @@ body {
   @apply font-mono text-xs font-medium uppercase tracking-[0.18em];
 }
 
+/* Scene → sections seam: the night frame fades into the page canvas. */
+.dawn {
+  height: 24vh;
+  background: linear-gradient(to bottom, #1d140f 0%, #5a3f2e 35%, #c9ae93 70%, rgb(var(--color-canvas)) 100%);
+}
+
+[data-theme='dark'] .dawn {
+  height: 32px;
+  background: linear-gradient(to bottom, #1d140f, rgb(var(--color-canvas)));
+}
+
+/* Timeline nodes: a soft ring by day; in the dark theme, the glow of the tree nodes. */
+.timeline-node {
+  box-shadow: 0 0 0 3px rgb(154 78 42 / 0.18);
+}
+
+[data-theme='dark'] .timeline-node {
+  box-shadow:
+    0 0 0 4px rgb(227 139 80 / 0.22),
+    0 0 14px rgb(227 139 80 / 0.55);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

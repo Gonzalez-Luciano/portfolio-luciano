@@ -53,3 +53,10 @@ export function hasAboutContent(profile: Profile, site: Site): boolean {
 export function hasContactContent(site: Site): boolean {
   return site.professional_links.length > 0 || site.cv !== null
 }
+
+/** A section fed by several regions (experience needs experiences and work cases). */
+export function combineStatus(...statuses: RegionStatus[]): RegionStatus {
+  if (statuses.includes('error')) return 'error'
+  if (statuses.includes('loading')) return 'loading'
+  return 'ready'
+}
