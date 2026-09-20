@@ -54,6 +54,11 @@ export function ScrollScene({ scrub, scene, status, ui, onRetry }: Props) {
         */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 mx-auto max-w-content">
           <div
+            data-scene-veil-gutter=""
+            className="absolute inset-y-0 right-full bg-[#1A1411]"
+            style={{ opacity: columnVeilOpacity(p), width: 'max(0px, calc((100vw - 90rem) / 2))' }}
+          />
+          <div
             className="h-full w-full [--scene-col:1] [--scene-gutter:1.5rem] sm:[--scene-gutter:2.5rem] lg:[--scene-col:0.4] lg:[--scene-gutter:4rem]"
             style={{
               opacity: columnVeilOpacity(p),

@@ -54,3 +54,33 @@ export function starsOpacity(p: number): number {
 export function linksOpacity(p: number): number {
   return ramp(p, 0.75, 0.9)
 }
+
+/** The sun travels left-to-right on a clearly visible arc before leaving the daylight sky. */
+export function sunSkyPosition(p: number, reducedMotion = false): { x: number; y: number } {
+  const travel = reducedMotion ? 0 : ramp(p, 0, 0.78)
+  return {
+    x: 120 + 1560 * travel,
+    y: 400 - 210 * 4 * travel * (1 - travel),
+  }
+}
+
+/** The moon enters from the left only after the sun has crossed out of the daylight sky. */
+export function moonSkyPosition(p: number, reducedMotion = false): { x: number; y: number; opacity: number } {
+  const arrival = ramp(p, 0.78, 0.9)
+  return {
+    x: reducedMotion ? 790 : -80 + 870 * arrival,
+    y: reducedMotion ? 190 : 400 - 210 * (2 * arrival - arrival * arrival),
+    opacity: arrival,
+  }
+}
+
+/** Deterministic, progress-led cloud movement with a still reduced-motion state. */
+export function cloudOffset(p: number, rate: number, reducedMotion: boolean): number {
+  return reducedMotion ? 0 : p * rate
+}
+
+/** Slightly staggered night-sky reveal while preserving the existing constellation language. */
+export function starOpacity(p: number, index: number): number {
+  const threshold = 0.48 + index * 0.012
+  return ramp(p, threshold, threshold + 0.16)
+}
