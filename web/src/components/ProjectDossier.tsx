@@ -19,7 +19,7 @@ export function ProjectDossier({ ui, project }: { ui: UiCopy; project: Project }
       id={`project-${project.key}`}
       tabIndex={-1}
       aria-labelledby={`project-${project.key}-title`}
-      className="grid scroll-mt-20 gap-10 outline-none lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-16"
+      className="grid grid-cols-[minmax(0,1fr)] scroll-mt-20 gap-10 outline-none lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-16"
     >
       <div>
         <p className="label text-muted">{meta.join(' · ')}</p>
