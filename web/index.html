@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <title>Portfolio</title>
+    <style>
+      /* Styles the noscript fallback scene in <body>; harmless with scripting enabled since
+         <noscript> content is never parsed into the DOM in that case. */
+      .noscript-scene {
+        position: relative;
+        width: 100%;
+        height: 100vh;
+        overflow: hidden;
+        background: #f5efe6;
+      }
+      .noscript-scene img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    </style>
     <script>
       // Applies the saved or system theme before the first paint to avoid a flash.
       ;(function () {
@@ -24,22 +42,6 @@
   <body>
     <div id="root"></div>
     <noscript>
-      <style>
-        .noscript-scene {
-          position: relative;
-          width: 100%;
-          height: 100vh;
-          overflow: hidden;
-          background: #f5efe6;
-        }
-        .noscript-scene img {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-      </style>
       <div class="noscript-scene">
         <img src="/media/scroll/ink-tree-network-v3-poster.webp" alt="" />
       </div>
