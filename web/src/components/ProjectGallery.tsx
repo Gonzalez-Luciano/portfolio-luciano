@@ -86,7 +86,13 @@ export function ProjectGallery({ ui, title, images }: Props) {
         }}
         className="m-auto max-h-[92vh] w-[min(92vw,1400px)] max-w-none overflow-hidden rounded-2xl bg-canvas p-0 text-ink backdrop:bg-scene-veil/80"
       >
-        <div className="flex items-center justify-between gap-4 border-b border-line px-4 py-2">
+        {/*
+          The flex column lives here, not on the <dialog>: a `display: flex` on the dialog itself
+          overrides the user agent's `display: none` while it is closed, which renders the viewer
+          inline in the page.
+        */}
+        <div className="flex max-h-[92vh] flex-col">
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-line px-4 py-2">
           <p className="label text-muted" aria-live="polite">
             {copy.image(wrapIndex(viewerIndex, images.length) + 1, images.length)}
           </p>
@@ -95,10 +101,19 @@ export function ProjectGallery({ ui, title, images }: Props) {
           </button>
         </div>
 
-        <img src={current.url} alt={current.alt} loading="lazy" decoding="async" className="max-h-[75vh] w-full object-contain" />
+        {/*
+          A flex column with a shrinkable image area: at normal zoom this behaves exactly like the
+          previous fixed `max-h-[75vh]` block (the cap is still here, so nothing changes visually),
+          but at 200% zoom the header/controls rows no longer push it past the dialog's max height
+          and clip the controls — the image gives up space instead. The wrapper's own size also
+          reserves the box before the image loads, so opening the viewer does not reflow.
+        */}
+        <div className="min-h-0 max-h-[75vh] flex-1">
+          <img src={current.url} alt={current.alt} decoding="async" className="h-full w-full object-contain" />
+        </div>
 
         {images.length > 1 && (
-          <div className="flex justify-between px-4 py-2">
+          <div className="flex shrink-0 justify-between px-4 py-2">
             <button type="button" onClick={() => step(-1)} aria-label={copy.previous} className="flex h-11 w-11 items-center justify-center rounded-full border border-line">
               <ChevronLeft size={18} aria-hidden="true" />
             </button>
@@ -107,6 +122,7 @@ export function ProjectGallery({ ui, title, images }: Props) {
             </button>
           </div>
         )}
+        </div>
       </dialog>
     </div>
   )

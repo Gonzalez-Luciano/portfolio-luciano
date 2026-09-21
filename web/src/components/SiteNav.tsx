@@ -55,6 +55,9 @@ export function SiteNav({ ui, locale, name, avatar, cv, sections, activeSection,
     document.body.style.overflow = ''
     document.getElementById(id)?.scrollIntoView()
     window.history.pushState(null, '', `#${id}`)
+    // pushState does not fire `hashchange` on its own; dispatch it so anything reading the current
+    // hash at render time (e.g. LanguageSwitch, to keep the other language on the same section) stays in sync.
+    window.dispatchEvent(new Event('hashchange'))
   }
 
   const tone = overScene ? (lightText ? 'text-scene-light' : 'text-scene-ink') : 'text-ink'
@@ -142,7 +145,7 @@ export function SiteNav({ ui, locale, name, avatar, cv, sections, activeSection,
         }}
         className="m-0 h-full max-h-none w-full max-w-none bg-canvas p-0 text-ink backdrop:bg-scene-veil/60"
       >
-        <div className="flex h-full flex-col px-6 pb-10 pt-4 sm:px-10">
+        <div className="flex h-full flex-col overflow-y-auto px-6 pb-10 pt-4 sm:px-10">
           <div className="flex h-12 items-center justify-between">
             <span className="label text-muted">{ui.menu.title}</span>
             <button
