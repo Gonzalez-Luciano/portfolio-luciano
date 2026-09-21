@@ -4,4 +4,4 @@ namespace App\Domain\Assets;
 
 use RuntimeException;
 
-final class AssetOperationException extends RuntimeException {}
+class AssetOperationException extends RuntimeException {}

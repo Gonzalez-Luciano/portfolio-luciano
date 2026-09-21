@@ -27,7 +27,10 @@ use Illuminate\Support\Str;
  * change in one transaction, copy public files only for a published and
  * visible project, then retire replaced or removed files. A failed public copy
  * restores the previous rows and discards the staged uploads, so the old
- * gallery stays intact.
+ * gallery stays intact. A failure to retire a replaced/removed file happens
+ * after that commit, so it is reported as a distinct GalleryRetireFailed
+ * carrying the already-saved project, instead of the generic
+ * AssetOperationException used for an actual save failure.
  */
 final class ProjectGalleryService
 {
@@ -113,9 +116,20 @@ final class ProjectGalleryService
         }
 
         $this->cache->invalidate($this->dependencies->for($project));
-        $this->retire($project, $retired);
 
-        return $project->fresh('images');
+        $fresh = $project->fresh('images');
+        try {
+            $this->retire($project, $retired);
+        } catch (AssetOperationException $exception) {
+            // The row changes above are already committed: this is a
+            // post-commit cleanup failure, not a save failure. A dedicated
+            // exception carrying the already-saved project lets a caller
+            // tell the two apart and avoid reporting a successful save as
+            // lost (see EditProject::handleRecordUpdate()).
+            throw new GalleryRetireFailed($fresh, $exception->getMessage(), previous: $exception);
+        }
+
+        return $fresh;
     }
 
     /**

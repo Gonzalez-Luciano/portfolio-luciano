@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Projects\Pages;
 
+use App\Domain\Assets\GalleryRetireFailed;
 use App\Domain\Content\Actions\ChangePublicKey;
 use App\Domain\Content\Actions\DeleteContent;
 use App\Domain\Content\Actions\SyncProjectImages;
@@ -172,6 +173,22 @@ class EditProject extends EditRecord
         if (is_array($imagesInput)) {
             try {
                 $updated = app(SyncProjectImages::class)($updated, self::galleryItems($imagesInput));
+            } catch (GalleryRetireFailed $exception) {
+                // The gallery's own row changes (and any public copies) are
+                // already committed: only the post-commit cleanup of a
+                // replaced/removed private file failed. This is not a save
+                // failure, so it must not be reported as one (that would
+                // both mislead the admin and, on retry, leave the repeater
+                // holding a stale id-less item that duplicates the row that
+                // was already saved). Use the already-saved project and fall
+                // through to the same refill the success path performs
+                // below, then warn about the orphaned file instead.
+                $updated = $exception->project;
+                Notification::make()
+                    ->warning()
+                    ->title('Saved')
+                    ->body('The gallery was saved, but an old screenshot file could not be removed. It has been logged for manual cleanup.')
+                    ->send();
             } catch (\Throwable $exception) {
                 // The panel runs without a database transaction, so the
                 // field/technology update above is already committed: the

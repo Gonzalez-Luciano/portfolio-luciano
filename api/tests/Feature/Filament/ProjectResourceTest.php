@@ -20,6 +20,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Mockery;
 use Tests\TestCase;
 
 final class ProjectResourceTest extends TestCase
@@ -577,6 +578,76 @@ final class ProjectResourceTest extends TestCase
         $this->assertSame('Resumen actualizado sintético', $project->refresh()->summary_es);
         $this->assertSame(0, $project->images()->count());
         $this->assertSame('Resumen actualizado sintético', $test->instance()->getRecord()->summary_es);
+    }
+
+    /**
+     * Regression: a post-commit failure to remove a replaced screenshot's
+     * old private file must not be reported the same way as a real save
+     * failure. It must not fall into the "Save partially failed" path, and
+     * the repeater must still be refilled with the saved row's id, exactly
+     * as the success path does, so a further save does not see a stale
+     * id-less item and duplicate the row that was already saved.
+     */
+    public function test_a_gallery_retire_failure_is_reported_without_losing_or_duplicating_the_saved_screenshot(): void
+    {
+        Repeater::fake();
+        Storage::fake('local');
+        Storage::fake('public');
+        $project = Project::factory()->create();
+        $image = app(SyncProjectImages::class)($project, [
+            ['id' => null, 'upload' => $this->png('first.png'), 'alt_es' => 'Primera', 'alt_en' => 'First'],
+        ])->images[0];
+        $oldPrivatePath = $image->private_path;
+        $this->authenticateAdmin();
+
+        // The mounted form already carries the existing image's id (from
+        // mutateFormDataBeforeFill()), so only its file changes here: no
+        // second real upload happens on this Livewire test instance, which
+        // is what the "replace, then retry with no changes" scenario below
+        // needs to reproduce.
+        //
+        // Overriding the manager's own cached "local" disk entry (its
+        // public set() method, the same one Storage::fake() itself uses)
+        // keeps every other disk resolution's real behaviour intact,
+        // including Livewire's own lazily-faked "tmp-for-tests" upload
+        // disk. Swapping the whole Storage facade root instead (as the
+        // domain-level equivalent test does) loses that caching and breaks
+        // Livewire's upload plumbing.
+        $local = Storage::disk('local');
+        $failingLocal = Mockery::mock($local)->makePartial();
+        $failingLocal->shouldReceive('delete')->andReturnUsing(
+            fn (string $path): bool => $path === $oldPrivatePath ? false : $local->delete($path)
+        );
+        $failingLocal->shouldReceive('exists')->andReturnUsing(
+            fn (string $path): bool => $path === $oldPrivatePath ? true : $local->exists($path)
+        );
+        Storage::set('local', $failingLocal);
+
+        // assertNotified()/assertNotNotified() both pull (and clear) the
+        // same session-flashed notifications, so only one of the two can
+        // observe them per response; asserting the "Saved" title alone is
+        // enough here because the retire-failure branch in
+        // handleRecordUpdate() never reaches the "Save partially failed"
+        // notification (it returns before that catch block).
+        $test = Livewire::test(EditProject::class, ['record' => $project->getKey()])
+            ->fillForm(['images.0.file' => $this->png('second.png')])
+            ->call('save')
+            ->assertHasNoFormErrors()
+            ->assertNotified('Saved');
+
+        $images = $project->images()->get();
+        $this->assertCount(1, $images);
+        $this->assertSame($image->id, $images[0]->id);
+        $this->assertNotSame($oldPrivatePath, $images[0]->private_path);
+
+        // A further save with no new upload must not duplicate the row: the
+        // repeater must already hold the saved id from the retire-failure
+        // save above, not a stale id-less item with a leftover upload.
+        $test->call('save')->assertHasNoFormErrors();
+
+        $images = $project->images()->get();
+        $this->assertCount(1, $images);
+        $this->assertSame($image->id, $images[0]->id);
     }
 
     private function png(string $name): UploadedFile

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Domain;
 
 use App\Domain\Assets\AssetOperationException;
+use App\Domain\Assets\GalleryRetireFailed;
 use App\Domain\Content\Actions\PublishContent;
 use App\Domain\Content\Actions\ShowContent;
 use App\Domain\Content\Actions\SyncProjectImages;
@@ -165,6 +166,46 @@ final class ProjectGalleryServiceTest extends TestCase
             $this->assertSame($old->public_path, $images[0]->public_path);
             $this->assertSame([$old->private_path], $local->allFiles());
         }
+    }
+
+    /**
+     * Regression: retire() runs after the row changes (and any public
+     * copies) are already committed, so a failure to delete the replaced
+     * private file must not be reported the same way as a real save
+     * failure. sync() must throw a distinct GalleryRetireFailed carrying the
+     * already-saved project, and the new row/committed state must stay
+     * intact regardless of the cleanup failure.
+     */
+    public function test_a_post_commit_retire_failure_is_reported_distinctly_while_the_new_row_stays_committed(): void
+    {
+        $project = Project::factory()->create();
+        $old = app(SyncProjectImages::class)($project, [$this->item(null, $this->png('old.png'))])->images[0];
+
+        $local = Storage::disk('local');
+        $failingLocal = Mockery::mock();
+        $failingLocal->shouldReceive('putFileAs')->andReturnUsing(fn (...$args) => $local->putFileAs(...$args));
+        $failingLocal->shouldReceive('delete')->andReturnUsing(
+            fn (string $path): bool => $path === $old->private_path ? false : $local->delete($path)
+        );
+        $failingLocal->shouldReceive('exists')->andReturnUsing(
+            fn (string $path): bool => $path === $old->private_path ? true : $local->exists($path)
+        );
+        Storage::shouldReceive('disk')->with('local')->andReturn($failingLocal);
+        Storage::shouldReceive('disk')->with('public')->andReturn(Storage::disk('public'));
+
+        try {
+            app(SyncProjectImages::class)($project->fresh(), [$this->item(null, $this->png('new.png'), 'Nueva', 'New')]);
+            $this->fail('A post-commit retire failure must be reported.');
+        } catch (GalleryRetireFailed $exception) {
+            $images = $exception->project->images;
+            $this->assertCount(1, $images);
+            $this->assertSame('New', $images[0]->alt_en);
+        }
+
+        $rows = $project->images()->get();
+        $this->assertCount(1, $rows);
+        $this->assertSame('New', $rows[0]->alt_en);
+        $local->assertExists($old->private_path);
     }
 
     private function visibleProjectWithOneImage(): Project
