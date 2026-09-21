@@ -10,7 +10,6 @@ import {
   moonSkyPosition,
   navVeilOpacity,
   starOpacity,
-  starsOpacity,
   sunSkyPosition,
 } from '@/lib/scene-timeline'
 
@@ -53,9 +52,6 @@ describe('backdrop', () => {
     expect(landscapeOpacity(0.4)).toBe(1)
     expect(landscapeOpacity(0.625)).toBeCloseTo(0.5)
     expect(landscapeOpacity(0.8)).toBe(0)
-    expect(starsOpacity(0.4)).toBe(0)
-    expect(starsOpacity(0.625)).toBeCloseTo(0.5)
-    expect(starsOpacity(0.8)).toBe(1)
     expect(linksOpacity(0.74)).toBe(0)
     expect(linksOpacity(0.825)).toBeCloseTo(0.5)
     expect(linksOpacity(0.95)).toBe(1)

@@ -47,10 +47,6 @@ export function landscapeOpacity(p: number): number {
   return 1 - ramp(p, 0.5, 0.75)
 }
 
-export function starsOpacity(p: number): number {
-  return ramp(p, 0.5, 0.75)
-}
-
 export function linksOpacity(p: number): number {
   return ramp(p, 0.75, 0.9)
 }
