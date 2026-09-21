@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { ProjectDossier } from '@/components/ProjectDossier'
 import { RegionStatus } from '@/components/RegionStatus'
 import { Section } from '@/components/Section'
@@ -15,10 +16,13 @@ function ProjectGroup({ ui, kind, projects }: { ui: UiCopy; kind: ProjectKind; p
   const [expanded, setExpanded] = useState(false)
   const { visible, hiddenCount } = previewItems(projects, expanded)
 
-  // Move focus to the first revealed project so keyboard users continue from there.
-  useEffect(() => {
-    if (expanded) document.getElementById(`project-${projects[PROJECT_PREVIEW_LIMIT]?.key}`)?.focus()
-  }, [expanded, projects])
+  // Expand synchronously, then move focus once to the first revealed project so keyboard
+  // users continue from there. Firing this from the click (not an effect keyed on `expanded`)
+  // means it runs exactly once per expansion instead of on every later re-render.
+  const showMore = () => {
+    flushSync(() => setExpanded(true))
+    document.getElementById(`project-${projects[PROJECT_PREVIEW_LIMIT]?.key}`)?.focus()
+  }
 
   return (
     <section id={`${kind}-projects`} aria-label={ui.projects.groups[kind]} className="scroll-mt-20">
@@ -31,7 +35,7 @@ function ProjectGroup({ ui, kind, projects }: { ui: UiCopy; kind: ProjectKind; p
       {hiddenCount > 0 && (
         <button
           type="button"
-          onClick={() => setExpanded(true)}
+          onClick={showMore}
           className="mt-14 min-h-11 rounded-full border border-line px-6 text-sm font-semibold transition-colors hover:border-accent"
         >
           {ui.projects.showMore}
@@ -42,7 +46,7 @@ function ProjectGroup({ ui, kind, projects }: { ui: UiCopy; kind: ProjectKind; p
 }
 
 function ProjectGroups({ ui, projects, emptyMessage }: { ui: UiCopy; projects: Project[]; emptyMessage: string }) {
-  const groups = groupProjects(projects)
+  const groups = useMemo(() => groupProjects(projects), [projects])
   const kinds = KINDS.filter((kind) => groups[kind].length > 0)
 
   if (kinds.length === 0) return <p className="max-w-2xl text-lg text-muted">{emptyMessage}</p>
@@ -56,7 +60,9 @@ function ProjectGroups({ ui, projects, emptyMessage }: { ui: UiCopy; projects: P
   )
 }
 
-export function ProjectsSection({ ui, projects, emptyMessage, onRetry }: Props) {
+// See StackSection for why this is memoized: the scroll scene publishes progress up to 60 times a
+// second and this section's own props do not change on those ticks.
+export const ProjectsSection = memo(function ProjectsSection({ ui, projects, emptyMessage, onRetry }: Props) {
   return (
     <Section id="projects" label={ui.sections.projects.nav} title={ui.sections.projects.title}>
       {projects.status !== 'ready' ? (
@@ -66,4 +72,4 @@ export function ProjectsSection({ ui, projects, emptyMessage, onRetry }: Props) 
       )}
     </Section>
   )
-}
+})
