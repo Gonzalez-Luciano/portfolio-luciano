@@ -80,6 +80,21 @@ This approach was selected over client-only metadata, which would make the initi
 | `/es/` | `308` | `/` |
 | `/en/` | `308` | `/en` |
 
+The physical `dist/en/index.html` layout is not permission to delegate canonicalization to a static file server. The gateway must own these exact path decisions before any generic directory or file-server behavior:
+
+```text
+exact request /en
+    -> internal rewrite/serve /en/index.html
+    -> HTTP 200
+    -> browser-visible URL remains /en
+
+exact request /en/
+    -> HTTP 308
+    -> Location: /en
+```
+
+The implementation must prevent a file server from detecting `en/` as a directory and redirecting `/en` to `/en/`. It must not rely on automatic static-server canonicalization for either result. The concrete Caddy matcher and rewrite syntax belongs to the implementation plan; this specification fixes the observable behavior.
+
 `/es` is a compatibility alias only. It has no shell, canonical, `hreflang`, sitemap entry, or client-side analytics pageview.
 
 The language switch links Spanish directly to `/` and English directly to `/en`. When the current section exists in both languages, the switch preserves its fragment, for example `/#projects` to `/en#projects` and back.
@@ -257,7 +272,17 @@ No other schema is introduced. In particular, the graph excludes `Organization`,
 - `https://lucianogonzalez.dev/`;
 - `https://lucianogonzalez.dev/en`.
 
-Each URL declares the approved `es`, `en`, and `x-default` alternates. The sitemap excludes aliases, normalized trailing-slash forms, admin, API, technical endpoints, and unknown paths. It does not invent `lastmod`, `changefreq`, or `priority`.
+Because the sitemap uses `xhtml:link` alternates, its root contract is `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">`. Each `<url>` contains its own `<loc>` and the same complete, reciprocal alternate set:
+
+| `hreflang` | `href` |
+| --- | --- |
+| `es` | `https://lucianogonzalez.dev/` |
+| `en` | `https://lucianogonzalez.dev/en` |
+| `x-default` | `https://lucianogonzalez.dev/` |
+
+Each URL therefore declares itself as well as the other locale, and both entries carry identical alternate relationships. The same typed SEO configuration generates the HTML `hreflang` links and sitemap relationships so they cannot drift independently.
+
+The sitemap excludes aliases, normalized trailing-slash forms, admin, API, technical endpoints, and unknown paths. It does not invent `lastmod`, `changefreq`, or `priority`.
 
 ### 9.2 `robots.txt`
 
@@ -273,13 +298,15 @@ This file is not a security boundary. Non-indexable responses expose their index
 
 ### 9.3 `X-Robots-Tag`
 
-The active gateway/application contract adds `X-Robots-Tag: noindex, nofollow` to surfaces that must not be indexed, especially:
+The active gateway/application contract adds `X-Robots-Tag: noindex, nofollow` only through explicit route matchers for surfaces that must not be indexed:
 
-- Laravel administration and Filament;
-- API responses;
-- technical endpoints;
+- `/admin`, `/admin/*`, and specifically identified Filament administrative document/request routes, excluding Filament static-asset families;
+- `/api` and `/api/*`;
 - `/runtime-config.json` when present;
+- identified health or technical response endpoints such as `/up` and `/__gateway/health`;
 - the frontend 404 when this fits cleanly in the gateway.
+
+The implementation must not attach this header to an umbrella Laravel matcher or another broad family that also includes public content. In particular, `/storage/*`, `/cv/*`, and other public media/assets remain outside the noindex matcher unless a separate human decision changes that policy. The implementation plan must enumerate and test the exact matchers rather than treating “technical endpoints” as a catch-all.
 
 Phase 8 does not change Laravel authentication or expand into Phase 9 security hardening.
 
@@ -342,6 +369,10 @@ Runtime configuration loading is:
 - equivalent to `credentials: "omit"`;
 - free from persistent retries and visible user errors.
 
+The HTTP response contract independently requires `Cache-Control: no-store` for `/runtime-config.json`. This header applies both when the config exists and when the route returns its intentional real `404`. The browser, portfolio gateway, host-level proxy, or another intermediate cache must not preserve an old config or negatively cache the initial absence across later activation.
+
+Phase 8 defines and verifies this route contract in the current application/gateway context. Phase 11 must preserve it when implementing production materialization, and Phase 12 must preserve it through the deployed proxy path. This requirement does not authorize Phase 8 to configure Cloudflare or production infrastructure.
+
 Any of the following leaves analytics `OFF` for that page load:
 
 - missing file or real `404`;
@@ -371,7 +402,7 @@ The initialization is idempotent. Repeated bootstrap calls, React development be
 
 The tracker is absent from the static 404, Laravel admin, API, and technical endpoints. It is not hardcoded in either HTML shell.
 
-Expected pageview behavior is:
+The required eventual pageview behavior is:
 
 | Navigation | Analytics path |
 | --- | --- |
@@ -384,6 +415,8 @@ Expected pageview behavior is:
 | `/es` or `/es/` | no `/es` pageview; HTTP redirect occurs before JavaScript and the destination records `/` |
 
 Residual traffic to `/es` may be evaluated later from gateway/operations logs, not with a client-side interstitial or special event.
+
+Phase 8 verifies the client-observable prerequisites for this table: the single inserted script, `data-website-id`, domain restriction, Do Not Track, search exclusion, hash exclusion, idempotence, and the absence of reinitialization on a hash change. It does not claim that a real Umami server received or deduplicated any pageview. Phase 12 verifies the table through live ingestion after the independent Umami service exists.
 
 ## 13. Approved custom events
 
@@ -436,7 +469,7 @@ It does not deploy Umami or define VPS-specific values.
 
 Phase 11 will create and locally verify the production Dockerfiles, `compose.production.yaml`, internal gateway, migrations/import/bootstrap flow, health checks, persistence, local smoke checks, CI, GitHub tag and release, GHCR images, digests, and deployment handoff. If the actual production architecture justifies a custom gateway image, that image is published alongside frontend and backend; MySQL remains a pinned official image.
 
-Phase 11 also materializes the already-defined `/runtime-config.json` interface. The recommended model is normal public runtime values passed to a container entrypoint that atomically creates the JSON file. The exact production wiring belongs to Phase 11, not Phase 8.
+Phase 11 also materializes the already-defined `/runtime-config.json` interface. The recommended model is normal public runtime values passed to a container entrypoint that atomically creates the JSON file. The exact production wiring belongs to Phase 11, not Phase 8. Both a present config response and an absent-config `404` must carry `Cache-Control: no-store` through the production internal gateway.
 
 The result must permit:
 
@@ -459,7 +492,8 @@ The separate `vps_ops_claude` context later:
 5. obtains the Website ID;
 6. supplies `trackerUrl` and `websiteId` to the portfolio runtime;
 7. recreates or reconfigures only the required runtime using the same released image and digest;
-8. verifies real pageviews and the four approved events.
+8. preserves `Cache-Control: no-store` for both present and absent runtime config across the deployed proxy chain;
+9. verifies through real Umami ingestion that `/` and `/en` arrive without query/hash variants or duplicate pageviews, and that the four approved property-free events arrive.
 
 The repository does not open SSH, touch `/srv`, modify Cloudflare or global Caddy, create real secrets, run production migrations, or perform production smoke checks.
 
@@ -493,6 +527,7 @@ Use the existing Vitest setup to cover:
 - invalid URLs, credentials, UUIDs, nil UUID, partial config, and unknown-property behavior;
 - `OFF` behavior for missing, HTTP, network, JSON, schema, and script errors;
 - one script and one initialization under repeated bootstrap calls;
+- exact tracker attributes for `data-website-id`, domain restriction, Do Not Track, search exclusion, and hash exclusion;
 - terminal no-retry behavior after script failure;
 - exact event names and absence of event properties;
 - removal of post-fetch `document.title` mutation.
@@ -505,6 +540,7 @@ The existing production build must prove:
 - complete localized metadata precedes JavaScript execution;
 - canonical, alternates, social metadata, and JSON-LD are correct;
 - sitemap and robots are real static files;
+- the sitemap declares the XHTML namespace and the same reciprocal `es`, `en`, and `x-default` set for both URLs;
 - approved visual assets exist before their metadata references are accepted;
 - `/es` has no generated shell;
 - the bundle contains no real or sample Umami Website ID and no build-time analytics configuration;
@@ -519,11 +555,14 @@ Through the portfolio gateway, verify:
 
 - `200` localized responses for `/` and `/en`;
 - exact `308` destinations for `/es`, `/es/`, and `/en/`;
+- `/en` stays visible as `/en` while the gateway internally serves `/en/index.html`, with no reverse canonicalization to `/en/`;
 - coherent `HEAD` behavior where applicable;
 - real `404` for unknown frontend documents and absent runtime config;
 - no SPA fallback for `/runtime-config.json`;
+- `Cache-Control: no-store` on both present and absent/`404` runtime-config responses;
 - correct content types for sitemap and robots;
-- `noindex` behavior for the frontend 404 and approved non-indexable families;
+- `noindex` behavior for the frontend 404 and explicitly matched non-indexable families;
+- absence of an accidental `X-Robots-Tag` on `/storage/*`, `/cv/*`, and other public assets;
 - existing Laravel routing precedence and preservation of backend 404 responses.
 
 ### 17.4 Browser verification
@@ -537,15 +576,16 @@ Verify:
 - `/es#projects` ending functionally at `/#projects`;
 - locale switching with a preserved valid hash;
 - anchors under `/en`;
-- no artificial pageview from hash changes;
-- no query/hash analytics variants;
 - bilingual static 404 with no React, API, or Umami requests;
 - analytics `OFF` for missing and invalid runtime configuration;
 - one tracker for valid simulated runtime configuration;
-- no duplicate script from remount, navigation, development behavior, or repeated bootstrap;
+- correct client-side tracker attributes for Website ID, domain restriction, Do Not Track, search exclusion, and hash exclusion;
+- no duplicate script or second initialization from remount, navigation, development behavior, repeated bootstrap, or a hash change;
 - functional CV, GitHub, LinkedIn, and email links with analytics both on and off.
 
-Real Umami ingestion cannot be certified in Phase 8 because the service is intentionally not deployed. Phase 12 verifies live ingestion, and Phase 13 reviews post-launch data.
+These Phase 8 checks observe DOM, network loading, and portfolio navigation only. They do not certify the pathname stored by Umami, server-side query/hash exclusion, or absence of duplicate pageviews in Umami because the service is intentionally not deployed. Phase 12 verifies live ingestion for `/`, `/en`, query/hash exclusion, duplicate absence, and all four events. Phase 13 reviews post-launch data over time.
+
+Phase 8 must not add a fake Umami ingestion server or other infrastructure to imitate that later verification.
 
 ### 17.5 Available checks and YAGNI
 
@@ -640,12 +680,12 @@ Full-content prerendering may be reconsidered only after post-launch evidence sh
 
 Phase 8 may be declared implemented and closed only when all of the following are true:
 
-1. The URL, shell, canonical, alternate, redirect, and real-404 contracts pass.
-2. Localized metadata, social metadata, JSON-LD, sitemap, robots, and indexing headers match this specification.
+1. The URL, shell, canonical, alternate, redirect, and real-404 contracts pass, including internal serving of `/en/index.html` without redirecting visible `/en` to `/en/`.
+2. Localized metadata, social metadata, JSON-LD, sitemap namespaces and reciprocal alternates, robots, and indexing headers match this specification.
 3. The human-approved social image and favicon files are integrated and referenced without placeholders.
-4. Runtime config is optional, validated from `unknown`, and absent from the build-time configuration surface.
+4. Runtime config is optional, validated from `unknown`, absent from the build-time configuration surface, and served with `Cache-Control: no-store` for both success and absence/`404`.
 5. Analytics remains harmlessly `OFF` for every specified failure.
-6. A valid simulated config produces one tracker, no duplicate initialization, and only the four approved property-free events.
+6. A valid simulated config produces one correctly attributed tracker, no duplicate client initialization, and only the four approved property-free event hooks; real ingestion remains a Phase 12 check.
 7. Hash, locale-switch, direct-refresh, and unknown-route behavior is verified in a browser.
 8. Available automated checks, gateway checks, and build inspection pass; unavailable tooling is reported without adding it.
 9. Active documentation drift is corrected without rewriting history or marking future work complete.
