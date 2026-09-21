@@ -1,10 +1,25 @@
+import { useSyncExternalStore } from 'react'
 import { alternateLocale, localePath, type Locale, type UiCopy } from '@/content'
 
 const LOCALES: readonly Locale[] = ['es', 'en']
 
+function subscribeToHash(onStoreChange: () => void) {
+  window.addEventListener('hashchange', onStoreChange)
+  window.addEventListener('popstate', onStoreChange)
+  return () => {
+    window.removeEventListener('hashchange', onStoreChange)
+    window.removeEventListener('popstate', onStoreChange)
+  }
+}
+
+const getHash = () => window.location.hash
+
 /** "ES / EN": the current language is boxed; the other one opens the same section in that language. */
 export function LanguageSwitch({ ui, locale }: { ui: UiCopy; locale: Locale }) {
   const target = alternateLocale(locale)
+  // Read at render time (not mutated on click) so the anchor's real href is always correct for
+  // middle-click, Cmd/Ctrl-click, "open in new tab" and "copy link", not only a plain click.
+  const hash = useSyncExternalStore(subscribeToHash, getHash)
 
   return (
     <span className="flex items-center font-mono text-xs font-medium">
@@ -21,15 +36,11 @@ export function LanguageSwitch({ ui, locale }: { ui: UiCopy; locale: Locale }) {
             </span>
           ) : (
             <a
-              href={localePath(target)}
+              href={localePath(target, hash)}
               hrefLang={target}
               lang={target}
               // Label-in-name (WCAG 2.5.3): the visible text ("EN"/"ES") stays inside the accessible name.
               aria-label={`${option.toUpperCase()} · ${ui.language.switchTo}`}
-              // The anchor is read at click time so the other language opens on the same section.
-              onClick={(event) => {
-                event.currentTarget.href = localePath(target, window.location.hash)
-              }}
               className="flex min-h-11 min-w-11 items-center justify-center px-1.5 transition-opacity hover:opacity-70"
             >
               {option.toUpperCase()}
