@@ -567,8 +567,19 @@ Spec: `docs/superpowers/specs/2026-09-14-phase-6-portfolio-redesign-design.md`. 
 - [x] Formación e idiomas como colecciones administrables.
 - [x] Ubicación y modalidades de trabajo en Profile.
 - [x] Borradores de contenido de Fase 6 cargados con acciones de dominio.
-- [ ] Revisión y publicación humana de los borradores en Filament.
-- [ ] Textos de problema, solución y resultado y capturas de Trucks and Drinks (los aporta Luciano).
+- [x] Revisión y publicación humana de los borradores en Filament.
+- [x] Textos de problema, solución y resultado y capturas de Trucks and Drinks (los aporta Luciano).
+
+### Alcance no ejecutado (planificación prematura)
+
+Los bloques **Motion**, **GSAP y ScrollTrigger**, **Campo de nodos interactivos** y **Rendimiento** se escribieron antes del brainstorming del 2026-09-14, cuando la fase se llamaba "Sistema de movimiento" y se imaginaba como una capa de animaciones sobre el front de Fase 5. Ese enfoque quedó sin efecto: el 2026-09-14 la fase se redefinió como el rediseño completo del portfolio (spec `docs/superpowers/specs/2026-09-14-phase-6-portfolio-redesign-design.md`) y se ejecutó con dos planes:
+
+- `docs/superpowers/plans/2026-09-14-phase-6-cms-api.md` (CMS y API): 9 tareas, completas.
+- `docs/superpowers/plans/2026-09-14-phase-6-front-visual.md` (front y sistema visual): 11 tareas, completas.
+
+El movimiento que la fase necesitaba quedó resuelto dentro de ese trabajo: escena de scroll con video, curvas de opacidad y stagger, ciclo de cielo, transición amanecer, acordeones, galería con visor y menú móvil, todo con soporte de `prefers-reduced-motion`. No se incorporaron GSAP/ScrollTrigger ni el campo de nodos interactivos: no hizo falta ninguna librería extra y el campo de nodos habría competido con la escena de tinta ya aprobada.
+
+Los ítems de esos cuatro bloques se dejan sin marcar a propósito, como registro de lo que se decidió no hacer. Si en el futuro se quiere retomar alguno (por ejemplo, mediciones formales de rendimiento), corresponde replantearlo con su propia spec y su propio plan, no darlo por pendiente de esta fase.
 
 ### Motion
 
