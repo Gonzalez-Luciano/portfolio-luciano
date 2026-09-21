@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Accordion } from '@/components/Accordion'
 import { RegionStatus } from '@/components/RegionStatus'
 import { Section } from '@/components/Section'
@@ -42,7 +43,9 @@ function CaseDetails({ ui, workCase }: { ui: UiCopy; workCase: WorkCase }) {
   )
 }
 
-export function ExperienceSection({ ui, locale, experiences, workCases, onRetry }: Props) {
+// See StackSection for why this is memoized: the scroll scene publishes progress up to 60 times a
+// second and this section's own props do not change on those ticks.
+export const ExperienceSection = memo(function ExperienceSection({ ui, locale, experiences, workCases, onRetry }: Props) {
   return (
     <Section id="experience" label={ui.sections.experience.nav} title={ui.sections.experience.title}>
       {experiences.status === 'ready' && workCases.status === 'ready' ? (
@@ -52,7 +55,7 @@ export function ExperienceSection({ ui, locale, experiences, workCases, onRetry 
       )}
     </Section>
   )
-}
+})
 
 function Timeline({ ui, locale, experiences, workCases }: { ui: UiCopy; locale: Locale; experiences: Experience[]; workCases: WorkCase[] }) {
   const { organizations, unlinkedCases } = groupExperience(experiences, workCases)
@@ -68,7 +71,14 @@ function Timeline({ ui, locale, experiences, workCases }: { ui: UiCopy; locale: 
                 <li key={experience.key} className="relative">
                   <span aria-hidden="true" className="timeline-node absolute -left-[calc(2rem+5px)] top-1.5 h-2.5 w-2.5 rounded-full bg-node lg:-left-[calc(3rem+5px)]" />
                   <p className="label text-muted">{formatPeriod(experience.start, experience.end, locale)}</p>
-                  <h4 className="mt-2 font-display text-2xl font-light">{experience.role}</h4>
+                  {/* Without an organization heading above it, the role is the heading directly under
+                      the section's H2, so it must be an H3 here to keep the outline unbroken; same
+                      classes either way, so nothing changes visually. */}
+                  {group.organization ? (
+                    <h4 className="mt-2 font-display text-2xl font-light">{experience.role}</h4>
+                  ) : (
+                    <h3 className="mt-2 font-display text-2xl font-light">{experience.role}</h3>
+                  )}
                   <p className="mt-3 max-w-3xl text-muted">{experience.summary}</p>
                   {experience.highlights.length > 0 && (
                     <ul className="mt-4 max-w-3xl list-disc space-y-2 pl-5 marker:text-accent">
