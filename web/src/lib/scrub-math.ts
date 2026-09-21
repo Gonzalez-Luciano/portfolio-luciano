@@ -16,25 +16,6 @@ export function stepTowards(
   return Math.abs(target - next) < snap ? target : next
 }
 
-/** Binary search over frames sorted by `ts` (microseconds) for the frame nearest to `seconds`. */
-export function nearestIndex(frames: ReadonlyArray<{ ts: number }>, seconds: number): number {
-  const count = frames.length
-  if (count === 0) return -1
-
-  const t = seconds * 1e6
-  let lo = 0
-  let hi = count - 1
-
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1
-    if (frames[mid].ts < t) lo = mid + 1
-    else hi = mid
-  }
-
-  if (lo > 0 && t - frames[lo - 1].ts <= frames[lo].ts - t) return lo - 1
-  return lo
-}
-
 /**
  * The two frames around `seconds` and how far between them it sits, so an
  * 81-frame bank can be drawn as a continuous cross-fade.
