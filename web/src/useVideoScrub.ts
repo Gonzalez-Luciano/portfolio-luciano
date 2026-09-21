@@ -173,6 +173,10 @@ export function useVideoScrub(videoSrc: string) {
     let rafId = 0
     let watchdogId: number | undefined
     let disposed = false
+    // The backdrop/correction filter (spec §11) and the canvas draw/warmLRU work only need to
+    // run while the 500vh track is actually on screen; once it has scrolled past (or hasn't been
+    // reached yet) the sticky scene is not visible, so skip the per-frame decode/paint work.
+    let onScreen = true
 
     const measure = () => {
       span = container.offsetHeight - window.innerHeight
@@ -305,16 +309,21 @@ export function useVideoScrub(videoSrc: string) {
       lastTime = now
 
       const p = getProgress()
-      setScrollProgress(p)
+      // Round to a 1e-3 step (invisible at any zoom) so React's setState bails out on the many
+      // sub-pixel scroll deltas that don't change the rendered scene, instead of reconciling the
+      // whole tree 60 times a second.
+      setScrollProgress(Math.round(p * 1000) / 1000)
 
       if (dur > 0) {
         target = p * dur
         if (reducedMotion.matches) current = target
         else current = stepTowards(current, target, dt, LERP_TAU, SNAP)
 
-        if (ready) draw()
-        else if (!video.seeking && Math.abs(video.currentTime - current) > 0.01) {
-          video.currentTime = current
+        if (onScreen) {
+          if (ready) draw()
+          else if (!video.seeking && Math.abs(video.currentTime - current) > 0.01) {
+            video.currentTime = current
+          }
         }
       }
 
@@ -324,6 +333,19 @@ export function useVideoScrub(videoSrc: string) {
     const onLoad = () => {
       void startBank()
     }
+
+    const intersectionObserver =
+      typeof IntersectionObserver === 'undefined'
+        ? null
+        : new IntersectionObserver(
+            (entries) => {
+              onScreen = entries[entries.length - 1].isIntersecting
+            },
+            // The 500vh track is taller than the viewport, so it stays "intersecting" for the
+            // whole time any part of the sticky scene could be visible.
+            { threshold: 0 },
+          )
+    intersectionObserver?.observe(container)
 
     measure()
     onMetadata()
@@ -339,6 +361,7 @@ export function useVideoScrub(videoSrc: string) {
       cancelAnimationFrame(rafId)
       window.clearTimeout(watchdogId)
       abort.abort()
+      intersectionObserver?.disconnect()
       video.removeEventListener('loadedmetadata', onMetadata)
       window.removeEventListener('resize', measure)
       window.removeEventListener('orientationchange', measure)

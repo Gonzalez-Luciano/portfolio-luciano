@@ -1,10 +1,13 @@
+import { memo } from 'react'
 import { Section } from '@/components/Section'
 import type { UiCopy } from '@/content'
 import type { Profile, Site } from '@/lib/api'
 import { compact, formatYears } from '@/lib/format'
 import { aboutStatement } from '@/lib/sections'
 
-export function AboutSection({ ui, profile, site }: { ui: UiCopy; profile: Profile; site: Site }) {
+// See StackSection for why this is memoized: the scroll scene publishes progress up to 60 times a
+// second and this section's own props do not change on those ticks.
+export const AboutSection = memo(function AboutSection({ ui, profile, site }: { ui: UiCopy; profile: Profile; site: Site }) {
   const statement = aboutStatement(site)
   const place = compact([profile.location, ...profile.work_modes.map((mode) => ui.about.modes[mode])])
 
@@ -55,4 +58,4 @@ export function AboutSection({ ui, profile, site }: { ui: UiCopy; profile: Profi
       </div>
     </Section>
   )
-}
+})

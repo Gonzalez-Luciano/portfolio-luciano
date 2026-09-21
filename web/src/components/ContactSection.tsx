@@ -1,4 +1,5 @@
 import { ArrowRight, Download } from 'lucide-react'
+import { memo } from 'react'
 import { ExternalLink } from '@/components/ExternalLink'
 import { Section } from '@/components/Section'
 import type { UiCopy } from '@/content'
@@ -8,7 +9,9 @@ import { emailAddress } from '@/lib/format'
 const ORDER: readonly ProfessionalLinkKey[] = ['email', 'linkedin', 'github']
 const LINK_CLASS = 'flex min-h-14 items-center justify-between gap-6 py-3 transition-colors hover:text-accent'
 
-export function ContactSection({ ui, site }: { ui: UiCopy; site: Site }) {
+// See StackSection for why this is memoized: the scroll scene publishes progress up to 60 times a
+// second and this section's own props do not change on those ticks.
+export const ContactSection = memo(function ContactSection({ ui, site }: { ui: UiCopy; site: Site }) {
   const links = ORDER.map((key) => site.professional_links.find((link) => link.key === key)).filter(
     (link): link is ProfessionalLink => link !== undefined,
   )
@@ -50,4 +53,4 @@ export function ContactSection({ ui, site }: { ui: UiCopy; site: Site }) {
       </div>
     </Section>
   )
-}
+})

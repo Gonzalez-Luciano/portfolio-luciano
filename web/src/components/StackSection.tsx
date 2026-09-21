@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { RegionStatus } from '@/components/RegionStatus'
 import { Section } from '@/components/Section'
 import type { UiCopy } from '@/content'
@@ -7,7 +8,9 @@ import { groupTechnologies } from '@/lib/grouping'
 
 type Props = { ui: UiCopy; technologies: RegionState<Technology[]>; groups: TechnologyGroup[]; onRetry: () => void }
 
-export function StackSection({ ui, technologies, groups, onRetry }: Props) {
+// The scroll scene above publishes a new progress value up to 60 times a second (see App.tsx);
+// memoizing this section stops it from re-rendering on every tick when its own props are unchanged.
+export const StackSection = memo(function StackSection({ ui, technologies, groups, onRetry }: Props) {
   return (
     <Section id="stack" label={ui.sections.stack.nav} title={ui.sections.stack.title}>
       {technologies.status !== 'ready' ? (
@@ -30,4 +33,4 @@ export function StackSection({ ui, technologies, groups, onRetry }: Props) {
       )}
     </Section>
   )
-}
+})
