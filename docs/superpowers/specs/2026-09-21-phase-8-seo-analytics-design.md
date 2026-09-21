@@ -116,7 +116,7 @@ The frontend side recognizes only the approved documents and required public ass
 - `/` and `/en`;
 - Vite-generated static assets;
 - approved public media required by the page;
-- social-image and favicon files once supplied;
+- the four approved favicon files, and the social-image file once supplied;
 - `/sitemap.xml` and `/robots.txt`;
 - `/runtime-config.json` when it has been materialized;
 - development-only Vite/HMR traffic in the development environment.
@@ -222,23 +222,24 @@ Luciano González
 Backend Engineer | PHP & Laravel
 ```
 
-The implementation will consume the final human-approved file. It must not generate or substitute a face, invent a replacement image, publish a placeholder, or point metadata at a nonexistent file. The final same-origin public filename is an integration detail chosen only when the approved asset is supplied, and all metadata must reference that actual file.
+The visual design is closed and approved as **A — Editorial portrait**. The final JPEG file is still pending. The implementation will consume that final human-approved file at `/social/luciano-gonzalez-social.jpg`. It must not generate or substitute a face, invent a replacement image, publish a placeholder, or point metadata at a nonexistent file.
 
 ### 7.2 Favicon family
 
-The favicon uses the approved minimal Terracotta sprout direction:
+The favicon uses the approved minimal Terracotta sprout direction. Its design is closed, and the final Favicon.io package is available at `C:\Users\lucho\Downloads\favicon_io`:
 
 - simple and recognizable at 16–32 px;
 - no text and no portrait;
 - visually consistent with the Phase 6 sprout;
-- SVG as the modern favicon source;
-- a small PNG or ICO fallback where required;
-- a dedicated PNG `apple-touch-icon` suitable for that use;
+- `favicon.ico` copied to `web/public/favicon.ico`;
+- `favicon-16x16.png` copied to `web/public/favicon-16x16.png`;
+- `favicon-32x32.png` copied to `web/public/favicon-32x32.png`;
+- `apple-touch-icon.png` copied to `web/public/apple-touch-icon.png`;
 - shared by both locales and both themes unless the final asset itself requires a theme variant.
 
-These files are also human inputs. The implementation must not invent a new mark or brand system.
+The implementation copies these four final files without conversion, derivation, vectorization, or redesign. It does not integrate `android-chrome-192x192.png`, `android-chrome-512x512.png`, or `site.webmanifest`, and neither shell includes a manifest link. Both shells reference the four integrated files with the approved ICO, 16 px PNG, 32 px PNG, and 180 px Apple touch icon link metadata.
 
-The missing approved social image or favicon files do not block this specification or its later implementation plan. They do block declaring Phase 8 implemented and closed.
+Final-file availability is separate from design approval. The available favicon files can be integrated directly. The pending social JPEG blocks only its own integration, its physical-file checks, and final Phase 8 closure; it does not block independent work on shells, SEO configuration, sitemap, robots, gateway behavior, analytics, tests, or documentation. Phase 8 cannot be declared implemented and closed until every referenced final asset is integrated and verified, and metadata must never point to a missing social file.
 
 ## 8. Structured data
 
@@ -636,7 +637,7 @@ Documentation changes are factual, active, and scoped to this phase.
 
 - replace the obsolete claim that no project screenshots exist;
 - record four Trucks and Drinks images and five ReservaHub images from Phase 7;
-- add the social image and favicon family only after their final files are human-approved and integrated.
+- add the social image only after its final JPEG is human-approved and integrated, and record the four already-approved favicon files at their exact public paths.
 
 No general documentation cleanup is authorized. `docs/SERVER_ARCHITECTURE.md` must not present Umami as already deployed, and future Phase 11/12 work must not be marked complete.
 
@@ -651,7 +652,7 @@ Expected implementation effort is approximately 6–8 hours:
 5. unit, build, HTTP, and browser verification: 1–1.5 hours;
 6. scoped documentation reconciliation and final review: 0.5–1 hour.
 
-This estimate assumes the final social image and favicon family arrive ready for technical integration. Their temporary absence does not enlarge the architecture; it keeps the final closure gate open. If implementation reveals that the design cannot fit approximately within one working day, work stops for human review before adding scope.
+This estimate assumes the available final favicon family is copied directly and the final social JPEG arrives ready for technical integration. The social file's temporary absence does not enlarge the architecture or block independent work; it keeps only its integration checks and the final closure gate open. If implementation reveals that the design cannot fit approximately within one working day, work stops for human review before adding scope.
 
 ## 20. Explicitly deferred work
 
