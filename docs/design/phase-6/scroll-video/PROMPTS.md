@@ -1,6 +1,6 @@
 # Scroll video — generation record
 
-Source record for `web/public/media/scroll/ink-tree-network-v1.mp4`. The two frames in this folder are generation inputs only; they are not served by the site.
+Source record for `ink-tree-network-v1.mp4`, kept in this folder together with `-v2` and its poster; superseded by `-v3`, which is the only encode served from `web/public/media/scroll/` (§11 of the design spec). The two frames in this folder are generation inputs only; none of the files here are served by the site.
 
 | Item | Value |
 |---|---|
