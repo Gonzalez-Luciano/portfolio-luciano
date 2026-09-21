@@ -91,7 +91,10 @@ export default function App() {
     }
     const target = document.getElementById(id)
     if (target) {
-      target.scrollIntoView()
+      // Instant, not the global smooth `scroll-behavior`: an on-load deep link (or the anchor kept
+      // by the language switch) should land directly on its section instead of scrubbing the whole
+      // 500vh video scene on the way. Nav links and the mobile menu keep the smooth scroll.
+      target.scrollIntoView({ behavior: 'instant' })
       deepLinkHandled.current = true
     }
   }, [content, sections, experiences.state, workCases.state, projects.state])
