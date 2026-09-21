@@ -655,13 +655,35 @@ Los ítems de esos cuatro bloques se dejan sin marcar a propósito, como registr
 
 ---
 
-# Fase 7 — Proyectos nuevos
+# Fase 7 — Proyectos demostrables (alcance reconciliado)
 
 ## Objetivo
 
-Crear y publicar proyectos que respalden el perfil backend.
+Publicar y verificar proyectos reales suficientes para respaldar el perfil backend, sin crear proyectos adicionales solo para cumplir el roadmap.
 
-Esta fase puede desarrollarse en paralelo después de que el CMS acepte proyectos.
+### Cierre práctico (2026-09-21)
+
+La decisión humana de cierre reemplazó el supuesto original de crear proyectos nuevos desde cero. El portfolio ya contaba con dos proyectos reales, complementarios y suficientes para el objetivo profesional:
+
+- **Trucks and Drinks**: proyecto para cliente, en uso, con foco en backend Symfony, reglas de negocio, stock, eventos y presupuestos.
+- **ReservaHub**: proyecto personal publicado como demo, con Laravel, API, concurrencia, pagos simulados, pruebas, Docker y CI.
+
+El cierre se realizó sobre el stack local asociado a `main`:
+
+- [x] Auditar `PhaseSixDraftContentSeeder` contra el modelo, CMS, API y frontend finales de Fase 6.
+- [x] Confirmar que no faltaba contenido aprobado recuperable y que las imágenes dependían de carga humana en Filament.
+- [x] Ejecutar migraciones y los seeders canónicos (`PortfolioContentSeeder` y `PhaseSixDraftContentSeeder`) sin reset destructivo.
+- [x] Cargar manualmente las imágenes reales desde Filament: cuatro para Trucks and Drinks y cinco para ReservaHub.
+- [x] Publicar ambos proyectos con orden, tecnologías, textos ES/EN, visibilidad y alt text verificados.
+- [x] Verificar CMS, API, `ProjectDossier`, `ProjectGallery`, enlaces, escritorio, móvil y ausencia de duplicados.
+- [x] Revisar visualmente las nueve capturas y confirmar que no exponen secretos ni información privada evidente.
+- [x] Recibir aprobación humana final de la presentación.
+
+No existe `progress.md`; por lo tanto, `ROADMAP.md` conserva el registro documental de esta intervención.
+
+### Alcance original deliberadamente no ejecutado
+
+El checklist original que sigue se conserva sin marcar como registro histórico. No se creó otro proyecto, no se grabó un video, no se produjo un diagrama y no se montó otra demo. Tampoco se exigió que el proyecto para cliente tuviera repositorio público, README, licencia o instrucciones de instalación. Esos entregables no fueron necesarios para satisfacer el objetivo profesional y no deben interpretarse como deuda pendiente de esta fase.
 
 ## Criterios para elegir proyectos
 
@@ -702,13 +724,13 @@ Cada proyecto debe demostrar al menos una capacidad relevante:
 
 ## Publicación
 
-- [ ] Cargar proyecto en CMS.
-- [ ] Revisar imagen.
-- [ ] Verificar enlaces.
-- [ ] Verificar responsive.
-- [ ] Verificar traducción.
-- [ ] Verificar accesibilidad.
-- [ ] Publicar solamente después de completar el checklist.
+- [x] Cargar proyectos en CMS.
+- [x] Revisar imágenes y galerías.
+- [x] Verificar enlaces reales disponibles.
+- [x] Verificar responsive.
+- [x] Verificar traducción ES/EN.
+- [x] Verificar accesibilidad y alt text.
+- [x] Publicar después de la revisión humana.
 
 ## Criterios de aceptación
 
@@ -718,6 +740,8 @@ Cada proyecto debe demostrar al menos una capacidad relevante:
 - Las demos funcionan.
 - Los repositorios no contienen secretos.
 - Los proyectos apoyan la búsqueda de empleo Laravel.
+
+**Estado:** Fase 7 cerrada el 2026-09-21 por decisión humana, con Trucks and Drinks y ReservaHub publicados y verificados. Los proyectos existentes satisfacen el objetivo; no se requiere crear otro proyecto para cerrar la fase.
 
 ---
 
@@ -1242,7 +1266,7 @@ Incluye fases 7 y 8.
 
 Resultado:
 
-- Proyectos nuevos.
+- Proyectos reales publicados y verificados.
 - Material visual.
 - SEO.
 - Analítica.
@@ -1432,7 +1456,7 @@ Mitigación:
 16. Agregar GSAP.
 17. Crear campo de nodos.
 18. Medir y optimizar.
-19. Crear proyectos nuevos.
+19. Publicar y verificar proyectos reales suficientes para demostrar el perfil backend.
 20. Implementar SEO.
 21. Implementar pruebas.
 22. Crear el runtime productivo y verificarlo localmente.
