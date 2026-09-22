@@ -82,6 +82,7 @@ const gatewayService = service('gateway');
 const webService = service('web');
 const webDockerfile = read('web/Dockerfile');
 const viteConfig = read('web/vite.config.ts');
+const runtimeConfigPlugin = read('web/vite/runtime-config-plugin.ts');
 
 assert.doesNotMatch(
   webDockerfile,
@@ -109,6 +110,10 @@ assert.match(
   'The Windows bind mount must enable Vite polling in development',
 );
 assert.match(webService, /^ {4}command: pnpm dev$/m, 'The web service must run the Vite development server');
+assert.match(viteConfig, /frontendAsset404ContractPlugin/, 'Vite must register the frontend asset 404 contract');
+assert.match(runtimeConfigPlugin, /\/assets\//, 'The frontend asset contract must cover /assets/*');
+assert.match(runtimeConfigPlugin, /\/social\//, 'The frontend asset contract must cover /social/*');
+assert.match(runtimeConfigPlugin, /404\.html/, 'The frontend asset contract must serve the static 404 body');
 
 assert.match(apiService, /^ {6}- api_public_media:\/var\/www\/html\/storage\/app\/public$/m);
 assert.match(apiService, /^ {6}- api_private_media:\/var\/www\/html\/storage\/app\/private$/m);

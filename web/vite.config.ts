@@ -2,7 +2,7 @@
 import { fileURLToPath, URL } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
-import { runtimeConfigContractPlugin } from './vite/runtime-config-plugin.ts'
+import { frontendAsset404ContractPlugin, runtimeConfigContractPlugin } from './vite/runtime-config-plugin.ts'
 import { localizedSeoPlugin } from './vite/seo-plugin.ts'
 
 // Inside Docker the browser reaches Vite through the portfolio gateway, so HMR
@@ -12,7 +12,7 @@ const usePolling = process.env.VITE_USE_POLLING === 'true'
 
 export default defineConfig({
   base: '/',
-  plugins: [react(), localizedSeoPlugin(), runtimeConfigContractPlugin()],
+  plugins: [react(), localizedSeoPlugin(), runtimeConfigContractPlugin(), frontendAsset404ContractPlugin()],
   build: {
     rollupOptions: {
       input: {
