@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://lucianogonzalez.dev/sitemap.xml
