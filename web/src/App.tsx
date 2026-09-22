@@ -49,10 +49,6 @@ export default function App() {
 
   const content = structural.status === 'ready' ? structural.content : null
 
-  useEffect(() => {
-    if (content) document.title = `${content.profile.name} — ${content.profile.headline}`
-  }, [content])
-
   const scene = useMemo(
     () => (content ? buildScene({ ...content, technologies: technologies.state.status === 'ready' ? technologies.state.data : [] }) : null),
     [content, technologies.state],
