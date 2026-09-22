@@ -1,0 +1,58 @@
+{
+	auto_https off
+	admin off
+}
+
+# Internal static runtime for the built Vite SPA. Only the portfolio gateway
+# reaches this port; it is never published to the host.
+:8080 {
+	root * /srv/www
+
+	handle /__web/health {
+		respond "ok" 200
+	}
+
+	# Runtime configuration is materialized by the entrypoint from public
+	# environment values. Present or absent, it is never cacheable.
+	handle /runtime-config.json {
+		header Cache-Control "no-store"
+		header X-Robots-Tag "noindex, nofollow"
+		file_server
+	}
+
+	# Content-hashed build output may be cached immutably.
+	handle /assets/* {
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+
+	# Localized shells must be revalidated so a redeployed digest is picked up.
+	@shell path / /index.html /en /en/ /en/index.html
+	handle @shell {
+		header Cache-Control "no-cache"
+		file_server
+	}
+
+	handle {
+		file_server
+	}
+
+	handle_errors {
+		header X-Robots-Tag "noindex, nofollow"
+
+		# A missing runtime configuration is an intentional 404 and keeps the
+		# same no-store contract as a present one.
+		@runtimeConfig path /runtime-config.json
+		handle @runtimeConfig {
+			header Cache-Control "no-store"
+			respond 404
+		}
+
+		handle {
+			rewrite * /404.html
+			file_server {
+				status 404
+			}
+		}
+	}
+}

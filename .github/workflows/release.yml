@@ -1,0 +1,101 @@
+name: Release
+
+# Publishes the production images for a version tag to GHCR.
+#
+# This workflow ends at the registry. It never connects to the VPS, never holds
+# a host or edge-network credential and never deploys anything. The actual
+# deployment is performed separately and manually by operations, consuming the
+# tag and digests recorded in docs/DEPLOYMENT.md.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to publish
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    name: Publish ${{ matrix.image }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: portfolio-web
+            dockerfile: infra/docker/web/Dockerfile
+          - image: portfolio-api
+            dockerfile: infra/docker/api/Dockerfile.production
+          - image: portfolio-gateway
+            dockerfile: infra/docker/gateway/Dockerfile
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Resolve release version
+        id: version
+        run: |
+          ref="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "version=${ref}" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Authenticate to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Every image is identifiable by release version and by commit SHA.
+      # `latest` is a convenience only: production deploys by tag or digest.
+      - name: Derive image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=sha-${{ steps.version.outputs.sha }}
+            type=raw,value=latest
+          labels: |
+            org.opencontainers.image.title=${{ matrix.image }}
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.revision=${{ steps.version.outputs.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=release-${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=release-${{ matrix.image }}
+
+      - name: Record digest
+        run: |
+          {
+            echo "### ${{ matrix.image }}"
+            echo
+            echo '```text'
+            echo "release: ${{ steps.version.outputs.version }}"
+            echo "commit:  ${{ steps.version.outputs.sha }}"
+            echo "image:   ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ steps.version.outputs.version }}"
+            echo "digest:  ${{ steps.push.outputs.digest }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

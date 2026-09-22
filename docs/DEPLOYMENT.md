@@ -4,7 +4,9 @@
 
 Este documento describe el contrato de aplicación y de release que el repositorio entrega al flujo operativo `vps_ops_claude`. No es un checklist para que un agente del repositorio instale, configure u opere el VPS: **ningún agente del repositorio entra al VPS**.
 
-> **Estado actual (2026-09-14): el portfolio NO está desplegado.** Todavía no existen Dockerfiles productivos, `compose.production.yaml`, workflows de GitHub Actions, tags, GitHub Releases ni imágenes GHCR. Se crean en Fase 11 de `ROADMAP.md`. Las secciones marcadas como "contrato de Fase 11" describen lo que esa fase debe producir, no algo existente.
+> **Estado actual (2026-09-22): el portfolio NO está desplegado.** El runtime productivo, `compose.production.yaml`, los workflows de GitHub Actions y la release `v0.9.0` ya existen y fueron verificados localmente. El deployment al VPS todavía **no fue ejecutado**: lo realiza después `vps_ops_claude` consumiendo exactamente esa release.
+>
+> **Excepción de roadmap autorizada (2026-09-22).** `v0.9.0` se produjo por decisión humana explícita de Luciano para publicar el portfolio antes de cerrar los gates normales, porque lo necesita en su CV. **Fase 9 (seguridad y endurecimiento) y Fase 10 (pruebas y control de calidad) permanecen OPEN**; sus tareas no se marcaron como hechas. `v0.9.0` es una release desplegable y funcional, no el cierre del roadmap. `v1.0.0` queda reservada para cuando Fases 9 y 10 estén completas y la imagen social final esté integrada. Ver `ROADMAP.md`, sección de la excepción.
 
 La secuencia de responsabilidad es:
 
@@ -332,9 +334,51 @@ Siguiendo la misma frontera que `docs/SERVER_ARCHITECTURE.md` ya establece para 
 - Las migraciones de Fase 4 son aditivas (tablas nuevas, sin `ALTER`/`DROP` sobre tablas de Fases 1–3). Un rollback de aplicación a una versión pre-Fase-4 con la base de datos ya migrada a Fase 4 deja tablas nuevas sin uso, pero no rompe el esquema previo; no se requiere una migración `down` destructiva para un rollback seguro de código.
 - Ningún rollback de código elimina archivos de `api_private_media`/`api_public_media` por sí mismo; la limpieza de esos volúmenes sigue siendo responsabilidad explícita de operaciones si realmente se desea revertir contenido, no solo código.
 
-## Runtime productivo (contrato de Fase 11 — pendiente)
+## Runtime productivo (entregado en Fase 11)
 
-Lo que Fase 11 debe producir y verificar localmente antes de cualquier release:
+El runtime productivo existe, es portable y fue verificado localmente. Los archivos que lo componen:
+
+| Artefacto | Ruta |
+|---|---|
+| Compose productivo portable | `compose.production.yaml` |
+| Entrada de entorno de ejemplo | `.env.production.example` |
+| Imagen frontend | `infra/docker/web/Dockerfile` |
+| Config estática del frontend | `infra/docker/web/Caddyfile` |
+| Materialización de runtime-config | `infra/docker/web/entrypoint.sh` |
+| Imagen backend | `infra/docker/api/Dockerfile.production` |
+| Arranque backend | `infra/docker/api/production-entrypoint.sh` |
+| PHP productivo | `infra/docker/api/php-production.ini` |
+| Imagen gateway interno | `infra/docker/gateway/Dockerfile` |
+| Rutas del gateway productivo | `infra/caddy/Caddyfile.production` |
+| Smoke reproducible | `infra/validation/smoke-production.sh` |
+
+### Topología del runtime
+
+```text
+127.0.0.1:8000 (único puerto publicado)
+  -> gateway  (Caddy, red front)          imagen propia, Caddyfile.production baked
+       ├── web  :8080  (red front)        Caddy static file server sobre el build de Vite
+       └── api  :80    (redes front+data) Apache + PHP 8.5, Laravel + Filament
+                └── mysql :3306 (solo red data, sin puerto publicado)
+```
+
+Decisiones cerradas al implementar la fase:
+
+- **Frontend productivo:** build stage (Node 24.18.0 + pnpm 11.20.0, `tsc --noEmit && vite build`, más `verify:build`) seguido de un runtime estático Caddy. No hay proceso Node, HMR ni dependencias de desarrollo en la imagen publicada, y el código fuente no viaja en la capa final.
+- **Puerto interno del frontend:** `8080`. El `5173` del entorno de desarrollo es del servidor Vite y no existe en producción.
+- **Assets aprobados del import inicial:** se hornean en la imagen del API en `/var/www/docs/content/approved-assets`, que es exactamente donde el importador los resuelve vía `base_path('../docs/...')`. Producción ya no depende del bind mount `./docs` de desarrollo. Son entrada versionada de solo lectura, no dato persistente a respaldar.
+- **Almacén de caché productivo:** `database`, que implementa `LockProvider` y ya tiene su migración. `file` sigue siendo válido; un backend sin `LockProvider` no.
+- **`Host`, protocolo reenviado y trusted proxies:** Laravel confía en rangos privados (`TRUSTED_PROXIES`, default `10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8`). El API no publica puerto y solo es alcanzable a través del gateway, así que un cliente público nunca puede presentar una de esas direcciones y `X-Forwarded-For` no es falsificable para los rate limiters por IP. Verificado en local: con `X-Forwarded-Proto: https` y `X-Forwarded-Host: lucianogonzalez.dev`, Filament emite `https://lucianogonzalez.dev/...`; sin esa configuración emitía `http://`, lo que habría roto el panel detrás de TLS.
+- **Nombres GHCR:** `ghcr.io/gonzalez-luciano/portfolio-web`, `portfolio-api` y `portfolio-gateway`. MySQL usa la imagen oficial `mysql:8.4.11`, deliberadamente fijada a patch; no se construye una imagen propia de MySQL.
+- **Rutas no cacheadas:** no se ejecuta `route:cache`. `routes/web.php` y `routes/api.php` registran acciones closure, que Laravel no puede serializar. Sí se cachean configuración y vistas, en el arranque del contenedor, cuando las variables de entorno ya están presentes.
+
+### Lo que el arranque del contenedor hace y no hace
+
+El entrypoint del API prepara directorios y permisos de `storage/` y `bootstrap/cache`, exige `APP_KEY`, rechaza arrancar con `APP_DEBUG` activo bajo `APP_ENV=production`, y cachea configuración y vistas.
+
+**Nunca** ejecuta migraciones, seeders, el import inicial ni el bootstrap administrativo: son acciones explícitas del operador, documentadas más abajo.
+
+### Requisitos que el runtime cumple
 
 - Dockerfiles específicos de producción; no se reutilizan ciegamente las imágenes de desarrollo.
 - `compose.production.yaml` portable y separado de `compose.yaml`: sin bind mounts de código, watchers/HMR ni dependencias de desarrollo.
@@ -355,9 +399,40 @@ Lo que Fase 11 debe producir y verificar localmente antes de cualquier release:
   publicar otra release. Los valores de Umami no se incorporan al build ni se
   convierten en secretos del frontend.
 
-Las decisiones abiertas que Fase 11 debe cerrar al empezar están enumeradas en `ROADMAP.md`.
+### Verificación local del runtime productivo (2026-09-22)
 
-## Release, imágenes y digests (contrato de Fase 11 — pendiente)
+Ejecutada con un proyecto Compose aislado (`portfolio-production-test`) sobre
+`127.0.0.1:28000`, sin tocar el stack de desarrollo, desde una base de datos
+vacía. Evidencia resumida:
+
+| Comprobación | Resultado |
+|---|---|
+| `docker compose -f compose.production.yaml config` | VALID |
+| Build de las tres imágenes propias | PASS |
+| Arranque con `--wait` (health de los 4 servicios) | PASS |
+| `php artisan migrate --force` desde base fresca | PASS, 15 migraciones |
+| `portfolio:import-initial-content` (primera ejecución) | PASS |
+| `portfolio:import-initial-content` (segunda ejecución) | rechazada, sin cambios |
+| Bootstrap administrativo interactivo en la imagen productiva | prompts operativos; completarlo requiere TTY real del operador |
+| Smoke `infra/validation/smoke-production.sh` | 37/37 PASS |
+| `runtime-config.json` OFF | `404` + `Cache-Control: no-store` |
+| `runtime-config.json` ON (mismo image id, sin rebuild) | `200` + `no-store` + JSON válido |
+| Configuración parcial/inválida/nil-UUID | siempre `404` (analítica OFF) |
+| Persistencia tras `restart` | PASS |
+| Persistencia tras `down` + `up` (recreate) | PASS, smoke 37/37 de nuevo |
+| MySQL alcanzable desde el host | NO (sin port binding) |
+| Puertos publicados por el proyecto | solo gateway, loopback |
+| Secretos, `.env`, `.git`, `node_modules`, tests en las imágenes | ninguno |
+
+El smoke cubre: health del gateway; `/` y `/en` con refresh directo, `lang` y
+canonical correctos; redirecciones `308` de `/es`, `/es/` y `/en/`; `sitemap.xml`;
+`robots.txt`; los cuatro favicons; `404` real con cuerpo estático y
+`X-Robots-Tag`; assets y media inexistentes con `404`; ausencia de las rutas del
+servidor de desarrollo; contrato `no-store` de `runtime-config.json`; `/api/v1` y
+su envelope de error; locales soportados y no soportados; `/up`; y `/admin`
+exigiendo autenticación y no indexable.
+
+## Release, imágenes y digests
 
 Orden obligatorio:
 
@@ -387,7 +462,162 @@ Reglas:
 
 | Release | Commit | Imagen | Digest | Migraciones/schema incluidos |
 |---|---|---|---|---|
-| — | — | — | — | Sin releases todavía |
+| `v0.9.0` | `RELEASE_COMMIT_PLACEHOLDER` | `ghcr.io/gonzalez-luciano/portfolio-web:v0.9.0` | `WEB_DIGEST_PLACEHOLDER` | Schema hasta `2026_09_15_000005_add_location_to_profiles` |
+| `v0.9.0` | `RELEASE_COMMIT_PLACEHOLDER` | `ghcr.io/gonzalez-luciano/portfolio-api:v0.9.0` | `API_DIGEST_PLACEHOLDER` | Schema hasta `2026_09_15_000005_add_location_to_profiles` |
+| `v0.9.0` | `RELEASE_COMMIT_PLACEHOLDER` | `ghcr.io/gonzalez-luciano/portfolio-gateway:v0.9.0` | `GATEWAY_DIGEST_PLACEHOLDER` | — |
+
+MySQL no se versiona con la release: usa la imagen oficial `mysql:8.4.11`.
+
+## Handoff operativo de `v0.9.0`
+
+Todo lo que operaciones necesita para desplegar esta release exacta. Ningún
+valor real de secreto aparece aquí; solo nombres de variables.
+
+### Identidad de la release
+
+```text
+Repositorio: https://github.com/Gonzalez-Luciano/portfolio-luciano
+Tag:         v0.9.0
+Commit:      RELEASE_COMMIT_PLACEHOLDER
+Compose:     compose.production.yaml (del checkout de ese tag)
+Hostname público esperado: lucianogonzalez.dev
+Entrypoint del proyecto:   127.0.0.1:8000
+```
+
+### Imágenes a desplegar
+
+Desplegar por digest. El tag se incluye para lectura humana; `latest` existe
+solo por comodidad y no debe usarse en producción.
+
+```text
+ghcr.io/gonzalez-luciano/portfolio-web:v0.9.0      @ WEB_DIGEST_PLACEHOLDER
+ghcr.io/gonzalez-luciano/portfolio-api:v0.9.0      @ API_DIGEST_PLACEHOLDER
+ghcr.io/gonzalez-luciano/portfolio-gateway:v0.9.0  @ GATEWAY_DIGEST_PLACEHOLDER
+mysql:8.4.11                                       (imagen oficial fijada)
+```
+
+### Variables requeridas por el runtime
+
+Nombres solamente. Los valores los crea y custodia operaciones.
+
+**Obligatorias (el stack no arranca sin ellas):**
+
+| Variable | Secreto | Notas |
+|---|---|---|
+| `APP_URL` | no | `https://lucianogonzalez.dev` |
+| `APP_KEY` | **sí** | `php artisan key:generate --show`, una vez por entorno |
+| `MYSQL_DATABASE` | no | |
+| `MYSQL_USER` | no | |
+| `MYSQL_PASSWORD` | **sí** | |
+| `MYSQL_ROOT_PASSWORD` | **sí** | |
+
+**Opcionales (tienen default en el Compose):**
+
+| Variable | Default | Notas |
+|---|---|---|
+| `GATEWAY_HOST` | `127.0.0.1` | no cambiar a `0.0.0.0` en un host público |
+| `GATEWAY_PORT` | `8000` | contrato con el Caddy global |
+| `LOG_LEVEL` | `warning` | |
+| `TRUSTED_PROXIES` | rangos privados | |
+| `WEB_IMAGE` / `API_IMAGE` / `GATEWAY_IMAGE` | `:local` | fijar al digest de la release |
+| `UMAMI_TRACKER_URL` | vacío | público, no secreto |
+| `UMAMI_WEBSITE_ID` | vacío | público, no secreto |
+
+`APP_ENV=production` y `APP_DEBUG=false` están fijados en el Compose y no son
+configurables desde el entorno.
+
+### Qué debe aportar el override del VPS
+
+El override de operaciones (fuera de este repositorio) aporta únicamente:
+
+- los valores reales de las variables anteriores, desde el mecanismo de
+  secretos del host;
+- las referencias de imagen fijadas por digest;
+- cualquier ajuste de logging, límites o restart propio del host.
+
+No debe redefinir rutas, redes, volúmenes ni el binding del gateway salvo
+decisión documentada.
+
+### Volúmenes persistentes
+
+| Volumen | Contenido | Backup |
+|---|---|---|
+| `mysql_data` | base del portfolio | **obligatorio** |
+| `api_private_media` | originales privados: foto, imágenes, íconos y **todos los PDF de CV** | **obligatorio**; sin esto el asset se pierde |
+| `api_public_media` | copias públicas verificadas | recomendado; regenerable al republicar |
+
+### Secuencia de primer deployment
+
+Ejecutada por el operador, en este orden, después de levantar el stack:
+
+```bash
+# 1. Migraciones sobre base vacía.
+docker compose -f compose.production.yaml exec api php artisan migrate --force
+
+# 2. Import inicial guardado de contenido. Un solo uso: rechaza cualquier
+#    ejecución posterior. Crea todo como borrador, oculto y no publicado.
+docker compose -f compose.production.yaml exec api php artisan portfolio:import-initial-content
+
+# 3. Primer administrador. Interactivo por diseño: requiere un TTY real.
+#    Pide nombre, email y contraseña (mínimo 12 caracteres) con confirmación.
+docker compose -f compose.production.yaml exec api php artisan portfolio:bootstrap-admin
+```
+
+Después de esto el contenido sigue **sin publicar**: un humano revisa y publica
+desde Filament en `/admin`. Hasta entonces los endpoints públicos localizados
+responden `404` con el envelope documentado, que es el comportamiento correcto
+de un sitio sin contenido publicado.
+
+### Health checks
+
+| Servicio | Check |
+|---|---|
+| gateway | `GET /__gateway/health` -> `200 ok` |
+| web | `GET :8080/__web/health` -> `200 ok` (interno) |
+| api | `GET /up` -> `200` |
+| mysql | `mysqladmin ping` (interno) |
+
+### Smoke posterior al deployment
+
+Operaciones ejecuta el mismo script del repositorio contra el origen público:
+
+```bash
+infra/validation/smoke-production.sh https://lucianogonzalez.dev
+```
+
+Es de solo lectura: no escribe contenido, no muta la base y no requiere
+credenciales.
+
+### Qué nunca se expone
+
+- MySQL: sin puerto publicado, solo en la red `data`.
+- `web` y `api`: sin puertos publicados, solo alcanzables por el gateway.
+- El gateway publica exclusivamente `127.0.0.1:8000`.
+- `/admin` exige autenticación y responde `X-Robots-Tag: noindex, nofollow`.
+
+### Activación posterior de analítica
+
+Cuando operaciones tenga el Website ID y la URL del tracker de su instancia
+Umami independiente, basta con fijar `UMAMI_TRACKER_URL` y `UMAMI_WEBSITE_ID` y
+reiniciar el contenedor `web`. **No se reconstruye la imagen, no cambia el
+digest y no se crea otra release.** Si falta cualquiera de los dos valores, o
+son inválidos, la analítica queda OFF y `/runtime-config.json` responde `404`;
+en ambos estados el header es `Cache-Control: no-store`.
+
+### Limitaciones conocidas de esta release
+
+- **Imagen social: DEFERRED.** `web/public/social/luciano-gonzalez-social.jpg`
+  (1200x630) todavía no existe. El build detecta su ausencia y **no** emite
+  `og:image` ni `twitter:image`, así que no hay ninguna referencia rota; los
+  enlaces compartidos muestran título y descripción sin imagen. Se integrará en
+  una release posterior a `v0.9.0` y anterior a `v1.0.0`.
+- **Fase 9 (seguridad y endurecimiento) OPEN.** Rate limiting, CORS por dominio
+  y protección de rutas administrativas ya existen; cabeceras de seguridad,
+  auditoría de dependencias, política de rotación de credenciales y el
+  procedimiento probado de backup/restore siguen pendientes.
+- **Fase 10 (QA integral) OPEN.** No se ejecutó la matriz completa de pruebas
+  E2E, accesibilidad manual ni navegadores.
+- **Revisión de indexación pendiente.** Search Console se trabaja en Fase 12.
 
 ## Handoff de release
 

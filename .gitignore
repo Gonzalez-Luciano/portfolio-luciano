@@ -5,6 +5,7 @@
 # Root Compose interpolation input; only tracked examples are allowed.
 /.env*
 !/.env.example
+!/.env.production.example
 
 # Application-specific environment files; only tracked examples are allowed.
 /web/.env*

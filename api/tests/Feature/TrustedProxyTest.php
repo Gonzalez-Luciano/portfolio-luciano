@@ -1,0 +1,74 @@
+<?php
+
+namespace Tests\Feature;
+
+use Illuminate\Http\Request;
+use Tests\TestCase;
+
+/**
+ * In production every request crosses the VPS-level global Caddy and then the
+ * portfolio's internal gateway before reaching Laravel. Without trusting those
+ * proxies Laravel reports plain HTTP from a container address and generates
+ * http:// URLs, which breaks Filament's administration assets behind TLS.
+ *
+ * Trust is limited to private ranges. The API publishes no host port and is
+ * only reachable through the gateway, so a public client can never present one
+ * of these addresses and cannot forge the request IP the rate limiters use.
+ */
+final class TrustedProxyTest extends TestCase
+{
+    private function requestThroughProxy(string $proxyAddress, array $headers = []): Request
+    {
+        $captured = null;
+
+        $this->app['router']->get('/__trusted-proxy-probe', function (Request $request) use (&$captured): string {
+            $captured = $request;
+
+            return 'ok';
+        });
+
+        $this->call(
+            method: 'GET',
+            uri: '/__trusted-proxy-probe',
+            server: ['REMOTE_ADDR' => $proxyAddress] + $headers,
+        )->assertOk();
+
+        return $captured;
+    }
+
+    public function test_it_honours_the_forwarded_scheme_and_host_from_a_private_proxy(): void
+    {
+        $request = $this->requestThroughProxy('172.18.0.4', [
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'HTTP_X_FORWARDED_HOST' => 'lucianogonzalez.dev',
+        ]);
+
+        $this->assertTrue($request->isSecure(), 'A forwarded HTTPS request must be reported as secure.');
+        $this->assertSame('lucianogonzalez.dev', $request->getHost());
+        $this->assertStringStartsWith('https://lucianogonzalez.dev', url('/admin'));
+    }
+
+    public function test_it_resolves_the_client_address_from_a_private_proxy(): void
+    {
+        $request = $this->requestThroughProxy('172.18.0.4', [
+            'HTTP_X_FORWARDED_FOR' => '203.0.113.7',
+        ]);
+
+        $this->assertSame('203.0.113.7', $request->ip());
+    }
+
+    public function test_it_ignores_forwarded_headers_from_an_untrusted_public_address(): void
+    {
+        $request = $this->requestThroughProxy('198.51.100.9', [
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'HTTP_X_FORWARDED_FOR' => '203.0.113.7',
+        ]);
+
+        $this->assertFalse($request->isSecure(), 'An untrusted sender must not be able to claim HTTPS.');
+        $this->assertSame(
+            '198.51.100.9',
+            $request->ip(),
+            'An untrusted sender must not be able to spoof the rate-limited client address.',
+        );
+    }
+}

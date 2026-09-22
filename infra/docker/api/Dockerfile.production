@@ -1,0 +1,67 @@
+# Production image for the Laravel API and Filament administration.
+#
+# Deliberately separate from infra/docker/api/Dockerfile, which is the
+# development image: that one expects the application tree and vendor/ to
+# arrive through bind mounts and a named volume. This image ships the
+# application and its production dependencies as immutable layers.
+#
+# Build context is the repository root.
+
+FROM php:8.5.8-apache-bookworm AS base
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl default-mysql-client libicu-dev libonig-dev libzip-dev unzip \
+    # Zend OPcache is compiled into this base image, so it is configured in
+    # php-production.ini rather than installed as a shared extension here.
+    && docker-php-ext-install -j"$(nproc)" bcmath intl mbstring pdo_mysql zip \
+    && a2enmod rewrite \
+    && rm -rf /var/lib/apt/lists/*
+
+# Composer resolves against the same PHP build and extension set that runs in
+# production, so platform requirements are verified rather than assumed.
+FROM base AS vendor
+
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+
+WORKDIR /app
+
+COPY api/composer.json api/composer.lock ./
+RUN composer install \
+    --no-dev \
+    --no-scripts \
+    --no-autoloader \
+    --prefer-dist \
+    --no-interaction \
+    --no-progress
+
+COPY api/ ./
+RUN composer dump-autoload --no-dev --optimize --classmap-authoritative \
+    && composer check-platform-reqs \
+    && rm -rf tests phpunit.xml package.json vite.config.js .npmrc
+
+FROM base AS runtime
+
+COPY infra/docker/api/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
+COPY infra/docker/api/php-production.ini /usr/local/etc/php/conf.d/zz-portfolio.ini
+COPY infra/docker/api/production-entrypoint.sh /usr/local/bin/portfolio-api-entrypoint
+RUN chmod +x /usr/local/bin/portfolio-api-entrypoint
+
+WORKDIR /var/www/html
+
+COPY --from=vendor --chown=www-data:www-data /app /var/www/html
+
+# The public disk is exposed through Laravel's standard symlink. It is created
+# here, deterministically, instead of at container start: api_public_media
+# mounts underneath it and the link itself never needs to change.
+RUN ln -sfn ../storage/app/public public/storage
+
+# Approved, read-only editorial input for `portfolio:import-initial-content`.
+# The importer resolves these through base_path('../docs/...'), which is
+# /var/www/docs in this image, so production no longer depends on the
+# development ./docs bind mount. These are versioned inputs, not persistent
+# data, and are never written to.
+COPY docs/content/approved-assets /var/www/docs/content/approved-assets
+
+EXPOSE 80
+ENTRYPOINT ["portfolio-api-entrypoint"]
+CMD ["apache2-foreground"]

@@ -1,0 +1,41 @@
+# Build context for the production API image (repository root).
+# Requires api/ source, this image's runtime files and the approved,
+# read-only editorial assets consumed by portfolio:import-initial-content.
+
+.git
+.gitattributes
+.worktrees
+.superpowers
+.source-materials
+tmp
+
+web
+compose.yaml
+compose.production.yaml
+
+# docs/ is excluded except the approved asset inputs baked into the image.
+docs/*
+!docs/content
+docs/content/*
+!docs/content/approved-assets
+
+.env
+.env.*
+**/.env
+**/.env.*
+
+**/node_modules
+**/vendor
+**/coverage
+api/public/storage
+api/storage/framework/cache/*
+api/storage/framework/sessions/*
+api/storage/framework/views/*
+api/storage/logs/*
+api/bootstrap/cache/*
+
+.vscode
+.idea
+*.swp
+*.swo
+*~

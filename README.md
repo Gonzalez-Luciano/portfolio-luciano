@@ -304,7 +304,42 @@ La misma regla de secretos aplica: no pasar una contraseña al comando, entorno 
 
 `main` es la única rama estable de larga duración. El trabajo usa ramas cortas con prefijos como `feat/`, `fix/`, `docs/`, `refactor/`, `test/`, `chore/` e `infra/`, y llega a `main` mediante pull request después de las validaciones relevantes. No existe una rama permanente `develop`, no se reescribe historial compartido y ningún trabajo se integra en `main` sin aprobación explícita.
 
-Los tags anotados se crean desde commits aprobados de `main` solo para hitos o releases significativos. Desde Fase 11, un tag versionado de release dispara el workflow que publica las imágenes productivas en GHCR (todavía no existe).
+Los tags anotados se crean desde commits aprobados de `main` solo para hitos o releases significativos. Desde Fase 11, un tag versionado de release dispara el workflow que publica las imágenes productivas en GHCR.
+
+`main` se protege de forma liviana: no se fuerza el push, no se borra la rama y no se reescribe su historial. Los cambios llegan por pull request con CI verde. El tag de release apunta siempre a un commit ya validado de `main`.
+
+## Runtime productivo local
+
+El stack productivo es independiente del de desarrollo y puede levantarse en cualquier máquina con Docker. Usa siempre un nombre de proyecto y un puerto distintos para no interferir con el entorno de desarrollo:
+
+```bash
+# El archivo de entorno vive FUERA del repositorio y nunca se versiona.
+cp .env.production.example ../portfolio-production.env
+# Editar ../portfolio-production.env con valores locales descartables.
+
+docker compose --env-file ../portfolio-production.env \
+  -f compose.production.yaml -p portfolio-production-test up -d --build --wait
+
+# Base fresca: migraciones, import inicial guardado y primer administrador.
+docker compose --env-file ../portfolio-production.env \
+  -f compose.production.yaml -p portfolio-production-test \
+  exec api php artisan migrate --force
+
+docker compose --env-file ../portfolio-production.env \
+  -f compose.production.yaml -p portfolio-production-test \
+  exec api php artisan portfolio:import-initial-content
+
+docker compose --env-file ../portfolio-production.env \
+  -f compose.production.yaml -p portfolio-production-test \
+  exec api php artisan portfolio:bootstrap-admin
+
+# Smoke funcional reproducible contra el puerto publicado.
+infra/validation/smoke-production.sh http://127.0.0.1:8000
+```
+
+Solo el gateway publica un puerto, sobre loopback. MySQL no es alcanzable desde el host. Los volúmenes `mysql_data`, `api_private_media` y `api_public_media` sobreviven a `restart` y a `down` + `up`; `down --volumes` sí los destruye.
+
+La analítica opcional se activa fijando `UMAMI_TRACKER_URL` y `UMAMI_WEBSITE_ID` y reiniciando el contenedor `web`: la imagen y su digest no cambian. Si falta cualquiera de los dos, o son inválidos, la analítica queda OFF y `/runtime-config.json` responde `404`; en ambos casos con `Cache-Control: no-store`.
 
 ## Contexto de producción
 

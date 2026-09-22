@@ -1,0 +1,7 @@
+# Build context for the production gateway image (repository root).
+# Only infra/caddy/Caddyfile.production is required.
+
+*
+!infra
+infra/docker
+infra/validation

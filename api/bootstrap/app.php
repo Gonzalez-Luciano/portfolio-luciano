@@ -22,6 +22,27 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'supported-locale' => RequireSupportedLocale::class,
         ]);
+
+        // In production every request crosses two reverse proxies before it
+        // reaches Laravel: the VPS-level global Caddy that terminates TLS and
+        // the portfolio's own internal gateway. Without trusting them Laravel
+        // sees plain HTTP from a container address and generates http:// URLs,
+        // which breaks Filament's administration assets and every redirect.
+        //
+        // Only private ranges are trusted by default. The API publishes no host
+        // port and is reachable exclusively through the gateway, so a public
+        // client can never present one of these addresses; that keeps
+        // X-Forwarded-For unspoofable for the request-IP rate limiters.
+        $middleware->trustProxies(
+            at: array_values(array_filter(array_map(
+                trim(...),
+                explode(',', (string) env('TRUSTED_PROXIES', '10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8')),
+            ))),
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_HOST
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $isApiPath = static fn (Request $request): bool => $request->is('api') || $request->is('api/*');
