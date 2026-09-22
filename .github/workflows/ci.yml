@@ -75,57 +75,39 @@ jobs:
   backend:
     name: Backend
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: api
 
-    services:
-      mysql:
-        image: mysql:8.4.11
-        env:
-          MYSQL_DATABASE: portfolio_test
-          MYSQL_USER: portfolio_test
-          MYSQL_PASSWORD: portfolio_test
-          MYSQL_ROOT_PASSWORD: portfolio_test_root
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping --protocol=tcp -h 127.0.0.1 -uroot -pportfolio_test_root --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=20
-
+    # The suite runs inside the repository's own Compose test profile rather
+    # than against an ad-hoc runner environment. Several tests assert the
+    # documented environment itself (the disposable mysql-test host, the
+    # public disk URL, the tracked .env.testing example), so a parallel setup
+    # fails them for reasons that have nothing to do with the application.
     env:
-      APP_ENV: testing
-      APP_DEBUG: 'false'
+      COMPOSE_PROJECT_NAME: portfolio-ci-test
+      APP_URL: http://localhost:8000
       APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-      DB_CONNECTION: mysql
-      DB_HOST: 127.0.0.1
-      DB_PORT: '3306'
-      DB_DATABASE: portfolio_test
-      DB_USERNAME: portfolio_test
-      DB_PASSWORD: portfolio_test
+      MYSQL_DATABASE: portfolio
+      MYSQL_USER: portfolio
+      MYSQL_PASSWORD: ci-placeholder
+      MYSQL_ROOT_PASSWORD: ci-placeholder-root
+      MYSQL_TEST_DATABASE: portfolio_test
+      MYSQL_TEST_USER: portfolio_test
+      MYSQL_TEST_PASSWORD: ci-placeholder
+      MYSQL_TEST_ROOT_PASSWORD: ci-placeholder-root
 
     steps:
       - uses: actions/checkout@v5
 
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.5'
-          extensions: bcmath, intl, mbstring, pdo_mysql, zip
-          coverage: none
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Cache Composer packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/composer/files
-          key: composer-${{ runner.os }}-${{ hashFiles('api/composer.lock') }}
-          restore-keys: composer-${{ runner.os }}-
-
-      - run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Install backend dependencies
+        run: docker compose --profile test run --rm api-test composer install --no-interaction --no-progress
 
       - name: Test suite
-        run: php artisan test
+        run: docker compose --profile test run --rm api-test php artisan test
+
+      - name: Tear down
+        if: always()
+        run: docker compose --profile test down --volumes --remove-orphans
 
   production-runtime:
     name: Production runtime
