@@ -28,6 +28,16 @@
 >
 > Camino previsto: `v0.9.0` -> portfolio online -> Fase 9 -> Fase 10 -> imagen
 > social -> `v0.9.x` según corresponda -> `v1.0.0`.
+>
+> **Resultado.** `v0.9.0` existe: tag anotado sobre `main` en
+> `ac3ae1a5dba4a2dc37fcb589ff2c6301a287c6e0`, con CI verde en los cuatro jobs
+> antes de etiquetar, GitHub Release publicada e imágenes en GHCR
+> (`portfolio-web`, `portfolio-api`, `portfolio-gateway`) cuyos digests están
+> registrados en `docs/DEPLOYMENT.md`. Esas imágenes se descargaron por digest
+> y pasaron el smoke completo con la secuencia de deployment documentada.
+>
+> **El portfolio todavía NO está desplegado.** El deployment al VPS lo ejecuta
+> después `vps_ops_claude`, fuera de este repositorio.
 
 ## 1. Visión
 
@@ -1055,8 +1065,8 @@ No se fijan antes de inspeccionar la implementación real; se registran cuando s
 ### GitHub y auditoría previa
 
 - [x] Auditar el historial Git completo (no solo el working tree) buscando `.env`, claves, tokens, passwords, dumps, logs sensibles y contenido confidencial, con conclusión explícita antes de publicar.
-- [ ] Crear o conectar el repositorio GitHub canónico `portfolio` y subir `main`.
-- [ ] Documentar la protección liviana de `main` (sin force push, sin borrado accidental, checks requeridos cuando corresponda).
+- [x] Crear o conectar el repositorio GitHub canónico `portfolio` y subir `main`.
+- [x] Documentar la protección liviana de `main` (sin force push, sin borrado accidental, checks requeridos cuando corresponda).
 
 ### Runtime productivo
 
@@ -1132,12 +1142,12 @@ No se fijan antes de inspeccionar la implementación real; se registran cuando s
 - [x] Documentar versionado, release notes y tags anotados sobre `main`.
 - [x] Crear el workflow de release disparado por tag versionado, con permisos mínimos para publicar Packages.
 - [x] Etiquetar las imágenes al menos por versión de release y por commit SHA; `latest`, si existe, es solo comodidad.
-- [ ] Confirmar `main` aprobada, CI verde, runtime productivo local PASS, smoke local PASS y working tree limpio antes del tag.
-- [ ] Crear el tag versionado (por ejemplo `v1.0.0`) sobre el commit aprobado de `main`.
-- [ ] Publicar GitHub Release cuando corresponda.
-- [ ] Publicar las imágenes productivas en GHCR.
-- [ ] Registrar versión, commit y digest `sha256` de cada imagen.
-- [ ] Confirmar que artefactos, imágenes y logs de CI no exponen secretos ni contenido confidencial.
+- [x] Confirmar `main` aprobada, CI verde, runtime productivo local PASS, smoke local PASS y working tree limpio antes del tag.
+- [x] Crear el tag versionado (por ejemplo `v1.0.0`) sobre el commit aprobado de `main`.
+- [x] Publicar GitHub Release cuando corresponda.
+- [x] Publicar las imágenes productivas en GHCR.
+- [x] Registrar versión, commit y digest `sha256` de cada imagen.
+- [x] Confirmar que artefactos, imágenes y logs de CI no exponen secretos ni contenido confidencial.
 
 ### Contrato de rollback
 
@@ -1149,7 +1159,7 @@ No se fijan antes de inspeccionar la implementación real; se registran cuando s
 
 ### Handoff de deployment
 
-- [ ] Actualizar `docs/DEPLOYMENT.md` con release, commit, imágenes y digests.
+- [x] Actualizar `docs/DEPLOYMENT.md` con release, commit, imágenes y digests.
 - [x] Documentar servicios, gateway, puertos internos, entrypoint `127.0.0.1:8000` y rutas `/`, `/es`, `/en`, `/api/*`, `/admin/*`, `/storage/*` y `/cv/*`.
 - [x] Documentar volúmenes persistentes, variables requeridas y secretos necesarios sin incluir valores.
 - [x] Documentar migraciones, import inicial, bootstrap administrativo, health checks y smoke checks para el deployment posterior.

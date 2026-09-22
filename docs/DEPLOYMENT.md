@@ -4,7 +4,7 @@
 
 Este documento describe el contrato de aplicación y de release que el repositorio entrega al flujo operativo `vps_ops_claude`. No es un checklist para que un agente del repositorio instale, configure u opere el VPS: **ningún agente del repositorio entra al VPS**.
 
-> **Estado actual (2026-09-22): el portfolio NO está desplegado.** El runtime productivo, `compose.production.yaml` y los workflows de GitHub Actions existen y fueron verificados localmente. La release `v0.9.0` se produce a partir de este commit: el tag, la GitHub Release y las imágenes GHCR se crean en el paso siguiente y sus digests quedan registrados más abajo. El deployment al VPS **no fue ejecutado**: lo realiza después `vps_ops_claude` consumiendo exactamente esa release.
+> **Estado actual (2026-09-22): el portfolio NO está desplegado.** El runtime productivo, `compose.production.yaml` y los workflows de GitHub Actions existen y fueron verificados localmente. La release `v0.9.0` existe: tag anotado sobre `main` en `ac3ae1a`, GitHub Release publicada e imágenes en GHCR con sus digests registrados más abajo. Esas imágenes se descargaron por digest y pasaron el smoke completo (40/40) con la misma secuencia de deployment documentada en este archivo. El deployment al VPS **no fue ejecutado**: lo realiza después `vps_ops_claude` consumiendo exactamente esa release.
 >
 > **Excepción de roadmap autorizada (2026-09-22).** `v0.9.0` se produjo por decisión humana explícita de Luciano para publicar el portfolio antes de cerrar los gates normales, porque lo necesita en su CV. **Fase 9 (seguridad y endurecimiento) y Fase 10 (pruebas y control de calidad) permanecen OPEN**; sus tareas no se marcaron como hechas. `v0.9.0` es una release desplegable y funcional, no el cierre del roadmap. `v1.0.0` queda reservada para cuando Fases 9 y 10 estén completas y la imagen social final esté integrada. Ver `ROADMAP.md`, sección de la excepción.
 
@@ -464,9 +464,9 @@ Reglas:
 
 | Release | Commit | Imagen | Digest | Migraciones/schema incluidos |
 |---|---|---|---|---|
-| `v0.9.0` | `RELEASE_COMMIT_PLACEHOLDER` | `ghcr.io/gonzalez-luciano/portfolio-web:v0.9.0` | `WEB_DIGEST_PLACEHOLDER` | Schema hasta `2026_09_15_000005_add_location_to_profiles` |
-| `v0.9.0` | `RELEASE_COMMIT_PLACEHOLDER` | `ghcr.io/gonzalez-luciano/portfolio-api:v0.9.0` | `API_DIGEST_PLACEHOLDER` | Schema hasta `2026_09_15_000005_add_location_to_profiles` |
-| `v0.9.0` | `RELEASE_COMMIT_PLACEHOLDER` | `ghcr.io/gonzalez-luciano/portfolio-gateway:v0.9.0` | `GATEWAY_DIGEST_PLACEHOLDER` | — |
+| `v0.9.0` | `ac3ae1a5dba4a2dc37fcb589ff2c6301a287c6e0` | `ghcr.io/gonzalez-luciano/portfolio-web:v0.9.0` | `sha256:7a2396917fa0eb7bc4758bbf3c966a03b124c63ad9bbae071a952f517bb35210` | Schema hasta `2026_09_15_000005_add_location_to_profiles` |
+| `v0.9.0` | `ac3ae1a5dba4a2dc37fcb589ff2c6301a287c6e0` | `ghcr.io/gonzalez-luciano/portfolio-api:v0.9.0` | `sha256:482579e1957487a991966ab1b9cf5bb7a911bcffb5006d70abd2e5bc40da4b83` | Schema hasta `2026_09_15_000005_add_location_to_profiles` |
+| `v0.9.0` | `ac3ae1a5dba4a2dc37fcb589ff2c6301a287c6e0` | `ghcr.io/gonzalez-luciano/portfolio-gateway:v0.9.0` | `sha256:228fd25fc15ecf02e441d3cce5eb5aaf634fd20517a8dafa4b917574aac369f0` | — |
 
 MySQL no se versiona con la release: usa la imagen oficial `mysql:8.4.11`.
 
@@ -480,7 +480,7 @@ valor real de secreto aparece aquí; solo nombres de variables.
 ```text
 Repositorio: https://github.com/Gonzalez-Luciano/portfolio-luciano
 Tag:         v0.9.0
-Commit:      RELEASE_COMMIT_PLACEHOLDER
+Commit:      ac3ae1a5dba4a2dc37fcb589ff2c6301a287c6e0
 Compose:     compose.production.yaml (del checkout de ese tag)
 Hostname público esperado: lucianogonzalez.dev
 Entrypoint del proyecto:   127.0.0.1:8000
@@ -505,9 +505,9 @@ para `linux/amd64`.
 > silenciosamente el digest publicado por una build local.
 
 ```text
-ghcr.io/gonzalez-luciano/portfolio-web:v0.9.0      @ WEB_DIGEST_PLACEHOLDER
-ghcr.io/gonzalez-luciano/portfolio-api:v0.9.0      @ API_DIGEST_PLACEHOLDER
-ghcr.io/gonzalez-luciano/portfolio-gateway:v0.9.0  @ GATEWAY_DIGEST_PLACEHOLDER
+ghcr.io/gonzalez-luciano/portfolio-web:v0.9.0      @ sha256:7a2396917fa0eb7bc4758bbf3c966a03b124c63ad9bbae071a952f517bb35210
+ghcr.io/gonzalez-luciano/portfolio-api:v0.9.0      @ sha256:482579e1957487a991966ab1b9cf5bb7a911bcffb5006d70abd2e5bc40da4b83
+ghcr.io/gonzalez-luciano/portfolio-gateway:v0.9.0  @ sha256:228fd25fc15ecf02e441d3cce5eb5aaf634fd20517a8dafa4b917574aac369f0
 mysql:8.4.11                                       (imagen oficial fijada)
 ```
 
@@ -741,10 +741,31 @@ El repositorio no adivina, y pertenecen a operaciones:
 - [x] Build, tests, health checks y smoke local son reproducibles.
 - [x] MySQL y servicios internos no se exponen públicamente.
 - [x] La frontera con el Caddy global, Cloudflare y el VPS está explícita.
-- [ ] Release, commit, imágenes y digests están registrados.
-      *Pendiente hasta que el workflow de release publique las imágenes; los
-      marcadores `*_PLACEHOLDER` de este documento se sustituyen en ese momento.*
+- [x] Release, commit, imágenes y digests están registrados.
 - [x] El contrato de rollback está documentado.
 - [x] Los datos relevantes para backup están identificados.
 - [x] La release puede entregarse a `vps_ops_claude` sin reconstruir código ni duplicar su checklist operacional.
 - [x] El documento no afirma que el portfolio ya fue desplegado.
+
+## Verificación de la release publicada (2026-09-22)
+
+Las imágenes publicadas se descargaron desde GHCR **por digest** y se
+ejecutaron con la misma secuencia que operaciones usará en el VPS
+(`docker compose pull` seguido de `up -d --no-build --wait`), sobre un proyecto
+Compose aislado y volúmenes vacíos.
+
+| Comprobación | Resultado |
+|---|---|
+| `docker compose pull` de los tres digests | PASS |
+| Arranque con `--no-build --wait` (health de los 4 servicios) | PASS |
+| `php artisan migrate --force` desde base fresca | PASS |
+| Smoke `infra/validation/smoke-production.sh` | 40/40 PASS |
+| Solo el gateway publica puerto, sobre loopback | PASS |
+| Trazabilidad de cada imagen al commit del tag | PASS |
+
+Cada imagen lleva las etiquetas OCI `org.opencontainers.image.version=v0.9.0` y
+`org.opencontainers.image.revision=ac3ae1a5dba4a2dc37fcb589ff2c6301a287c6e0`,
+de modo que un operador puede confirmar desde el registry que el artefacto
+corresponde exactamente al commit etiquetado, sin reconstruir nada.
+
+Las imágenes están publicadas para `linux/amd64`.
