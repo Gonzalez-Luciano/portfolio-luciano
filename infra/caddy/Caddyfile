@@ -57,7 +57,7 @@
 	}
 
 	# Public Vite files, SEO files, and development HMR paths are indexability-neutral.
-	@frontendPublic path /robots.txt /sitemap.xml /favicon.ico /favicon-16x16.png /favicon-32x32.png /apple-touch-icon.png /social/luciano-gonzalez-social.jpg /assets/* /media/* /@vite/* /@react-refresh /src/* /node_modules/.vite/*
+	@frontendPublic path /robots.txt /sitemap.xml /favicon.ico /favicon-16x16.png /favicon-32x32.png /apple-touch-icon.png /social/luciano-gonzalez-social.jpg /assets/* /media/* /@vite/* /@react-refresh /src/* /node_modules/.vite/* /node_modules/.pnpm/*
 	handle @frontendPublic {
 		reverse_proxy web:5173
 	}
