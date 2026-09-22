@@ -6,6 +6,7 @@ infra/docker/**/*.sh text eol=lf
 
 # Docker-mounted application and infrastructure sources must retain LF on Windows.
 *.css text eol=lf
+*.html text eol=lf
 *.js text eol=lf
 *.json text eol=lf
 *.mjs text eol=lf
@@ -13,6 +14,7 @@ infra/docker/**/*.sh text eol=lf
 *.php text eol=lf
 *.ts text eol=lf
 *.tsx text eol=lf
+*.txt text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf
 Dockerfile text eol=lf
