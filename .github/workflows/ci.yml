@@ -130,76 +130,53 @@ jobs:
   production-runtime:
     name: Production runtime
     runs-on: ubuntu-latest
+
+    # Placeholder values: every Compose invocation in this job needs them, and
+    # the teardown must still work when an earlier step failed.
+    env:
+      APP_URL: http://127.0.0.1:8000
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      MYSQL_DATABASE: portfolio
+      MYSQL_USER: portfolio
+      MYSQL_PASSWORD: ci-placeholder
+      MYSQL_ROOT_PASSWORD: ci-placeholder-root
+      MYSQL_TEST_DATABASE: portfolio_test
+      MYSQL_TEST_USER: portfolio_test
+      MYSQL_TEST_PASSWORD: ci-placeholder
+      MYSQL_TEST_ROOT_PASSWORD: ci-placeholder-root
+
     steps:
       - uses: actions/checkout@v5
 
       - uses: docker/setup-buildx-action@v3
 
       - name: Validate production Compose
-        env:
-          APP_URL: http://localhost:8000
-          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-          MYSQL_DATABASE: portfolio
-          MYSQL_USER: portfolio
-          MYSQL_PASSWORD: ci-placeholder
-          MYSQL_ROOT_PASSWORD: ci-placeholder-root
         run: docker compose -f compose.production.yaml config --quiet
 
       - name: Validate development Compose
-        env:
-          APP_URL: http://localhost:8000
-          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-          MYSQL_DATABASE: portfolio
-          MYSQL_USER: portfolio
-          MYSQL_PASSWORD: ci-placeholder
-          MYSQL_ROOT_PASSWORD: ci-placeholder-root
-          MYSQL_TEST_DATABASE: portfolio_test
-          MYSQL_TEST_USER: portfolio_test
-          MYSQL_TEST_PASSWORD: ci-placeholder
-          MYSQL_TEST_ROOT_PASSWORD: ci-placeholder-root
         run: docker compose -f compose.yaml config --quiet
 
       - name: Validate gateway configuration
-        run: |
-          docker run --rm -v "$PWD/infra/caddy:/etc/portfolio:ro" caddy:2.11.4-alpine \
-            caddy validate --config /etc/portfolio/Caddyfile.production --adapter caddyfile
+        run: docker run --rm -v "$PWD/infra/caddy:/etc/portfolio:ro" caddy:2.11.4-alpine caddy validate --config /etc/portfolio/Caddyfile.production --adapter caddyfile
 
       - name: Validate static web runtime configuration
-        run: |
-          docker run --rm -v "$PWD/infra/docker/web:/etc/portfolio:ro" caddy:2.11.4-alpine \
-            caddy validate --config /etc/portfolio/Caddyfile --adapter caddyfile
+        run: docker run --rm -v "$PWD/infra/docker/web:/etc/portfolio:ro" caddy:2.11.4-alpine caddy validate --config /etc/portfolio/Caddyfile --adapter caddyfile
 
       # Building is not evidence that the runtime works. The stack is started
       # from empty volumes and the same smoke script operations runs after a
       # deployment is executed against it.
       - name: Build production images
-        env:
-          APP_URL: http://127.0.0.1:8000
-          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-          MYSQL_DATABASE: portfolio
-          MYSQL_USER: portfolio
-          MYSQL_PASSWORD: ci-placeholder
-          MYSQL_ROOT_PASSWORD: ci-placeholder-root
         run: docker compose -f compose.production.yaml -p portfolio-ci build
 
       - name: Start the production stack from empty volumes
-        env:
-          APP_URL: http://127.0.0.1:8000
-          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-          MYSQL_DATABASE: portfolio
-          MYSQL_USER: portfolio
-          MYSQL_PASSWORD: ci-placeholder
-          MYSQL_ROOT_PASSWORD: ci-placeholder-root
         run: |
           docker compose -f compose.production.yaml -p portfolio-ci up -d --wait
-          docker compose -f compose.production.yaml -p portfolio-ci \
-            exec -T api php artisan migrate --force
+          docker compose -f compose.production.yaml -p portfolio-ci exec -T api php artisan migrate --force
 
       - name: Verify only the gateway publishes a port
         run: |
-          published="$(docker ps --filter label=com.docker.compose.project=portfolio-ci \
-            --format '{{.Names}} {{.Ports}}' | grep -c '0\.0\.0\.0\|127\.0\.0\.1' || true)"
           docker ps --filter label=com.docker.compose.project=portfolio-ci --format '{{.Names}} {{.Ports}}'
+          published=$(docker ps --filter label=com.docker.compose.project=portfolio-ci --format '{{.Ports}}' | grep -c -- '->' || true)
           if [ "$published" != "1" ]; then
             echo "Expected exactly one service to publish a host port, found ${published}." >&2
             exit 1
@@ -208,15 +185,19 @@ jobs:
       - name: Smoke the production runtime
         run: bash infra/validation/smoke-production.sh http://127.0.0.1:8000
 
+      # The published images must not carry credentials, test fixtures or
+      # managed media. Empty directories are fine; files are not.
       - name: Verify the images carry no secrets or runtime state
         run: |
           for image in portfolio-api:local portfolio-web:local portfolio-gateway:local; do
             echo "== ${image} =="
             docker run --rm --entrypoint sh "${image}" -c '
-              found=$(find / -xdev \( -name ".env" -o -name "id_rsa*" -o -name "*.p12" \) 2>/dev/null | head -5)
-              staged=$(find /var/www/html/storage/framework/testing /var/www/html/tests -maxdepth 0 2>/dev/null)
-              if [ -n "$found" ] || [ -n "$staged" ]; then
-                echo "Unexpected content: $found $staged" >&2
+              secrets=$(find / -xdev -name ".env" -o -xdev -name "id_rsa*" -o -xdev -name "*.p12" 2>/dev/null | head -5)
+              fixtures=$(find /var/www/html/storage/framework/testing /var/www/html/storage/app -type f 2>/dev/null | grep -v "gitignore" | head -5)
+              suite=$(ls -d /var/www/html/tests 2>/dev/null)
+              if [ -n "$secrets" ] || [ -n "$fixtures" ] || [ -n "$suite" ]; then
+                echo "Unexpected content in image:" >&2
+                echo "$secrets$fixtures$suite" >&2
                 exit 1
               fi
               echo "clean"
