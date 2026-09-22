@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { Plugin } from 'vite'
 
@@ -6,6 +6,8 @@ const frontendAssetPrefixes = ['/assets/', '/media/', '/social/']
 
 const isFrontendAssetPath = (pathname: string) =>
   frontendAssetPrefixes.some((prefix) => pathname.startsWith(prefix))
+
+const isRegularFile = (path: string) => existsSync(path) && statSync(path).isFile()
 
 export function runtimeConfigContractPlugin(): Plugin {
   return {
@@ -41,7 +43,7 @@ export function frontendAsset404ContractPlugin(): Plugin {
         const pathname = new URL(request.url ?? '/', 'http://vite.local').pathname
 
         if (!isFrontendAssetPath(pathname)) return next()
-        if (existsSync(resolve(server.config.publicDir, pathname.slice(1)))) return next()
+        if (isRegularFile(resolve(server.config.publicDir, pathname.slice(1)))) return next()
 
         response.statusCode = 404
         response.setHeader('Content-Type', 'text/html; charset=utf-8')

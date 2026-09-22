@@ -114,6 +114,8 @@ assert.match(viteConfig, /frontendAsset404ContractPlugin/, 'Vite must register t
 assert.match(runtimeConfigPlugin, /\/assets\//, 'The frontend asset contract must cover /assets/*');
 assert.match(runtimeConfigPlugin, /\/social\//, 'The frontend asset contract must cover /social/*');
 assert.match(runtimeConfigPlugin, /404\.html/, 'The frontend asset contract must serve the static 404 body');
+assert.match(runtimeConfigPlugin, /statSync/, 'The frontend asset contract must distinguish files from directories');
+assert.match(runtimeConfigPlugin, /\.isFile\(\)/, 'Only regular public files may fall through to Vite');
 
 assert.match(apiService, /^ {6}- api_public_media:\/var\/www\/html\/storage\/app\/public$/m);
 assert.match(apiService, /^ {6}- api_private_media:\/var\/www\/html\/storage\/app\/private$/m);
