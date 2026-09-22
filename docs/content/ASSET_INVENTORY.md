@@ -2,7 +2,7 @@
 
 Status: **Approved by Luciano on 2026-08-11.**
 
-This is an implementation-readiness record, not a publication action. A `public path` below is a future contract or an external contact destination; no listed file is publicly served by this repository at present. Future project media is intentionally absent.
+This is an implementation-readiness record, not a publication action. A `public path` below is either an active served path, a future contract, or an external contact destination; each row records its own publication state. Future project media beyond the Phase 7 gallery is intentionally absent.
 
 | Asset ID | Public purpose | Language | Source owner/location | Target public path | Status | Accessibility text | Confidentiality review |
 |---|---|---|---|---|---|---|---|
@@ -15,7 +15,21 @@ This is an implementation-readiness record, not a publication action. A `public 
 | AST-SCROLL-VIDEO | Decorative scroll-scene illustration (ink tree becoming a node network, day to night) | ES / EN | AI-generated for this site from prompts in `docs/design/phase-6/scroll-video/PROMPTS.md`; upscaled 4× with Real-ESRGAN (`x4plus-anime`) and downscaled 2× to 1696×960 | `/media/scroll/ink-tree-network-v3.mp4` | Approved by Luciano on 2026-09-14; served by the Phase 6 front (H.264 all-intra, 1696×960, 81 frames, 16 fps, no audio, 2,260,651 bytes / ~2.16 MB); the same-frame v1 (246 KB) and v2 (868 KB) encodes are kept unserved in `docs/design/phase-6/scroll-video/` (with their poster), per the versioning rule | Decorative (`aria-hidden`); the scene copy is available as text | No personal data, text, logos or people in the frames. |
 | AST-SCROLL-POSTER | First frame of the scroll video, shown while it loads | ES / EN | Extracted from `AST-SCROLL-VIDEO` | `/media/scroll/ink-tree-network-v3-poster.webp` | Served by the Phase 6 front (1696×960, ~7 KB) | Decorative | Same as `AST-SCROLL-VIDEO`. |
 | AST-FONTS | Self-hosted web fonts: Fraunces Variable, Instrument Sans, IBM Plex Mono | ES / EN | Fontsource npm packages (SIL Open Font License 1.1) bundled by Vite | `/assets/*.woff2` (hashed by the build) | Served by the Phase 6 front; no external font request | Not applicable | Open-source fonts; no personal data. |
-| AST-PROJECT-MEDIA | Project screenshots (ordered gallery, up to 12 per project) | ES / EN | No asset supplied yet; Trucks and Drinks screenshots pending from Luciano | `/storage/projects/{uuid}.{jpg,png,webp}` public copies created by the CMS only while the project is published and visible | **Absent — the CMS gallery exists (Phase 6), no screenshot has been uploaded** | Required `alt_es`/`alt_en` per screenshot (max 500 characters) before publication | `PUB-030` to `PUB-033`: artifact-specific confidentiality and hidden-data review is required before any screenshot is uploaded to a project that will be published. |
+| AST-FAVICON-ICO | Site favicon | ES / EN | `web/public/favicon.ico`; final human-approved Phase 8 Favicon.io file | `/favicon.ico` | Integrated in Phase 8 by direct copy without conversion, derivation or redesign | Decorative browser chrome asset | Approved minimal Terracotta sprout design; no text, portrait or personal data. |
+| AST-FAVICON-16 | 16 px favicon | ES / EN | `web/public/favicon-16x16.png`; final human-approved Phase 8 Favicon.io file | `/favicon-16x16.png` | Integrated in Phase 8 by direct copy without conversion, derivation or redesign | Decorative browser chrome asset | Same approved minimal Terracotta sprout design. |
+| AST-FAVICON-32 | 32 px favicon | ES / EN | `web/public/favicon-32x32.png`; final human-approved Phase 8 Favicon.io file | `/favicon-32x32.png` | Integrated in Phase 8 by direct copy without conversion, derivation or redesign | Decorative browser chrome asset | Same approved minimal Terracotta sprout design. |
+| AST-APPLE-TOUCH-ICON | Apple touch icon | ES / EN | `web/public/apple-touch-icon.png`; final human-approved Phase 8 Favicon.io file | `/apple-touch-icon.png` | Integrated in Phase 8 by direct copy without conversion, derivation or redesign | Decorative browser chrome asset | Same approved minimal Terracotta sprout design. |
+| AST-PROJECT-MEDIA | Project screenshots (ordered gallery, up to 12 per project) | ES / EN | Uploaded manually through Filament during Phase 7: 4 images for Trucks and Drinks and 5 images for ReservaHub | `/storage/projects/{uuid}.{jpg,png,webp}` public copies created by the CMS only while the project is published and visible | Published and verified in Phase 7 on 2026-09-21; the nine images remain CMS-managed media, not files tracked in `web/public` | Required `alt_es`/`alt_en` per screenshot (max 500 characters), verified before publication | Phase 7 visually reviewed all nine captures and found no evident secrets or private information. The per-artifact confidentiality requirement remains applicable to all future uploads. |
+
+## Phase 8 social image
+
+The editorial design **A — Editorial portrait** is human-approved: a light
+Terracotta `1200 × 630` JPEG with the professional portrait on the right,
+approved name/title on the left, a subtle sprout or landscape line, and
+`lucianogonzalez.dev` as secondary information. The final JPEG has not yet
+been supplied or integrated. Consequently, there is no
+`web/public/social/luciano-gonzalez-social.jpg` asset record or public file,
+and Phase 8 metadata does not reference a placeholder or missing image.
 
 ## Professional photo implementation review
 

@@ -226,13 +226,12 @@ Fase 3 no crea targets de producción especulativos ni un Compose final del serv
 
 Desde Fase 6, `web` es una SPA Vite: `pnpm build` genera archivos estáticos en `web/dist` sin depender de Laravel, y el contenido se pide en el navegador a la API pública. Por eso el build de imagen de producción de `web` nunca requiere que el API de producción esté disponible. Fase 11 define cómo se sirven esos archivos detrás del gateway (el gateway no sirve archivos de aplicación directamente).
 
-La validación local de aceptación usó Caddy `2.11.4-alpine`, Node `24.18.0`,
-pnpm `11.20.0`, Next `16.2.12`, React `19.2.4`, PHP `8.5.8`, Laravel
-`13.25.0`, Filament `5.7.6` y MySQL `8.4`. Los puertos internos son Caddy
-`80`, Next `3000`, Apache/Laravel `80` y MySQL `3306`; el único publish local
-es Caddy `127.0.0.1:8000`. Las señales de aplicación entregadas son Caddy
-`/__gateway/health`, Next `/health`, Laravel `/up` y `mysqladmin ping`. Desde
-Fase 6 el front es Vite (puerto interno `5173`, health `GET /`) y reemplaza a Next.
+La validación local de aceptación usa Caddy `2.11.4-alpine`, Node `24.18.0`,
+pnpm `11.20.0`, Vite 8 con React 18, PHP `8.5.8`, Laravel `13.25.0`, Filament
+`5.7.6` y MySQL `8.4`. Los puertos internos son Caddy `80`, Vite `5173`,
+Apache/Laravel `80` y MySQL `3306`; el único publish local es Caddy
+`127.0.0.1:8000`. Las señales de aplicación entregadas son Caddy
+`/__gateway/health`, Vite `GET /`, Laravel `/up` y `mysqladmin ping`.
 
 El bootstrap local instala desde lockfiles en los volúmenes vacíos, espera
 health, ejecuta migraciones y crea explícitamente `public/storage` solo después
@@ -346,6 +345,15 @@ Lo que Fase 11 debe producir y verificar localmente antes de cualquier release:
 - Restart policies apropiadas y healthchecks reales por servicio.
 - Configuración productiva sin secretos embebidos; sin rutas `/srv`, configuración de Cloudflare ni del Caddy global.
 - Almacén de caché con `LockProvider` (ver "Requisitos del almacén de caché").
+- Materialización futura y atómica de la configuración pública opcional
+  `/runtime-config.json` a partir de valores de runtime. Tanto el `200` de una
+  configuración existente como el `404` intencional cuando falte deben llevar
+  `Cache-Control: no-store`. Valores ausentes o parciales dejan la analítica
+  inequívocamente `OFF` y no afectan health.
+- La materialización debe permitir cambiar la configuración de runtime con la
+  misma imagen y digest del frontend, sin recompilar Vite, crear un tag ni
+  publicar otra release. Los valores de Umami no se incorporan al build ni se
+  convierten en secretos del frontend.
 
 Las decisiones abiertas que Fase 11 debe cerrar al empezar están enumeradas en `ROADMAP.md`.
 
@@ -429,6 +437,31 @@ release ya creada
 Fase 11 documenta qué valores espera el runtime productivo desde el entorno o el override (secretos, referencias de imagen y demás parámetros); el contenido real del override lo crea operaciones y nunca se versiona aquí.
 
 No se despliega desde un working tree sin versionar ni desde una imagen construida manualmente sin referencia a una release o commit conocido.
+
+## Activación operativa posterior de Umami y Search Console (Fase 12 — pendiente)
+
+La Fase 12 comienza únicamente desde una release de Fase 11 ya existente. El
+deployment del portfolio y la activación de Umami los realiza
+`vps_ops_claude` desde el contexto operativo; no los ejecuta este repositorio
+ni GitHub Actions.
+
+El handoff para operaciones debe requerir, sin implementar aquí, una instancia
+Umami independiente con imagen oficial deliberadamente fijada, PostgreSQL
+`12.14` o superior, persistencia y backups separados del portfolio. Operaciones
+es dueña de `DATABASE_URL`, `APP_SECRET`, la rotación de la credencial inicial
+del administrador, hostname/TLS, logging, retención, actualizaciones y health.
+Después de crear el sitio `lucianogonzalez.dev` en Umami, entrega el Website ID
+y la URL del tracker para que el runtime de la misma release se reconfigure sin
+reconstruir su imagen ni cambiar su digest.
+
+La activación se acepta con ingestión real: pageviews de `/` y `/en` sin
+variantes de query/hash ni duplicados, y los cuatro eventos aprobados sin
+propiedades. Fase 8 no agregó ni contactó un servidor Umami, por lo que sus
+pruebas no certifican ingestión real.
+
+Después del deployment, el checklist de Search Console se limita a verificar
+el dominio, enviar el sitemap, inspeccionar URLs y observar la indexación. Los
+tokens, cambios DNS y el envío real permanecen fuera de Fase 8 y del repositorio.
 
 ## Contrato de rollback
 

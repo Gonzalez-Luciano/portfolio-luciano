@@ -208,9 +208,50 @@ Dirección (decisión humana del 2026-09-14, Fase 6; reemplaza al front Next.js 
 
 ### Renderizado y datos
 
-El front es una SPA sin render de servidor. `resolveLocale` toma el idioma del path (`/en` -> inglés; `/` y `/es` -> español). `loadStructuralContent` pide `profile` y `site`; si alguno falla, la página muestra solo el error general con Reintentar. `App.tsx` llama a `useRegion` una vez por cada región (`technologies`, `experiences`, `work-cases`, `projects`): son cuatro llamadas independientes al mismo hook, no un único hook que reparte varias colecciones, y sus cuatro fetches corren en paralelo; cada colección es regional y su fallo muestra un error con Reintentar solo en su sección. Todo cuerpo se valida como `unknown` en `web/src/lib/api.ts`. Las decisiones de presentación son funciones puras con tests en `web/src/lib/` (`groupExperience`, `groupProjects`, `groupTechnologies`, `visibleSections`, `formatPeriod`, `buildScene`, `thumbnailSlots`, `pickActiveId`, curvas de la escena); los componentes de `web/src/components/` solo las renderizan (por ejemplo `ExternalLink`, el enlace con flecha e hint `sr-only` para lo que abre en una pestaña nueva). `web/src/content.ts` contiene solo textos de interfaz, nunca contenido profesional. El tema (`light`/`dark`) se fija antes del primer pintado con `data-theme` desde `localStorage` (`portfolio-theme`) o `prefers-color-scheme`; los tokens viven en `docs/design/phase-6/DESIGN_TOKENS.md`. Consecuencia conocida: sin render de servidor, el HTML inicial no contiene el contenido; SEO/metadata se resuelven en Fase 8.
+El front es una SPA sin render de servidor. Vite construye dos shells estáticas
+desde una única configuración SEO tipada: `dist/index.html` para `/` en
+español y `dist/en/index.html` para `/en` en inglés. Esa fuente comparte los
+valores de canonical, `hreflang`, Open Graph/Twitter, JSON-LD `Person` y
+`WebSite`, sitemap y `robots.txt`; el build no pide Laravel ni un servicio
+externo. La imagen social solo se emite cuando exista su JPEG final aprobado.
 
-La base de Fase 3 mantenía `/es` y `/en` prerenderizables porque la UI base todavía no hacía ningún fetch de contenido. Desde Fase 5, la ruta pública localizada hace fetch obligatorio a los seis endpoints públicos en cada request (ver sección "Fase 5 — Sitio público" más abajo) y por lo tanto renderiza dinámicamente (`dynamic = 'force-dynamic'` en `[locale]/layout.tsx`), no estáticamente. `next build` sigue completando sin Laravel, Caddy ni MySQL en ejecución — incluyendo con `INTERNAL_API_ORIGIN` inalcanzable — porque el build no ejecuta ese fetch; la única demostración real de contenido ocurre en runtime, con Laravel arriba. El tema no se resuelve con `cookies()` del servidor: un bootstrap mínimo, estable y previo al paint aplica `data-theme` desde una preferencia explícita `light`/`dark` en `localStorage` o, si no existe, desde `prefers-color-scheme`. Cualquier supresión de warning de hidratación queda limitada al elemento raíz cuya mutación previa es intencional.
+El gateway resuelve primero las familias de Laravel y después las rutas del
+front: `/` y `/en` devuelven sus shells; `/es` y `/es/` redirigen con `308` a
+`/`, y `/en/` con `308` a `/en`. La whitelist explícita permite únicamente
+esas rutas, los assets públicos requeridos, sitemap, robots y la configuración
+de runtime; cualquier otro documento de frontend recibe una 404 bilingüe,
+estática y real, sin React, llamadas a la API ni tracker. Un 404 de Laravel
+conserva su ownership y su status backend.
+
+`loadStructuralContent` pide `profile` y `site`; si alguno falla, la página
+muestra solo el error general con Reintentar. `App.tsx` llama a `useRegion` una
+vez por cada región (`technologies`, `experiences`, `work-cases`, `projects`):
+son cuatro llamadas independientes al mismo hook, no un único hook que reparte
+varias colecciones, y sus cuatro fetches corren en paralelo; cada colección es
+regional y su fallo muestra un error con Reintentar solo en su sección. Todo
+cuerpo se valida como `unknown` en `web/src/lib/api.ts`. Las decisiones de
+presentación son funciones puras con tests en `web/src/lib/` (`groupExperience`,
+`groupProjects`, `groupTechnologies`, `visibleSections`, `formatPeriod`,
+`buildScene`, `thumbnailSlots`, `pickActiveId`, curvas de la escena); los
+componentes de `web/src/components/` solo las renderizan (por ejemplo
+`ExternalLink`, el enlace con flecha e hint `sr-only` para lo que abre en una
+pestaña nueva). `web/src/content.ts` contiene solo textos de interfaz, nunca
+contenido profesional. El tema (`light`/`dark`) se fija antes del primer
+pintado con `data-theme` desde `localStorage` (`portfolio-theme`) o
+`prefers-color-scheme`; los tokens viven en
+`docs/design/phase-6/DESIGN_TOKENS.md`. El HTML inicial no contiene el
+contenido administrado; sus metadatos SEO estáticos sí son correctos antes de
+JavaScript.
+
+La configuración pública opcional `/runtime-config.json` se carga sin bloquear
+la aplicación, se valida como `unknown` y siempre usa `no-store`. Si falta,
+falla su red, tiene JSON/esquema inválido o el script externo falla, la
+analítica queda terminalmente `OFF` sin afectar navegación ni contenido. Con
+una configuración válida, el front carga una sola vez el tracker de Umami y
+solo expone los cuatro eventos fijos sin propiedades. Umami es un servicio
+externo e independiente del runtime del portfolio: no hay contenedor, tabla,
+volumen, secreto ni endpoint Laravel compartido. Su despliegue e ingestión real
+pertenecen a operaciones en Fase 12; Fase 13 revisa sus datos reales.
 
 ---
 
@@ -680,17 +721,16 @@ En el bind mount Windows/9p, el desarrollo web activa el polling de Vite
 que el HMR vuelva por el gateway. Esta elección es solo del watcher de
 desarrollo: no cambia Caddy, sus rutas ni el build de producción.
 
-### Runtime verificado de Fase 3
+### Runtime de desarrollo vigente
 
-La aceptación local verificó Caddy `2.11.4-alpine`, Node `24.18.0`, pnpm
-`11.20.0`, Next `16.2.12`, React `19.2.4`, PHP `8.5.8`, Laravel `13.25.0`,
-Filament `5.7.6` y MySQL `8.4`. Los puertos internos son Caddy `80`, Next
-`3000`, Apache/Laravel `80` y MySQL `3306`; solo Caddy se publica como
+La aceptación local vigente usa Caddy `2.11.4-alpine`, Node `24.18.0`, pnpm
+`11.20.0`, Vite 8 con React 18, PHP `8.5.8`, Laravel `13.25.0`, Filament
+`5.7.6` y MySQL `8.4`. Los puertos internos son Caddy `80`, Vite `5173`,
+Apache/Laravel `80` y MySQL `3306`; solo Caddy se publica como
 `127.0.0.1:8000`.
 
-Las señales de health son `GET /__gateway/health` para Caddy, `GET /health`
-para Next (desde Fase 6: `GET /` en Vite `5173`), `GET /up` para Laravel y
-`mysqladmin ping` para MySQL. El bootstrap
+Las señales de health son `GET /__gateway/health` para Caddy, `GET /` para
+Vite, `GET /up` para Laravel y `mysqladmin ping` para MySQL. El bootstrap
 frío instala dependencias desde los lockfiles en volúmenes inicialmente vacíos,
 espera servicios saludables, ejecuta migraciones y crea explícitamente el link
 estándar `public/storage` tras comprobar que solo se retiraría un enlace no
