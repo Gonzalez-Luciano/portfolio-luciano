@@ -7,6 +7,7 @@ import type { SceneContent } from '@/lib/scene'
 import { SCROLL_POSTER_SRC, SCROLL_VIDEO_SRC, columnVeilOpacity, correctionFilter } from '@/lib/scene-timeline'
 import { STAGGER_THRESHOLD, sectionOneOpacity, sectionThreeOpacity, sectionTwoOpacity } from '@/lib/section-opacity'
 import type { useVideoScrub } from '@/useVideoScrub'
+import { ANALYTICS_EVENTS } from '@/lib/analytics-events'
 
 type Props = {
   scrub: ReturnType<typeof useVideoScrub>
@@ -87,6 +88,7 @@ export function ScrollScene({ scrub, scene, status, ui, onRetry }: Props) {
           <a
             href={scene.email.href}
             className="sr-only focus:not-sr-only focus:absolute focus:left-6 focus:top-6 focus:z-50 focus:rounded-full focus:bg-scene-veil focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-scene-light"
+            data-umami-event={ANALYTICS_EVENTS.email}
           >
             {scene.email.label}
           </a>
@@ -171,6 +173,7 @@ export function ScrollScene({ scrub, scene, status, ui, onRetry }: Props) {
                         href={scene.email.href}
                         tabIndex={-1}
                         className={`mt-8 inline-flex min-h-11 items-center gap-3 font-mono text-xs font-medium uppercase tracking-[0.18em] text-scene-light ${o3 > STAGGER_THRESHOLD ? 'pointer-events-auto' : ''}`}
+                        data-umami-event={ANALYTICS_EVENTS.email}
                       >
                         {scene.email.label}
                         <ArrowRight size={16} aria-hidden="true" />

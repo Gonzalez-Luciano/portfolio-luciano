@@ -18,8 +18,8 @@ const project: Project = {
   result: 'Result',
   featured: false,
   images: [],
-  demo_url: null,
-  repository_url: null,
+  demo_url: 'https://demo.example.test',
+  repository_url: 'https://github.com/example/project',
   technologies: [],
 }
 
@@ -30,5 +30,13 @@ describe('ProjectDossier', () => {
 
     expect(article).toContain('grid-cols-[minmax(0,1fr)]')
     expect(article).toContain('lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]')
+  })
+
+  it('leaves project demo and repository links uninstrumented', () => {
+    const markup = renderToStaticMarkup(createElement(ProjectDossier, { ui: uiCopy('en'), project }))
+
+    expect(markup).toContain('https://demo.example.test')
+    expect(markup).toContain('https://github.com/example/project')
+    expect(markup).not.toContain('data-umami-event=')
   })
 })

@@ -753,24 +753,23 @@ Hacer que el portfolio sea encontrable, compartible y medible.
 
 ## Tareas
 
-- [ ] Metadata en español.
-- [ ] Metadata en inglés.
-- [ ] Canonical.
-- [ ] `hreflang`.
-- [ ] Sitemap.
-- [ ] Robots.
-- [ ] Open Graph.
-- [ ] Twitter card.
+- [x] Metadata en español.
+- [x] Metadata en inglés.
+- [x] Canonical.
+- [x] `hreflang`.
+- [x] Sitemap.
+- [x] Robots.
+- [x] Open Graph.
+- [x] Twitter card.
 - [ ] Imagen social.
-- [ ] Datos estructurados Person.
-- [ ] Datos estructurados WebSite.
-- [ ] Favicon.
-- [ ] Manifest opcional.
-- [ ] Página 404.
-- [ ] Exclusión de administración.
-- [ ] Analítica respetuosa de privacidad.
-- [ ] Eventos de clic en CV, GitHub, LinkedIn y correo.
-- [ ] No registrar información sensible.
+- [x] Datos estructurados Person.
+- [x] Datos estructurados WebSite.
+- [x] Favicon.
+- [x] Página 404.
+- [x] Exclusión de administración.
+- [x] Analítica respetuosa de privacidad.
+- [x] Eventos de clic en CV, GitHub, LinkedIn y correo.
+- [x] No registrar información sensible.
 - [ ] Revisar indexación por idioma.
 
 ## Entregables
@@ -786,6 +785,15 @@ Hacer que el portfolio sea encontrable, compartible y medible.
 - Cada idioma tiene metadata propia.
 - Administración y previews no se indexan.
 - Los eventos de contacto pueden medirse sin invadir privacidad.
+
+**Estado al 2026-09-21:** las shells estáticas localizadas de Vite + React,
+las redirecciones canónicas, la 404 estática, metadata/SEO, el sitemap,
+`robots.txt`, el favicon y la analítica opcional en runtime están implementados
+y verificados localmente. La fase permanece abierta: el diseño editorial de la
+imagen social está aprobado, pero falta integrar su JPEG final humano de
+`1200 × 630`; sin ese archivo no se emite metadata social que lo referencie.
+La revisión real de indexación queda para el lanzamiento (Fase 12), no se
+realizó una operación de Search Console en esta fase.
 
 ---
 
@@ -966,7 +974,7 @@ No se fijan antes de inspeccionar la implementación real; se registran cuando s
 - [ ] Visibilidad del repositorio GitHub y de los paquetes GHCR.
 - [ ] Cómo accede el runtime productivo a los assets aprobados que consume `portfolio:import-initial-content` sin depender de bind mounts de desarrollo.
 - [ ] Almacén de caché productivo compatible con `LockProvider` (`file` o `database`; ver `docs/DEPLOYMENT.md`).
-- [ ] Tratamiento de `Host`, protocolo reenviado y trusted proxies para la cadena Caddy global -> gateway interno -> Laravel/Next.js, verificable en local sin configurar Cloudflare ni el Caddy global.
+- [ ] Tratamiento de `Host`, protocolo reenviado y trusted proxies para la cadena Caddy global -> gateway interno -> frontend Vite + React y Laravel, verificable en local sin configurar Cloudflare ni el Caddy global.
 
 ### GitHub y auditoría previa
 
@@ -987,13 +995,14 @@ No se fijan antes de inspeccionar la implementación real; se registran cuando s
 - [ ] Definir restart policies apropiadas.
 - [ ] Definir healthchecks reales por servicio.
 - [ ] Definir la configuración productiva sin secretos embebidos; los secretos quedan fuera de Git y fuera de las imágenes.
+- [ ] Materializar opcionalmente `/runtime-config.json` en el runtime productivo desde valores públicos de entorno, con `Cache-Control: no-store` tanto para su `200` como para su `404` intencional; el mismo digest de imagen debe poder reconfigurarse sin rebuild, tag ni release nuevos.
 - [ ] Verificar que ninguna imagen contiene `.env`, claves, tokens, passwords, secretos ni artefactos temporales innecesarios.
 - [ ] Verificar que ni `compose.production.yaml` ni las imágenes contienen rutas `/srv`, configuración de Cloudflare, del Caddy global ni del host.
 
 ### Verificación productiva local
 
 - [ ] Levantar localmente el runtime productivo completo con `compose.production.yaml`, sin el Compose de desarrollo.
-- [ ] Verificar gateway, Next.js, Laravel y MySQL.
+- [ ] Verificar gateway interno, frontend Vite + React, Laravel y MySQL.
 - [ ] Verificar la API (`/api/v1` y los endpoints públicos localizados).
 - [ ] Verificar `/`, `/es`, `/en` y `/admin`.
 - [ ] Verificar media/storage (`/storage/*`) y descargas de CV (`/cv/*`).
@@ -1141,6 +1150,15 @@ Las verificaciones contra producción de esta fase las realizan Luciano u operac
 - [ ] Confirmar que los smoke checks de producción pasaron.
 - [ ] Confirmar que existe un backup inicial gestionado y verificado por operaciones.
 
+### Activación operativa de analítica e indexación
+
+- [ ] Confirmar que operaciones desplegó Umami de forma independiente al runtime del portfolio, con imagen oficial fijada, PostgreSQL `12.14` o superior, persistencia y backups separados.
+- [ ] Confirmar que operaciones administra `DATABASE_URL`, `APP_SECRET`, rotación de la credencial inicial de administrador, logging y retención; esos secretos no pertenecen al repositorio.
+- [ ] Confirmar que operaciones creó el sitio `lucianogonzalez.dev` en Umami y entregó el Website ID y la URL del tracker al runtime de la release ya desplegada.
+- [ ] Confirmar que operaciones reconfiguró solo el runtime necesario con la misma imagen y digest, preservando `Cache-Control: no-store` para la configuración presente o ausente.
+- [ ] Verificar mediante ingestión real de Umami los pageviews de `/` y `/en`, sin variantes de query/hash ni duplicados, y los cuatro eventos sin propiedades.
+- [ ] Completar en Search Console la verificación del dominio, envío del sitemap, inspección de URLs y observación de indexación. Tokens, cambios DNS y el envío real no pertenecen a Fase 8.
+
 ### Revisión y comunicación
 
 - [ ] Revisión final de contenido.
@@ -1189,7 +1207,8 @@ Mejorar el portfolio mediante evidencia y no por impulso.
 - [ ] Revisar errores.
 - [ ] Revisar los logs de aplicación disponibles mediante el handoff operativo, sin asumir administración del host.
 - [ ] Revisar analítica.
-- [ ] Verificar indexación.
+- [ ] Revisar con datos reales los pageviews y los cuatro eventos de Umami, incluidos duplicados, propiedades y comportamiento de privacidad.
+- [ ] Verificar indexación a partir de la observación posterior al lanzamiento en Search Console.
 - [ ] Verificar descargas del CV.
 - [ ] Corregir enlaces.
 - [ ] Consultar a dos personas técnicas.

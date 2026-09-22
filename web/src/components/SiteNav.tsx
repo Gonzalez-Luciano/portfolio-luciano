@@ -6,6 +6,7 @@ import type { Locale, UiCopy } from '@/content'
 import type { CvLink, Photo } from '@/lib/api'
 import { sectionNumber, type SectionId } from '@/lib/sections'
 import type { Theme } from '@/lib/theme'
+import { ANALYTICS_EVENTS } from '@/lib/analytics-events'
 
 type Props = {
   ui: UiCopy
@@ -71,6 +72,7 @@ export function SiteNav({ ui, locale, name, avatar, cv, sections, activeSection,
           // Label-in-name (WCAG 2.5.3): the visible text ("CV") stays inside the accessible name.
           aria-label={`${ui.cvLabel} — ${cv.label}`}
           className="flex min-h-11 items-center px-1 transition-opacity hover:opacity-70"
+          data-umami-event={ANALYTICS_EVENTS.cv}
         >
           <span className="rounded-sm border border-current px-2 py-0.5 font-mono text-xs font-medium">{ui.cvLabel}</span>
         </a>
