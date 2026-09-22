@@ -138,24 +138,31 @@ for (const path of ['infra/caddy/Caddyfile', 'infra/caddy/laravel-routes.json', 
 }
 
 const caddy = read('infra/caddy/Caddyfile');
-assert.match(caddy, /@livewire path_regexp livewire \^\/livewire-\[\^\/\]\+\(\?:\/\.\*\)\?\$/);
 assert.doesNotMatch(caddy, /livewire-[0-9a-f]{8,}/i, 'Caddy must not copy a generated Livewire hash');
 assert.doesNotMatch(caddy, /cloudflare|trusted_proxies/i, 'Gateway must not own Cloudflare proxy configuration');
 assert.doesNotMatch(caddy, /(?:^|\n)\s*(?:root|file_server)\b/m, 'Gateway must not serve application files directly');
+// Observable route contract, expressed against named matchers/handlers in Caddyfile.
+assert.match(caddy, /\/es.*308/);
+assert.match(caddy, /\/es\/.*308/);
+assert.match(caddy, /\/en\/.*308/);
+assert.match(caddy, /rewrite[^\n]*\/en\/index\.html/);
+assert.match(caddy, /Cache-Control[^\n]*no-store/);
+assert.match(caddy, /@livewireTechnical/);
+assert.match(caddy, /@livewireAssets/);
+assert.match(caddy, /handle_response/);
+assert.match(caddy, /copy_response 404/);
+assert.doesNotMatch(caddy, /@(?:backendNoIndex|nonIndexable)[^\n]*\/storage\/\*/);
+assert.doesNotMatch(caddy, /@(?:backendNoIndex|nonIndexable)[^\n]*\/cv\/\*/);
 
-const apiHandle = caddy.indexOf('handle @laravel');
-const livewireHandle = caddy.indexOf('handle @livewire');
-const fallbackHandle = caddy.lastIndexOf('\n\thandle {');
-assert.ok(apiHandle >= 0 && livewireHandle >= 0 && fallbackHandle >= 0, 'Caddy must declare backend and fallback handlers');
-assert.ok(apiHandle < fallbackHandle && livewireHandle < fallbackHandle, 'Backend handlers must precede the frontend fallback');
-assert.match(caddy, /handle \{\n\t\treverse_proxy web:5173\n\t}\n}/, 'Caddy must end with the frontend fallback');
+assert.ok(existsSync(resolve(root, 'web/public/404.html')), 'Missing web/public/404.html');
+assert.ok(existsSync(resolve(root, 'web/vite/runtime-config-plugin.ts')), 'Missing web/vite/runtime-config-plugin.ts');
 
 const routeInventory = JSON.parse(read('infra/caddy/laravel-routes.json'));
 assert.ok(routeInventory.some((route) => route.uri === 'api/v1'));
 assert.ok(routeInventory.some((route) => /^livewire-[^/]+\//.test(route.uri)));
 assert.ok(routeInventory.some((route) => route.uri === 'cv/luciano-gonzalez-es.pdf'));
 assert.ok(routeInventory.some((route) => route.uri === 'cv/luciano-gonzalez-en.pdf'));
-assert.match(caddy, /^\t@laravel path[^\n]*\/cv\/\*/m, 'The @laravel matcher must cover /cv/*');
+assert.match(caddy, /^\t@backendPublic path[^\n]*\/cv\/\*/m, 'The public backend matcher must cover /cv/*');
 
 const readme = read('README.md');
 assert.match(readme, /docker compose up -d --wait/);

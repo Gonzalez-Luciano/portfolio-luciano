@@ -4,24 +4,72 @@
 
 :80 {
 	handle /__gateway/health {
+		header X-Robots-Tag "noindex, nofollow"
 		respond "ok" 200
 	}
 
-	# Laravel route inventory and browser-observed Filament assets establish these families.
-	@laravel path /api /api/* /admin /admin/* /up /storage/* /filament /filament/* /css/filament/* /fonts/filament/* /js/filament/* /cv/*
-	handle @laravel {
+	# Laravel route inventory establishes these non-public backend families.
+	@backendNoIndex path /api /api/* /admin /admin/* /filament /filament/* /up
+	handle @backendNoIndex {
+		header X-Robots-Tag "noindex, nofollow"
 		reverse_proxy api:80
 	}
 
-	# Livewire's installed prefix is content-addressed and changes with its package build.
-	# Match the family structurally; never copy the generated prefix from the route inventory.
-	@livewire path_regexp livewire ^/livewire-[^/]+(?:/.*)?$
-	handle @livewire {
+	# Public Laravel media and Filament assets must remain indexability-neutral.
+	@backendPublic path /storage/* /css/filament/* /fonts/filament/* /js/filament/* /cv/*
+	handle @backendPublic {
 		reverse_proxy api:80
 	}
 
-	# This final handler owns the Vite front (/, /es, /en), its assets, and development HMR/WebSocket traffic.
-	handle {
+	# Livewire's content-addressed prefix changes with its package build.
+	# Match current technical/action routes structurally without copying its hash.
+	@livewireTechnical path_regexp livewireTechnical ^/livewire-[^/]+/(?:update|upload-file|preview-file(?:/.*)?)$
+	handle @livewireTechnical {
+		header X-Robots-Tag "noindex, nofollow"
+		reverse_proxy api:80
+	}
+
+	# Current Livewire CSS, JavaScript, and source maps are public assets.
+	@livewireAssets path_regexp livewireAssets ^/livewire-[^/]+/(?:css/[^/]+(?:\.global)?\.css|js/[^/]+\.js|livewire\.js|livewire\.csp\.min\.js\.map|livewire\.min\.js\.map)$
+	handle @livewireAssets {
+		reverse_proxy api:80
+	}
+
+	# Spanish uses the root shell and English has a stable no-trailing-slash URL.
+	redir /es / 308
+	redir /es/ / 308
+	redir /en/ /en 308
+
+	handle / {
 		reverse_proxy web:5173
+	}
+
+	handle /en {
+		rewrite * /en/index.html
+		reverse_proxy web:5173
+	}
+
+	# Vite owns whether runtime configuration exists; it is never cacheable or indexable.
+	handle /runtime-config.json {
+		header Cache-Control "no-store"
+		header X-Robots-Tag "noindex, nofollow"
+		reverse_proxy web:5173
+	}
+
+	# Public Vite files, SEO files, and development HMR paths are indexability-neutral.
+	@frontendPublic path /robots.txt /sitemap.xml /favicon.ico /favicon-16x16.png /favicon-32x32.png /apple-touch-icon.png /social/luciano-gonzalez-social.jpg /assets/* /media/* /@vite/* /@react-refresh /src/* /node_modules/.vite/*
+	handle @frontendPublic {
+		reverse_proxy web:5173
+	}
+
+	# Every allowed route family has returned above, so all remaining frontend paths are static 404s.
+	handle {
+		header X-Robots-Tag "noindex, nofollow"
+		rewrite * /404.html
+		reverse_proxy web:5173 {
+			handle_response {
+				copy_response 404
+			}
+		}
 	}
 }
