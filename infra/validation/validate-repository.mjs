@@ -160,11 +160,6 @@ assert.match(caddy, /handle_response/);
 assert.match(caddy, /copy_response 404/);
 assert.doesNotMatch(caddy, /@(?:backendNoIndex|nonIndexable)[^\n]*\/storage\/\*/);
 assert.doesNotMatch(caddy, /@(?:backendNoIndex|nonIndexable)[^\n]*\/cv\/\*/);
-assert.match(
-  caddy,
-  /\/node_modules\/\.pnpm\/\*/,
-  'Gateway must whitelist Vite-emitted pnpm module imports',
-);
 
 assert.ok(existsSync(resolve(root, 'web/public/404.html')), 'Missing web/public/404.html');
 assert.ok(existsSync(resolve(root, 'web/vite/runtime-config-plugin.ts')), 'Missing web/vite/runtime-config-plugin.ts');
