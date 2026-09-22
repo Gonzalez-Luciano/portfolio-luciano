@@ -1,0 +1,83 @@
+{
+	auto_https off
+	admin off
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+:80 {
+	handle /__gateway/health {
+		header X-Robots-Tag "noindex, nofollow"
+		respond "ok" 200
+	}
+
+	# Laravel route inventory establishes these non-public backend families.
+	@backendNoIndex path /api /api/* /admin /admin/* /filament /filament/* /up
+	handle @backendNoIndex {
+		header X-Robots-Tag "noindex, nofollow"
+		reverse_proxy api:80
+	}
+
+	# Public Laravel media and Filament assets must remain indexability-neutral.
+	@backendPublic path /storage/* /css/filament/* /fonts/filament/* /js/filament/* /cv/*
+	handle @backendPublic {
+		reverse_proxy api:80
+	}
+
+	# Livewire's content-addressed prefix changes with its package build.
+	# Match current technical/action routes structurally without copying its hash.
+	@livewireTechnical path_regexp livewireTechnical ^/livewire-[^/]+/(?:update|upload-file|preview-file(?:/.*)?)$
+	handle @livewireTechnical {
+		header X-Robots-Tag "noindex, nofollow"
+		reverse_proxy api:80
+	}
+
+	# Current Livewire CSS, JavaScript, and source maps are public assets.
+	@livewireAssets path_regexp livewireAssets ^/livewire-[^/]+/(?:css/[^/]+(?:\.global)?\.css|js/[^/]+\.js|livewire\.js|livewire\.csp\.min\.js\.map|livewire\.min\.js\.map)$
+	handle @livewireAssets {
+		reverse_proxy api:80
+	}
+
+	# Spanish uses the root shell and English has a stable no-trailing-slash URL.
+	redir /es / 308
+	redir /es/ / 308
+	redir /en/ /en 308
+
+	handle / {
+		reverse_proxy web:8080
+	}
+
+	handle /en {
+		rewrite * /en/index.html
+		reverse_proxy web:8080
+	}
+
+	# The web runtime owns whether runtime configuration exists; it is never
+	# cacheable or indexable. `>` replaces the upstream value instead of
+	# appending to it, so the response carries exactly one of each header.
+	handle /runtime-config.json {
+		header >Cache-Control "no-store"
+		header >X-Robots-Tag "noindex, nofollow"
+		reverse_proxy web:8080
+	}
+
+	# Public built files and SEO files are indexability-neutral. The development
+	# server's module-graph and hot-reload path families do not exist in the
+	# production runtime and therefore fall through to the static 404 below.
+	@frontendPublic path /robots.txt /sitemap.xml /favicon.ico /favicon-16x16.png /favicon-32x32.png /apple-touch-icon.png /social/luciano-gonzalez-social.jpg /assets/* /media/*
+	handle @frontendPublic {
+		reverse_proxy web:8080
+	}
+
+	# Every allowed route family has returned above, so all remaining frontend paths are static 404s.
+	handle {
+		header >X-Robots-Tag "noindex, nofollow"
+		rewrite * /404.html
+		reverse_proxy web:8080 {
+			handle_response {
+				copy_response 404
+			}
+		}
+	}
+}

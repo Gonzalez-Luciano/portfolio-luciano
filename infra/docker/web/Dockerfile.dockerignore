@@ -1,0 +1,31 @@
+# Build context for the production web image (repository root).
+# Only web/ source and this image's runtime files are required.
+
+.git
+.gitattributes
+.worktrees
+.superpowers
+.source-materials
+tmp
+
+api
+docs
+compose.yaml
+compose.production.yaml
+
+.env
+.env.*
+**/.env
+**/.env.*
+
+**/node_modules
+**/dist
+**/coverage
+**/vendor
+**/*.tsbuildinfo
+
+.vscode
+.idea
+*.swp
+*.swo
+*~

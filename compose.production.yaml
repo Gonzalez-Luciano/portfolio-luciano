@@ -1,0 +1,125 @@
+# Portable production runtime for the portfolio.
+#
+# This file is NOT the development environment (see compose.yaml) and NOT the
+# VPS deployment. It contains no host path, no edge/CDN configuration, no
+# global Caddy configuration and no host secret, so it runs identically on a
+# workstation and on the server.
+#
+# Operations layers its own Compose override on top of this file to pin image
+# digests and supply real secrets. That override lives in the operations tree
+# on the server, is created outside this repository and is never versioned
+# here; docs/DEPLOYMENT.md states what it must provide.
+#
+# Every value below comes from the environment. Nothing is defaulted to a
+# secret, and only the gateway publishes a host port.
+
+services:
+  gateway:
+    image: ${GATEWAY_IMAGE:-portfolio-gateway:local}
+    build:
+      context: .
+      dockerfile: infra/docker/gateway/Dockerfile
+    # The single entrypoint of the portfolio stack. Loopback by default: the
+    # host-level global Caddy owned by operations is what faces the internet.
+    ports:
+      - "${GATEWAY_HOST:-127.0.0.1}:${GATEWAY_PORT:-8000}:80"
+    networks: [front]
+    restart: unless-stopped
+    depends_on:
+      web: {condition: service_healthy}
+      api: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://localhost/__gateway/health]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  web:
+    image: ${WEB_IMAGE:-portfolio-web:local}
+    build:
+      context: .
+      dockerfile: infra/docker/web/Dockerfile
+    # Public, non-secret analytics configuration. Both values must be present
+    # and valid or analytics stays OFF and /runtime-config.json is a 404.
+    # Changing them restarts the container; it never rebuilds the image, so the
+    # same digest serves every configuration.
+    environment:
+      UMAMI_TRACKER_URL: ${UMAMI_TRACKER_URL:-}
+      UMAMI_WEBSITE_ID: ${UMAMI_WEBSITE_ID:-}
+    networks: [front]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://localhost:8080/__web/health]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  api:
+    image: ${API_IMAGE:-portfolio-api:local}
+    build:
+      context: .
+      dockerfile: infra/docker/api/Dockerfile.production
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: ${APP_URL:?APP_URL is required}
+      APP_KEY: ${APP_KEY:?APP_KEY is required}
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: ${LOG_LEVEL:-warning}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_DATABASE: ${MYSQL_DATABASE:?MYSQL_DATABASE is required}
+      DB_USERNAME: ${MYSQL_USER:?MYSQL_USER is required}
+      DB_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+      SESSION_DRIVER: database
+      # Both database and file implement LockProvider, which PublicContentCache
+      # requires; see docs/DEPLOYMENT.md. Do not select a store without it.
+      CACHE_STORE: database
+      QUEUE_CONNECTION: sync
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8}
+    volumes:
+      - api_private_media:/var/www/html/storage/app/private
+      - api_public_media:/var/www/html/storage/app/public
+    networks: [front, data]
+    restart: unless-stopped
+    depends_on:
+      mysql: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://localhost/up]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  mysql:
+    # Official image, deliberately pinned to a patch version. Never reachable
+    # from the host: no published port and no membership in the front network.
+    image: mysql:8.4.11
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?MYSQL_DATABASE is required}
+      MYSQL_USER: ${MYSQL_USER:?MYSQL_USER is required}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks: [data]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, 'mysqladmin ping --protocol=tcp -h 127.0.0.1 -P 3306 -u"$${MYSQL_USER}" -p"$${MYSQL_PASSWORD}" --silent']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+networks:
+  front: {}
+  data: {}
+
+volumes:
+  # Persistent. Recreating a container must never discard these.
+  mysql_data: {}
+  api_private_media: {}
+  api_public_media: {}

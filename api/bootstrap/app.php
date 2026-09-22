@@ -22,6 +22,36 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'supported-locale' => RequireSupportedLocale::class,
         ]);
+
+        // In production every request crosses two reverse proxies before it
+        // reaches Laravel: the VPS-level global Caddy that terminates TLS and
+        // the portfolio's own internal gateway. Without trusting them Laravel
+        // sees plain HTTP from a container address and generates http:// URLs,
+        // which breaks Filament's administration assets and every redirect.
+        //
+        // Only private ranges are trusted. The API publishes no host port and
+        // is reachable exclusively through the gateway, so a public client can
+        // never present one of these addresses; Symfony then walks
+        // X-Forwarded-For right to left and stops at the first untrusted hop,
+        // which keeps the request IP used by the rate limiters unspoofable.
+        //
+        // A wildcard is rejected outright: trusting every proxy would turn all
+        // of the headers below into client-controlled input.
+        $middleware->trustProxies(
+            at: array_values(array_filter(
+                array_map(trim(...), explode(',', (string) env(
+                    'TRUSTED_PROXIES',
+                    '10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8',
+                ))),
+                static fn (string $proxy): bool => $proxy !== '' && ! str_contains($proxy, '*'),
+            )),
+            // X-Forwarded-Host is deliberately NOT trusted. Caddy forwards the
+            // original Host header, so Laravel already sees the real hostname,
+            // and trusting the forwarded variant would let a visitor poison
+            // generated URLs through a proxy that merely passes the header on.
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_PROTO,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $isApiPath = static fn (Request $request): bool => $request->is('api') || $request->is('api/*');

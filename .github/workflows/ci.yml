@@ -1,0 +1,232 @@
+name: CI
+
+# Validation only. This workflow never deploys, never reaches the server and
+# never needs a host, edge-network or registry credential.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository:
+    name: Repository contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24.18.0'
+
+      - name: Validate repository and production contract
+        run: node infra/validation/validate-repository.mjs
+
+      - name: Check for tracked environment files
+        run: |
+          if git ls-files | grep -E '(^|/)\.env(\.|$)' | grep -v '\.example$'; then
+            echo "A real environment file is tracked." >&2
+            exit 1
+          fi
+          echo "No tracked environment files."
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '11.20.0'
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24.18.0'
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test:run
+
+      - name: Production build
+        run: pnpm build
+
+      - name: Verify build output contract
+        run: pnpm verify:build
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+
+    services:
+      mysql:
+        image: mysql:8.4.11
+        env:
+          MYSQL_DATABASE: portfolio_test
+          MYSQL_USER: portfolio_test
+          MYSQL_PASSWORD: portfolio_test
+          MYSQL_ROOT_PASSWORD: portfolio_test_root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --protocol=tcp -h 127.0.0.1 -uroot -pportfolio_test_root --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_DATABASE: portfolio_test
+      DB_USERNAME: portfolio_test
+      DB_PASSWORD: portfolio_test
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: bcmath, intl, mbstring, pdo_mysql, zip
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ runner.os }}-${{ hashFiles('api/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Test suite
+        run: php artisan test
+
+  production-runtime:
+    name: Production runtime
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Validate production Compose
+        env:
+          APP_URL: http://localhost:8000
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          MYSQL_DATABASE: portfolio
+          MYSQL_USER: portfolio
+          MYSQL_PASSWORD: ci-placeholder
+          MYSQL_ROOT_PASSWORD: ci-placeholder-root
+        run: docker compose -f compose.production.yaml config --quiet
+
+      - name: Validate development Compose
+        env:
+          APP_URL: http://localhost:8000
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          MYSQL_DATABASE: portfolio
+          MYSQL_USER: portfolio
+          MYSQL_PASSWORD: ci-placeholder
+          MYSQL_ROOT_PASSWORD: ci-placeholder-root
+          MYSQL_TEST_DATABASE: portfolio_test
+          MYSQL_TEST_USER: portfolio_test
+          MYSQL_TEST_PASSWORD: ci-placeholder
+          MYSQL_TEST_ROOT_PASSWORD: ci-placeholder-root
+        run: docker compose -f compose.yaml config --quiet
+
+      - name: Validate gateway configuration
+        run: |
+          docker run --rm -v "$PWD/infra/caddy:/etc/portfolio:ro" caddy:2.11.4-alpine \
+            caddy validate --config /etc/portfolio/Caddyfile.production --adapter caddyfile
+
+      - name: Validate static web runtime configuration
+        run: |
+          docker run --rm -v "$PWD/infra/docker/web:/etc/portfolio:ro" caddy:2.11.4-alpine \
+            caddy validate --config /etc/portfolio/Caddyfile --adapter caddyfile
+
+      # Building is not evidence that the runtime works. The stack is started
+      # from empty volumes and the same smoke script operations runs after a
+      # deployment is executed against it.
+      - name: Build production images
+        env:
+          APP_URL: http://127.0.0.1:8000
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          MYSQL_DATABASE: portfolio
+          MYSQL_USER: portfolio
+          MYSQL_PASSWORD: ci-placeholder
+          MYSQL_ROOT_PASSWORD: ci-placeholder-root
+        run: docker compose -f compose.production.yaml -p portfolio-ci build
+
+      - name: Start the production stack from empty volumes
+        env:
+          APP_URL: http://127.0.0.1:8000
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          MYSQL_DATABASE: portfolio
+          MYSQL_USER: portfolio
+          MYSQL_PASSWORD: ci-placeholder
+          MYSQL_ROOT_PASSWORD: ci-placeholder-root
+        run: |
+          docker compose -f compose.production.yaml -p portfolio-ci up -d --wait
+          docker compose -f compose.production.yaml -p portfolio-ci \
+            exec -T api php artisan migrate --force
+
+      - name: Verify only the gateway publishes a port
+        run: |
+          published="$(docker ps --filter label=com.docker.compose.project=portfolio-ci \
+            --format '{{.Names}} {{.Ports}}' | grep -c '0\.0\.0\.0\|127\.0\.0\.1' || true)"
+          docker ps --filter label=com.docker.compose.project=portfolio-ci --format '{{.Names}} {{.Ports}}'
+          if [ "$published" != "1" ]; then
+            echo "Expected exactly one service to publish a host port, found ${published}." >&2
+            exit 1
+          fi
+
+      - name: Smoke the production runtime
+        run: bash infra/validation/smoke-production.sh http://127.0.0.1:8000
+
+      - name: Verify the images carry no secrets or runtime state
+        run: |
+          for image in portfolio-api:local portfolio-web:local portfolio-gateway:local; do
+            echo "== ${image} =="
+            docker run --rm --entrypoint sh "${image}" -c '
+              found=$(find / -xdev \( -name ".env" -o -name "id_rsa*" -o -name "*.p12" \) 2>/dev/null | head -5)
+              staged=$(find /var/www/html/storage/framework/testing /var/www/html/tests -maxdepth 0 2>/dev/null)
+              if [ -n "$found" ] || [ -n "$staged" ]; then
+                echo "Unexpected content: $found $staged" >&2
+                exit 1
+              fi
+              echo "clean"
+            '
+          done
+
+      - name: Collect logs on failure
+        if: failure()
+        run: docker compose -f compose.production.yaml -p portfolio-ci logs --tail 80
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f compose.production.yaml -p portfolio-ci down --volumes --remove-orphans

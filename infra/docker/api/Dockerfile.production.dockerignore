@@ -1,0 +1,55 @@
+# Build context for the production API image (repository root).
+# Requires api/ source, this image's runtime files and the approved,
+# read-only editorial assets consumed by portfolio:import-initial-content.
+#
+# Requires BuildKit/buildx: this per-Dockerfile ignore file replaces the root
+# .dockerignore, which deliberately excludes api/ and docs/ for the
+# development image's narrower context.
+
+.git
+.gitattributes
+.worktrees
+.superpowers
+.source-materials
+tmp
+
+web
+compose.yaml
+compose.production.yaml
+
+# docs/ is excluded except the approved asset inputs baked into the image.
+docs/*
+!docs/content
+docs/content/*
+!docs/content/approved-assets
+
+.env
+.env.*
+**/.env
+**/.env.*
+
+**/node_modules
+**/vendor
+**/coverage
+
+# Runtime state belongs to volumes, never to an image layer. storage/app holds
+# managed media (CV PDFs, photos) on a machine where Laravel ran outside
+# Docker, and storage/framework/testing holds test fixtures and stray Livewire
+# uploads; none of it may ship in a public image.
+api/public/storage
+api/storage/app/private/*
+!api/storage/app/private/.gitignore
+api/storage/app/public/*
+!api/storage/app/public/.gitignore
+api/storage/framework/cache/*
+api/storage/framework/sessions/*
+api/storage/framework/views/*
+api/storage/framework/testing/*
+api/storage/logs/*
+api/bootstrap/cache/*
+
+.vscode
+.idea
+*.swp
+*.swo
+*~

@@ -1,8 +1,10 @@
 # Asset-manifest hashes are defined over the approved LF license text bytes.
 docs/prototypes/phase-2/assets/fonts/*.txt text eol=lf
 
-# Linux container entrypoints must retain a POSIX shebang after Windows checkout.
+# Linux container entrypoints and helper scripts must retain a POSIX shebang
+# after a Windows checkout, or they fail with a bad-interpreter error.
 infra/docker/**/*.sh text eol=lf
+infra/validation/*.sh text eol=lf
 
 # Docker-mounted application and infrastructure sources must retain LF on Windows.
 *.css text eol=lf
@@ -17,5 +19,10 @@ infra/docker/**/*.sh text eol=lf
 *.txt text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf
-Dockerfile text eol=lf
-Caddyfile text eol=lf
+# A CRLF Dockerfile appends a carriage return to every RUN argument, and Caddy
+# reads its configuration verbatim, so both need LF regardless of suffix.
+Dockerfile* text eol=lf
+Caddyfile* text eol=lf
+.dockerignore text eol=lf
+.env.example text eol=lf
+.env.production.example text eol=lf

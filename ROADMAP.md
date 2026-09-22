@@ -1,5 +1,34 @@
 # ROADMAP.md — Portfolio Backend PHP & Laravel
 
+> ## Excepción de orden autorizada — `v0.9.0` (2026-09-22)
+>
+> Luciano autorizó explícitamente **adelantar la Fase 11** (runtime productivo,
+> CI y release) **sin cerrar antes las Fases 9 y 10**, porque necesita el
+> portfolio publicado para usarlo en su CV.
+>
+> Esto es una **excepción de orden registrada**, no un cierre de fases:
+>
+> - **Fase 9 — seguridad y endurecimiento: OPEN**, diferida después del
+>   lanzamiento expedito. Ninguna de sus tareas se marcó como hecha.
+> - **Fase 10 — pruebas y control de calidad: OPEN**, diferida después del
+>   lanzamiento expedito. Ninguna de sus tareas se marcó como hecha.
+> - **Fase 8** permanece abierta por la imagen social final y la revisión real
+>   de indexación.
+> - **Fase 11** se ejecutó por esta autorización humana para producir una
+>   release desplegable, su runtime y su handoff.
+> - **`v0.9.0`** es la primera release pública desplegable: funcional y
+>   verificada localmente, pero **no representa el cierre del roadmap**.
+> - **`v1.0.0`** queda reservada para cuando se completen los gates normales:
+>   Fase 9, Fase 10, la imagen social final y cualquier gap real que esas fases
+>   descubran.
+>
+> Antes de etiquetar `v0.9.0` se aplicó un **gate mínimo de release** acotado
+> (secretos, build, tests existentes, runtime productivo local, smoke y
+> contratos HTTP). Ese gate no sustituye a las Fases 9 y 10.
+>
+> Camino previsto: `v0.9.0` -> portfolio online -> Fase 9 -> Fase 10 -> imagen
+> social -> `v0.9.x` según corresponda -> `v1.0.0`.
+
 ## 1. Visión
 
 Construir un portfolio bilingüe, administrable y visualmente cinematográfico que posicione a Luciano González para puestos de:
@@ -795,9 +824,32 @@ imagen social está aprobado, pero falta integrar su JPEG final humano de
 La revisión real de indexación queda para el lanzamiento (Fase 12), no se
 realizó una operación de Search Console en esta fase.
 
+**Actualización 2026-09-22 (`v0.9.0`):** la dirección visual aprobada de la
+imagen social es **A — Retrato editorial**, y su archivo final sigue
+**PENDING**. Luciano decidió explícitamente que esto **no bloquea** el
+lanzamiento expedito: `v0.9.0` se publica **sin imagen social**. El build
+detecta la ausencia del archivo y no emite `og:image` ni `twitter:image`, así
+que no hay metadata que apunte a un archivo inexistente, no se usa placeholder
+y no se regeneró el diseño. Los enlaces compartidos muestran título y
+descripción correctos, sin imagen. La integración entrará en una release
+posterior a `v0.9.0` y anterior a `v1.0.0`. Esta fase permanece **OPEN**.
+
 ---
 
 # Fase 9 — Seguridad y endurecimiento
+
+> **Estado al 2026-09-22: OPEN — diferida después del lanzamiento expedito `v0.9.0`.**
+> Ninguna tarea de esta fase se marcó como hecha. Lo que ya existe en el código
+> desde fases anteriores (rate limiting en API y descargas de CV, CORS
+> restringido por origen, panel sin registro público, autenticación
+> administrativa obligatoria, MySQL sin exposición, secretos fuera de Git) no
+> constituye el cierre de esta fase. Sigue pendiente, entre otros: cabeceras de
+> seguridad, auditoría y actualización de dependencias, política y rotación de
+> credenciales, revisión de logs y el procedimiento de backup/restore probado.
+>
+> El gate mínimo aplicado antes de `v0.9.0` verificó ausencia de secretos,
+> `APP_DEBUG` desactivado en producción, credenciales suministradas por runtime
+> y administración autenticada. Eso es un subconjunto acotado, no esta fase.
 
 ## Objetivo
 
@@ -846,6 +898,18 @@ Preparar el sistema para exposición pública.
 ---
 
 # Fase 10 — Pruebas y control de calidad
+
+> **Estado al 2026-09-22: OPEN — diferida después del lanzamiento expedito `v0.9.0`.**
+> Ninguna tarea de esta fase se marcó como hecha. El gate mínimo previo a
+> `v0.9.0` ejecutó únicamente las validaciones que ya existían en el
+> repositorio: contrato de repositorio, type check, 97 pruebas de frontend,
+> build de producción, verificación del build emitido, 594 pruebas de backend
+> contra MySQL real, build de las imágenes productivas y un smoke funcional de
+> 40 comprobaciones contra el runtime productivo local.
+>
+> Sigue pendiente la matriz completa: pruebas E2E, accesibilidad automática y
+> manual, navegadores principales, matriz de animaciones, rotación móvil, bajo
+> rendimiento y los reportes formales de esta fase.
 
 ## Objetivo
 
@@ -964,78 +1028,110 @@ Que las imágenes compilen **no** es evidencia suficiente: el runtime productivo
 - `main` en estado aprobado por decisión humana explícita.
 - Las brechas editoriales abiertas de Fase 5 resueltas, o su tratamiento en la release decidido explícitamente por un humano.
 
+> **Excepción aplicada el 2026-09-22 para `v0.9.0`.** El primer prerrequisito
+> **no se cumplió**: Fases 9 y 10 siguen OPEN. Luciano autorizó explícitamente
+> ejecutar esta fase igualmente para publicar el portfolio y usarlo en su CV
+> (ver la excepción al inicio de este documento). Los otros dos prerrequisitos
+> sí se cumplieron: `main` fue aprobada por decisión humana, y el tratamiento
+> de las brechas editoriales y de la imagen social en esta release se decidió
+> explícitamente (contenido importado como borrador y publicado por un humano
+> desde Filament; imagen social diferida sin emitir metadata rota).
+>
+> Este prerrequisito **no se elimina ni se reescribe**: sigue vigente para
+> `v1.0.0`.
+
 ## Tareas
 
 ### Decisiones a cerrar al iniciar la fase
 
 No se fijan antes de inspeccionar la implementación real; se registran cuando se decidan.
 
-- [ ] Nombres definitivos de las imágenes GHCR, derivados de la arquitectura real (frontend, backend y gateway según corresponda).
-- [ ] Visibilidad del repositorio GitHub y de los paquetes GHCR.
-- [ ] Cómo accede el runtime productivo a los assets aprobados que consume `portfolio:import-initial-content` sin depender de bind mounts de desarrollo.
-- [ ] Almacén de caché productivo compatible con `LockProvider` (`file` o `database`; ver `docs/DEPLOYMENT.md`).
-- [ ] Tratamiento de `Host`, protocolo reenviado y trusted proxies para la cadena Caddy global -> gateway interno -> frontend Vite + React y Laravel, verificable en local sin configurar Cloudflare ni el Caddy global.
+- [x] Nombres definitivos de las imágenes GHCR, derivados de la arquitectura real (frontend, backend y gateway según corresponda).
+- [x] Visibilidad del repositorio GitHub y de los paquetes GHCR.
+- [x] Cómo accede el runtime productivo a los assets aprobados que consume `portfolio:import-initial-content` sin depender de bind mounts de desarrollo.
+- [x] Almacén de caché productivo compatible con `LockProvider` (`file` o `database`; ver `docs/DEPLOYMENT.md`).
+- [x] Tratamiento de `Host`, protocolo reenviado y trusted proxies para la cadena Caddy global -> gateway interno -> frontend Vite + React y Laravel, verificable en local sin configurar Cloudflare ni el Caddy global.
 
 ### GitHub y auditoría previa
 
-- [ ] Auditar el historial Git completo (no solo el working tree) buscando `.env`, claves, tokens, passwords, dumps, logs sensibles y contenido confidencial, con conclusión explícita antes de publicar.
+- [x] Auditar el historial Git completo (no solo el working tree) buscando `.env`, claves, tokens, passwords, dumps, logs sensibles y contenido confidencial, con conclusión explícita antes de publicar.
 - [ ] Crear o conectar el repositorio GitHub canónico `portfolio` y subir `main`.
 - [ ] Documentar la protección liviana de `main` (sin force push, sin borrado accidental, checks requeridos cuando corresponda).
 
 ### Runtime productivo
 
-- [ ] Diseñar Dockerfiles específicos de producción, sin reutilizar ciegamente las imágenes de desarrollo.
-- [ ] Definir las imágenes frontend, backend y gateway según la arquitectura real; MySQL usa una imagen oficial fijada deliberadamente.
-- [ ] Crear `compose.production.yaml` portable, separado de `compose.yaml`.
-- [ ] Separar configuración de desarrollo y producción (sin bind mounts de código, watchers/HMR ni dependencias de desarrollo en runtime).
-- [ ] Conservar el gateway Caddy interno como único entrypoint del stack.
-- [ ] Mantener MySQL exclusivamente interno, sin puertos publicados.
-- [ ] Publicar únicamente el gateway, con bind/puerto configurable y default `127.0.0.1:8000`.
-- [ ] Definir networks y volumes propios del portfolio (datos MySQL, `api_private_media`, `api_public_media`).
-- [ ] Definir restart policies apropiadas.
-- [ ] Definir healthchecks reales por servicio.
-- [ ] Definir la configuración productiva sin secretos embebidos; los secretos quedan fuera de Git y fuera de las imágenes.
-- [ ] Materializar opcionalmente `/runtime-config.json` en el runtime productivo desde valores públicos de entorno, con `Cache-Control: no-store` tanto para su `200` como para su `404` intencional; el mismo digest de imagen debe poder reconfigurarse sin rebuild, tag ni release nuevos.
-- [ ] Verificar que ninguna imagen contiene `.env`, claves, tokens, passwords, secretos ni artefactos temporales innecesarios.
-- [ ] Verificar que ni `compose.production.yaml` ni las imágenes contienen rutas `/srv`, configuración de Cloudflare, del Caddy global ni del host.
+- [x] Diseñar Dockerfiles específicos de producción, sin reutilizar ciegamente las imágenes de desarrollo.
+- [x] Definir las imágenes frontend, backend y gateway según la arquitectura real; MySQL usa una imagen oficial fijada deliberadamente.
+- [x] Crear `compose.production.yaml` portable, separado de `compose.yaml`.
+- [x] Separar configuración de desarrollo y producción (sin bind mounts de código, watchers/HMR ni dependencias de desarrollo en runtime).
+- [x] Conservar el gateway Caddy interno como único entrypoint del stack.
+- [x] Mantener MySQL exclusivamente interno, sin puertos publicados.
+- [x] Publicar únicamente el gateway, con bind/puerto configurable y default `127.0.0.1:8000`.
+- [x] Definir networks y volumes propios del portfolio (datos MySQL, `api_private_media`, `api_public_media`).
+- [x] Definir restart policies apropiadas.
+- [x] Definir healthchecks reales por servicio.
+- [x] Definir la configuración productiva sin secretos embebidos; los secretos quedan fuera de Git y fuera de las imágenes.
+- [x] Materializar opcionalmente `/runtime-config.json` en el runtime productivo desde valores públicos de entorno, con `Cache-Control: no-store` tanto para su `200` como para su `404` intencional; el mismo digest de imagen debe poder reconfigurarse sin rebuild, tag ni release nuevos.
+- [x] Verificar que ninguna imagen contiene `.env`, claves, tokens, passwords, secretos ni artefactos temporales innecesarios.
+- [x] Verificar que ni `compose.production.yaml` ni las imágenes contienen rutas `/srv`, configuración de Cloudflare, del Caddy global ni del host.
 
 ### Verificación productiva local
 
-- [ ] Levantar localmente el runtime productivo completo con `compose.production.yaml`, sin el Compose de desarrollo.
-- [ ] Verificar gateway interno, frontend Vite + React, Laravel y MySQL.
-- [ ] Verificar la API (`/api/v1` y los endpoints públicos localizados).
-- [ ] Verificar `/`, `/es`, `/en` y `/admin`.
-- [ ] Verificar media/storage (`/storage/*`) y descargas de CV (`/cv/*`).
-- [ ] Ejecutar migraciones desde una base fresca.
-- [ ] Ejecutar el import/bootstrap inicial de contenido según su contrato.
+- [x] Levantar localmente el runtime productivo completo con `compose.production.yaml`, sin el Compose de desarrollo.
+- [x] Verificar gateway interno, frontend Vite + React, Laravel y MySQL.
+- [x] Verificar la API (`/api/v1` y los endpoints públicos localizados).
+- [x] Verificar `/`, `/es`, `/en` y `/admin`.
+- [x] Verificar media/storage (`/storage/*`) y descargas de CV (`/cv/*`).
+- [x] Ejecutar migraciones desde una base fresca.
+- [x] Ejecutar el import/bootstrap inicial de contenido según su contrato.
 - [ ] Ejecutar el bootstrap administrativo según el contrato vigente.
-- [ ] Verificar healthchecks.
-- [ ] Verificar persistencia tras restart y recreate de contenedores.
-- [ ] Confirmar que solo el gateway publica un puerto y que MySQL no es alcanzable desde el host.
-- [ ] Ejecutar un smoke funcional reproducible y registrar la evidencia.
+      *Parcial:* `portfolio:bootstrap-admin` se ejecuta correctamente dentro de
+      la imagen productiva (arranca, adquiere su lock, consulta la base y
+      renderiza sus prompts), pero completarlo requiere un TTY real, que es
+      exactamente su contrato interactivo. Lo ejecuta el operador durante el
+      deployment. Su lógica ya está cubierta por `BootstrapAdminTest`.
+- [x] Verificar healthchecks.
+- [x] Verificar persistencia tras restart y recreate de contenedores.
+- [x] Confirmar que solo el gateway publica un puerto y que MySQL no es alcanzable desde el host.
+- [x] Ejecutar un smoke funcional reproducible y registrar la evidencia.
 
 ### CI
 
 - [ ] Ejecutar lint.
 - [ ] Ejecutar format check cuando corresponda.
-- [ ] Ejecutar typecheck.
-- [ ] Ejecutar tests frontend.
-- [ ] Ejecutar tests backend contra MySQL real.
-- [ ] Ejecutar build frontend.
-- [ ] Ejecutar build/validación backend cuando aplique.
-- [ ] Construir los Dockerfiles productivos.
-- [ ] Validar `compose.production.yaml`.
+- [x] Ejecutar typecheck.
+- [x] Ejecutar tests frontend.
+- [x] Ejecutar tests backend contra MySQL real.
+- [x] Ejecutar build frontend.
+- [x] Ejecutar build/validación backend cuando aplique.
+- [x] Construir los Dockerfiles productivos.
+- [x] Validar `compose.production.yaml`.
 - [ ] Ejecutar las auditorías de dependencias acordadas.
 - [ ] Detectar secretos accidentales.
-- [ ] Configurar caché de dependencias donde sea segura y útil.
-- [ ] Confirmar que CI no accede al VPS ni contiene secretos del host, claves SSH ni credenciales de Cloudflare.
+- [x] Configurar caché de dependencias donde sea segura y útil.
+- [x] Confirmar que CI no accede al VPS ni contiene secretos del host, claves SSH ni credenciales de Cloudflare.
+
+> **Pendientes reales de CI al 2026-09-22.** No se agregó tooling nuevo solo
+> para completar la lista:
+>
+> - *Lint* y *format check*: el frontend no tiene linter configurado y no se
+>   introdujo uno para esta release. El backend tiene `laravel/pint` como
+>   dependencia de desarrollo, pero no hay un contrato de formato acordado
+>   todavía. Ambos corresponden a Fase 10.
+> - *Auditorías de dependencias*: no hay una auditoría acordada todavía;
+>   pertenece a Fase 9.
+> - *Detección de secretos*: CI solo comprueba que no haya archivos `.env`
+>   reales versionados. No hay escaneo de secretos por contenido ni sobre el
+>   historial dentro del pipeline; la auditoría de historial de esta fase se
+>   hizo manualmente y su conclusión está registrada. Un escáner permanente
+>   pertenece a Fase 9.
 
 ### Release
 
-- [ ] Definir el checklist de release readiness.
-- [ ] Documentar versionado, release notes y tags anotados sobre `main`.
-- [ ] Crear el workflow de release disparado por tag versionado, con permisos mínimos para publicar Packages.
-- [ ] Etiquetar las imágenes al menos por versión de release y por commit SHA; `latest`, si existe, es solo comodidad.
+- [x] Definir el checklist de release readiness.
+- [x] Documentar versionado, release notes y tags anotados sobre `main`.
+- [x] Crear el workflow de release disparado por tag versionado, con permisos mínimos para publicar Packages.
+- [x] Etiquetar las imágenes al menos por versión de release y por commit SHA; `latest`, si existe, es solo comodidad.
 - [ ] Confirmar `main` aprobada, CI verde, runtime productivo local PASS, smoke local PASS y working tree limpio antes del tag.
 - [ ] Crear el tag versionado (por ejemplo `v1.0.0`) sobre el commit aprobado de `main`.
 - [ ] Publicar GitHub Release cuando corresponda.
@@ -1045,21 +1141,21 @@ No se fijan antes de inspeccionar la implementación real; se registran cuando s
 
 ### Contrato de rollback
 
-- [ ] Documentar cómo identificar la release anterior.
-- [ ] Documentar qué imágenes y digests corresponden a cada release.
-- [ ] Documentar cómo volver a una imagen/digest anterior sin reconstruir código.
-- [ ] Documentar que un rollback de aplicación no implica automáticamente rollback de base de datos.
-- [ ] Documentar que las migraciones destructivas requieren análisis independiente y registrar el schema asociado a cada release.
+- [x] Documentar cómo identificar la release anterior.
+- [x] Documentar qué imágenes y digests corresponden a cada release.
+- [x] Documentar cómo volver a una imagen/digest anterior sin reconstruir código.
+- [x] Documentar que un rollback de aplicación no implica automáticamente rollback de base de datos.
+- [x] Documentar que las migraciones destructivas requieren análisis independiente y registrar el schema asociado a cada release.
 
 ### Handoff de deployment
 
 - [ ] Actualizar `docs/DEPLOYMENT.md` con release, commit, imágenes y digests.
-- [ ] Documentar servicios, gateway, puertos internos, entrypoint `127.0.0.1:8000` y rutas `/`, `/es`, `/en`, `/api/*`, `/admin/*`, `/storage/*` y `/cv/*`.
-- [ ] Documentar volúmenes persistentes, variables requeridas y secretos necesarios sin incluir valores.
-- [ ] Documentar migraciones, import inicial, bootstrap administrativo, health checks y smoke checks para el deployment posterior.
-- [ ] Documentar qué debe respaldarse y qué servicios y puertos nunca se exponen.
-- [ ] Documentar qué debe aportar el override `/srv/ops/portfolio/compose.vps.yaml`, sin crearlo.
-- [ ] Referenciar `vps_ops_claude` como propietario del deployment real.
+- [x] Documentar servicios, gateway, puertos internos, entrypoint `127.0.0.1:8000` y rutas `/`, `/es`, `/en`, `/api/*`, `/admin/*`, `/storage/*` y `/cv/*`.
+- [x] Documentar volúmenes persistentes, variables requeridas y secretos necesarios sin incluir valores.
+- [x] Documentar migraciones, import inicial, bootstrap administrativo, health checks y smoke checks para el deployment posterior.
+- [x] Documentar qué debe respaldarse y qué servicios y puertos nunca se exponen.
+- [x] Documentar qué debe aportar el override `/srv/ops/portfolio/compose.vps.yaml`, sin crearlo.
+- [x] Referenciar `vps_ops_claude` como propietario del deployment real.
 
 ## Salida esperada
 

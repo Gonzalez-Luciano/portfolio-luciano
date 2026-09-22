@@ -4,6 +4,19 @@
 
 Baseline de arquitectura del proyecto Portfolio.
 
+> **Runtime productivo (2026-09-22).** Existe y fue verificado localmente. El
+> frontend productivo es un **build de Vite servido estáticamente por Caddy**
+> (`infra/docker/web/`), no un servidor de desarrollo: la imagen publicada no
+> contiene Node, HMR, dependencias de desarrollo ni código fuente. El gateway
+> interno se publica como imagen propia con su `Caddyfile.production` horneado
+> (`infra/docker/gateway/`). El backend productivo es una imagen separada de la
+> de desarrollo (`infra/docker/api/Dockerfile.production`). MySQL usa la imagen
+> oficial `mysql:8.4.11`. El stack portable vive en `compose.production.yaml`.
+> Detalle completo y handoff en `docs/DEPLOYMENT.md`.
+>
+> La release `v0.9.0` se produce bajo una **excepción de orden autorizada**:
+> Fases 9 y 10 siguen OPEN. Ver `ROADMAP.md`.
+
 Este documento describe la arquitectura interna del portfolio.
 
 La arquitectura compartida del VPS se encuentra en:
@@ -792,6 +805,18 @@ CI valida:
 
 - Auditorías de dependencias acordadas.
 - Detección de secretos accidentales.
+
+> **Estado real al 2026-09-22 (`v0.9.0`).** `.github/workflows/ci.yml` ejecuta:
+> contrato de repositorio y producción, comprobación de que no haya `.env`
+> versionado, type check, pruebas y build del frontend con verificación del
+> output emitido, pruebas del backend contra MySQL real, validación de ambos
+> Compose, validación de las dos configuraciones Caddy y build de las tres
+> imágenes productivas.
+>
+> **Todavía no ejecuta lint, format check, auditorías de dependencias ni
+> escaneo de secretos por contenido**, porque no existen esos contratos en el
+> repositorio y no se agregó tooling nuevo solo para completar la lista.
+> Corresponden a Fases 9 y 10, que siguen OPEN.
 
 El workflow de release, disparado por un tag versionado sobre `main`, publica las imágenes productivas en GHCR identificables por versión y commit SHA, y sus digests quedan registrados en `docs/DEPLOYMENT.md`.
 
