@@ -14,7 +14,7 @@ Baseline de arquitectura del proyecto Portfolio.
 > oficial `mysql:8.4.11`. El stack portable vive en `compose.production.yaml`.
 > Detalle completo y handoff en `docs/DEPLOYMENT.md`.
 >
-> La release `v0.9.0` se produjo bajo una **excepción de orden autorizada**:
+> La release `v0.9.0` se produce bajo una **excepción de orden autorizada**:
 > Fases 9 y 10 siguen OPEN. Ver `ROADMAP.md`.
 
 Este documento describe la arquitectura interna del portfolio.

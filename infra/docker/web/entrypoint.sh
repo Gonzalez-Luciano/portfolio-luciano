@@ -30,6 +30,10 @@ elif ! printf '%s' "$tracker_url" | grep -Eq "$tracker_pattern"; then
     analytics_off "UMAMI_TRACKER_URL is not an http(s) URL"
 elif printf '%s' "$tracker_url" | grep -q '["\\]'; then
     analytics_off "UMAMI_TRACKER_URL contains an unsupported character"
+elif printf '%s' "$tracker_url" | grep -q '@'; then
+    # The browser-side parser rejects a tracker URL carrying credentials, so
+    # writing one here would publish a file the client silently discards.
+    analytics_off "UMAMI_TRACKER_URL must not embed credentials"
 elif ! printf '%s' "$website_id" | grep -Eq "$uuid_pattern"; then
     analytics_off "UMAMI_WEBSITE_ID is not a UUID"
 elif [ "$website_id" = "$nil_uuid" ]; then

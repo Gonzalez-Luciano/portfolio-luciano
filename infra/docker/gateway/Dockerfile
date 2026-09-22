@@ -9,6 +9,8 @@
 # entrypoint of the portfolio stack and listens on a loopback-bound host port.
 #
 # Build context is the repository root.
+# Requires BuildKit/buildx: the sibling Dockerfile.dockerignore replaces the
+# root .dockerignore, which excludes web/ and api/ for the development image.
 
 FROM caddy:2.11.4-alpine
 

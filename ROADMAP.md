@@ -905,7 +905,7 @@ Preparar el sistema para exposición pública.
 > repositorio: contrato de repositorio, type check, 97 pruebas de frontend,
 > build de producción, verificación del build emitido, 594 pruebas de backend
 > contra MySQL real, build de las imágenes productivas y un smoke funcional de
-> 37 comprobaciones contra el runtime productivo local.
+> 40 comprobaciones contra el runtime productivo local.
 >
 > Sigue pendiente la matriz completa: pruebas E2E, accesibilidad automática y
 > manual, navegadores principales, matriz de animaciones, rotación móvil, bajo

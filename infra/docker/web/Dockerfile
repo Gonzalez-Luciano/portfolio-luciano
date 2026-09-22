@@ -6,6 +6,8 @@
 # dependencies and no application source in the shipped layer.
 #
 # Build context is the repository root.
+# Requires BuildKit/buildx: the sibling Dockerfile.dockerignore replaces the
+# root .dockerignore, which excludes web/ and api/ for the development image.
 
 FROM node:24.18.0-bookworm-slim AS build
 

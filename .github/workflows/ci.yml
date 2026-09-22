@@ -169,29 +169,64 @@ jobs:
           docker run --rm -v "$PWD/infra/docker/web:/etc/portfolio:ro" caddy:2.11.4-alpine \
             caddy validate --config /etc/portfolio/Caddyfile --adapter caddyfile
 
-      - name: Build production gateway image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: infra/docker/gateway/Dockerfile
-          push: false
-          cache-from: type=gha,scope=gateway
-          cache-to: type=gha,mode=max,scope=gateway
+      # Building is not evidence that the runtime works. The stack is started
+      # from empty volumes and the same smoke script operations runs after a
+      # deployment is executed against it.
+      - name: Build production images
+        env:
+          APP_URL: http://127.0.0.1:8000
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          MYSQL_DATABASE: portfolio
+          MYSQL_USER: portfolio
+          MYSQL_PASSWORD: ci-placeholder
+          MYSQL_ROOT_PASSWORD: ci-placeholder-root
+        run: docker compose -f compose.production.yaml -p portfolio-ci build
 
-      - name: Build production web image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: infra/docker/web/Dockerfile
-          push: false
-          cache-from: type=gha,scope=web
-          cache-to: type=gha,mode=max,scope=web
+      - name: Start the production stack from empty volumes
+        env:
+          APP_URL: http://127.0.0.1:8000
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          MYSQL_DATABASE: portfolio
+          MYSQL_USER: portfolio
+          MYSQL_PASSWORD: ci-placeholder
+          MYSQL_ROOT_PASSWORD: ci-placeholder-root
+        run: |
+          docker compose -f compose.production.yaml -p portfolio-ci up -d --wait
+          docker compose -f compose.production.yaml -p portfolio-ci \
+            exec -T api php artisan migrate --force
 
-      - name: Build production API image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: infra/docker/api/Dockerfile.production
-          push: false
-          cache-from: type=gha,scope=api
-          cache-to: type=gha,mode=max,scope=api
+      - name: Verify only the gateway publishes a port
+        run: |
+          published="$(docker ps --filter label=com.docker.compose.project=portfolio-ci \
+            --format '{{.Names}} {{.Ports}}' | grep -c '0\.0\.0\.0\|127\.0\.0\.1' || true)"
+          docker ps --filter label=com.docker.compose.project=portfolio-ci --format '{{.Names}} {{.Ports}}'
+          if [ "$published" != "1" ]; then
+            echo "Expected exactly one service to publish a host port, found ${published}." >&2
+            exit 1
+          fi
+
+      - name: Smoke the production runtime
+        run: bash infra/validation/smoke-production.sh http://127.0.0.1:8000
+
+      - name: Verify the images carry no secrets or runtime state
+        run: |
+          for image in portfolio-api:local portfolio-web:local portfolio-gateway:local; do
+            echo "== ${image} =="
+            docker run --rm --entrypoint sh "${image}" -c '
+              found=$(find / -xdev \( -name ".env" -o -name "id_rsa*" -o -name "*.p12" \) 2>/dev/null | head -5)
+              staged=$(find /var/www/html/storage/framework/testing /var/www/html/tests -maxdepth 0 2>/dev/null)
+              if [ -n "$found" ] || [ -n "$staged" ]; then
+                echo "Unexpected content: $found $staged" >&2
+                exit 1
+              fi
+              echo "clean"
+            '
+          done
+
+      - name: Collect logs on failure
+        if: failure()
+        run: docker compose -f compose.production.yaml -p portfolio-ci logs --tail 80
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f compose.production.yaml -p portfolio-ci down --volumes --remove-orphans

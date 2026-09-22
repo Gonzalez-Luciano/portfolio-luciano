@@ -306,7 +306,7 @@ La misma regla de secretos aplica: no pasar una contraseña al comando, entorno 
 
 Los tags anotados se crean desde commits aprobados de `main` solo para hitos o releases significativos. Desde Fase 11, un tag versionado de release dispara el workflow que publica las imágenes productivas en GHCR.
 
-`main` se protege de forma liviana: no se fuerza el push, no se borra la rama y no se reescribe su historial. Los cambios llegan por pull request con CI verde. El tag de release apunta siempre a un commit ya validado de `main`.
+La política acordada para `main` es liviana: no forzar el push, no borrar la rama, no reescribir su historial, y llegar por pull request con CI verde. El tag de release apunta siempre a un commit ya validado de `main`. La protección de rama se configura en GitHub; el workflow de release además rechaza cualquier tag cuyo commit no esté contenido en `origin/main`.
 
 ## Runtime productivo local
 

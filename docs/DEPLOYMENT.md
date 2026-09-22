@@ -4,7 +4,7 @@
 
 Este documento describe el contrato de aplicación y de release que el repositorio entrega al flujo operativo `vps_ops_claude`. No es un checklist para que un agente del repositorio instale, configure u opere el VPS: **ningún agente del repositorio entra al VPS**.
 
-> **Estado actual (2026-09-22): el portfolio NO está desplegado.** El runtime productivo, `compose.production.yaml`, los workflows de GitHub Actions y la release `v0.9.0` ya existen y fueron verificados localmente. El deployment al VPS todavía **no fue ejecutado**: lo realiza después `vps_ops_claude` consumiendo exactamente esa release.
+> **Estado actual (2026-09-22): el portfolio NO está desplegado.** El runtime productivo, `compose.production.yaml` y los workflows de GitHub Actions existen y fueron verificados localmente. La release `v0.9.0` se produce a partir de este commit: el tag, la GitHub Release y las imágenes GHCR se crean en el paso siguiente y sus digests quedan registrados más abajo. El deployment al VPS **no fue ejecutado**: lo realiza después `vps_ops_claude` consumiendo exactamente esa release.
 >
 > **Excepción de roadmap autorizada (2026-09-22).** `v0.9.0` se produjo por decisión humana explícita de Luciano para publicar el portfolio antes de cerrar los gates normales, porque lo necesita en su CV. **Fase 9 (seguridad y endurecimiento) y Fase 10 (pruebas y control de calidad) permanecen OPEN**; sus tareas no se marcaron como hechas. `v0.9.0` es una release desplegable y funcional, no el cierre del roadmap. `v1.0.0` queda reservada para cuando Fases 9 y 10 estén completas y la imagen social final esté integrada. Ver `ROADMAP.md`, sección de la excepción.
 
@@ -368,7 +368,9 @@ Decisiones cerradas al implementar la fase:
 - **Puerto interno del frontend:** `8080`. El `5173` del entorno de desarrollo es del servidor Vite y no existe en producción.
 - **Assets aprobados del import inicial:** se hornean en la imagen del API en `/var/www/docs/content/approved-assets`, que es exactamente donde el importador los resuelve vía `base_path('../docs/...')`. Producción ya no depende del bind mount `./docs` de desarrollo. Son entrada versionada de solo lectura, no dato persistente a respaldar.
 - **Almacén de caché productivo:** `database`, que implementa `LockProvider` y ya tiene su migración. `file` sigue siendo válido; un backend sin `LockProvider` no.
-- **`Host`, protocolo reenviado y trusted proxies:** Laravel confía en rangos privados (`TRUSTED_PROXIES`, default `10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8`). El API no publica puerto y solo es alcanzable a través del gateway, así que un cliente público nunca puede presentar una de esas direcciones y `X-Forwarded-For` no es falsificable para los rate limiters por IP. Verificado en local: con `X-Forwarded-Proto: https` y `X-Forwarded-Host: lucianogonzalez.dev`, Filament emite `https://lucianogonzalez.dev/...`; sin esa configuración emitía `http://`, lo que habría roto el panel detrás de TLS.
+- **`Host`, protocolo reenviado y trusted proxies:** Laravel confía únicamente en rangos privados (`TRUSTED_PROXIES`, default `10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8`); un valor con comodín se descarta. El API no publica puerto y solo es alcanzable a través del gateway, así que un cliente público nunca puede presentar una de esas direcciones. Se confían `X-Forwarded-For` y `X-Forwarded-Proto`; **`X-Forwarded-Host` NO se confía**, porque Caddy ya reenvía el `Host` original y confiar en la variante reenviada permitiría envenenar las URLs generadas. Verificado en local: con `X-Forwarded-Proto: https` sobre el `Host` real, Filament emite `https://lucianogonzalez.dev/...`; sin esta configuración emitía `http://`, lo que habría roto el panel detrás de TLS. Cubierto por `api/tests/Feature/TrustedProxyTest.php`.
+
+  > **Nota para operaciones — IP del cliente y rate limiting.** Symfony recorre `X-Forwarded-For` de derecha a izquierda y se detiene en el primer salto no confiable. Cloudflare es una red pública, así que si el Caddy global no la trata explícitamente, el `request->ip()` que ven los rate limiters (`public-api` 60/min y `cv-download` 30/min, en `api/app/Providers/AppServiceProvider.php`) será **la IP del edge de Cloudflare, no la del visitante**, y todos los visitantes de un mismo PoP compartirán cupo. Para obtener la IP real, el Caddy global debe declarar Cloudflare en sus propios `trusted_proxies` y reenviar `header_up X-Forwarded-For {http.request.client_ip}`. Esto pertenece a operaciones; el repositorio no lo configura. No es una vulnerabilidad: la dirección sigue sin ser falsificable, solo es menos granular.
 - **Nombres GHCR:** `ghcr.io/gonzalez-luciano/portfolio-web`, `portfolio-api` y `portfolio-gateway`. MySQL usa la imagen oficial `mysql:8.4.11`, deliberadamente fijada a patch; no se construye una imagen propia de MySQL.
 - **Rutas no cacheadas:** no se ejecuta `route:cache`. `routes/web.php` y `routes/api.php` registran acciones closure, que Laravel no puede serializar. Sí se cachean configuración y vistas, en el arranque del contenedor, cuando las variables de entorno ya están presentes.
 
@@ -414,12 +416,12 @@ vacía. Evidencia resumida:
 | `portfolio:import-initial-content` (primera ejecución) | PASS |
 | `portfolio:import-initial-content` (segunda ejecución) | rechazada, sin cambios |
 | Bootstrap administrativo interactivo en la imagen productiva | prompts operativos; completarlo requiere TTY real del operador |
-| Smoke `infra/validation/smoke-production.sh` | 37/37 PASS |
+| Smoke `infra/validation/smoke-production.sh` | 40/40 PASS |
 | `runtime-config.json` OFF | `404` + `Cache-Control: no-store` |
 | `runtime-config.json` ON (mismo image id, sin rebuild) | `200` + `no-store` + JSON válido |
 | Configuración parcial/inválida/nil-UUID | siempre `404` (analítica OFF) |
 | Persistencia tras `restart` | PASS |
-| Persistencia tras `down` + `up` (recreate) | PASS, smoke 37/37 de nuevo |
+| Persistencia tras `down` + `up` (recreate) | PASS, smoke 40/40 de nuevo |
 | MySQL alcanzable desde el host | NO (sin port binding) |
 | Puertos publicados por el proyecto | solo gateway, loopback |
 | Secretos, `.env`, `.git`, `node_modules`, tests en las imágenes | ninguno |
@@ -487,7 +489,20 @@ Entrypoint del proyecto:   127.0.0.1:8000
 ### Imágenes a desplegar
 
 Desplegar por digest. El tag se incluye para lectura humana; `latest` existe
-solo por comodidad y no debe usarse en producción.
+solo por comodidad y no debe usarse en producción. Las imágenes se publican
+para `linux/amd64`.
+
+> **`compose.production.yaml` conserva secciones `build:`** para poder verificar
+> el runtime localmente. En el VPS eso significa que un `up` a secas podría
+> construir en vez de descargar. El deployment debe ser explícito:
+>
+> ```bash
+> docker compose -f compose.production.yaml pull
+> docker compose -f compose.production.yaml up -d --no-build --wait
+> ```
+>
+> `--no-build` falla de forma ruidosa si falta una imagen, en lugar de sustituir
+> silenciosamente el digest publicado por una build local.
 
 ```text
 ghcr.io/gonzalez-luciano/portfolio-web:v0.9.0      @ WEB_DIGEST_PLACEHOLDER
@@ -719,15 +734,17 @@ El repositorio no adivina, y pertenecen a operaciones:
 
 ## Definition of done del handoff (Fase 11)
 
-- [ ] El runtime productivo fue levantado y verificado localmente desde una base fresca.
-- [ ] Servicios, redes, puertos internos y entrypoint están documentados.
-- [ ] Variables y secretos requeridos tienen owner y ejemplo sin valores reales.
-- [ ] Persistencia, migraciones, import inicial y bootstrap están documentados.
-- [ ] Build, tests, health checks y smoke local son reproducibles.
-- [ ] MySQL y servicios internos no se exponen públicamente.
-- [ ] La frontera con el Caddy global, Cloudflare y el VPS está explícita.
+- [x] El runtime productivo fue levantado y verificado localmente desde una base fresca.
+- [x] Servicios, redes, puertos internos y entrypoint están documentados.
+- [x] Variables y secretos requeridos tienen owner y ejemplo sin valores reales.
+- [x] Persistencia, migraciones, import inicial y bootstrap están documentados.
+- [x] Build, tests, health checks y smoke local son reproducibles.
+- [x] MySQL y servicios internos no se exponen públicamente.
+- [x] La frontera con el Caddy global, Cloudflare y el VPS está explícita.
 - [ ] Release, commit, imágenes y digests están registrados.
-- [ ] El contrato de rollback está documentado.
-- [ ] Los datos relevantes para backup están identificados.
-- [ ] La release puede entregarse a `vps_ops_claude` sin reconstruir código ni duplicar su checklist operacional.
-- [ ] El documento no afirma que el portfolio ya fue desplegado.
+      *Pendiente hasta que el workflow de release publique las imágenes; los
+      marcadores `*_PLACEHOLDER` de este documento se sustituyen en ese momento.*
+- [x] El contrato de rollback está documentado.
+- [x] Los datos relevantes para backup están identificados.
+- [x] La release puede entregarse a `vps_ops_claude` sin reconstruir código ni duplicar su checklist operacional.
+- [x] El documento no afirma que el portfolio ya fue desplegado.

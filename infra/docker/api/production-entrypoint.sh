@@ -43,6 +43,8 @@ php artisan config:clear
 php artisan config:cache
 php artisan view:cache
 
-chown -R www-data:www-data bootstrap/cache
+# Both commands run as root, so the compiled configuration and the Blade views
+# they leave behind must be handed back to the Apache/PHP user.
+chown -R www-data:www-data storage bootstrap/cache
 
 exec "$@"
