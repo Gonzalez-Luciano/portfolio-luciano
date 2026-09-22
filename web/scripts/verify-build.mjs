@@ -36,6 +36,12 @@ const expectedFavicons = [
   '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">',
 ]
 
+const serializeHtmlAttribute = (value) => value
+  .replaceAll('&', '&amp;')
+  .replaceAll('"', '&quot;')
+  .replaceAll('<', '&lt;')
+  .replaceAll('>', '&gt;')
+
 const assertShell = (html, locale) => {
   const expected = metadata[locale]
   assert.match(html, new RegExp(`<html lang="${locale}">`))
@@ -52,6 +58,8 @@ const assertShell = (html, locale) => {
   assert(jsonLd, `${locale} JSON-LD is missing`)
   assert.deepEqual(JSON.parse(jsonLd[1])['@graph'].map((node) => node['@type']), ['Person', 'WebSite'])
 }
+
+const socialImageAlt = serializeHtmlAttribute('Luciano González — Backend Engineer | PHP & Laravel')
 
 assertShell(es, 'es')
 assertShell(en, 'en')
@@ -93,9 +101,9 @@ if (existsSync(socialImage)) {
     assert(html.includes(`<meta property="og:image" content="${image}">`), 'OG image is missing')
     assert(html.includes('<meta property="og:image:width" content="1200">'), 'OG image width is missing')
     assert(html.includes('<meta property="og:image:height" content="630">'), 'OG image height is missing')
-    assert(html.includes('<meta property="og:image:alt" content="Luciano González — Backend Engineer | PHP & Laravel">'), 'OG image alt is missing')
+    assert(html.includes(`<meta property="og:image:alt" content="${socialImageAlt}">`), 'OG image alt is missing')
     assert(html.includes(`<meta name="twitter:image" content="${image}">`), 'Twitter image is missing')
-    assert(html.includes('<meta name="twitter:image:alt" content="Luciano González — Backend Engineer | PHP & Laravel">'), 'Twitter image alt is missing')
+    assert(html.includes(`<meta name="twitter:image:alt" content="${socialImageAlt}">`), 'Twitter image alt is missing')
   }
 } else {
   assert(!es.includes('og:image'), 'ES shell must not reference a missing OG image')
