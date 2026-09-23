@@ -4,7 +4,7 @@
 
 Este documento describe el contrato de aplicación y de release que el repositorio entrega al flujo operativo `vps_ops_claude`. No es un checklist para que un agente del repositorio instale, configure u opere el VPS: **ningún agente del repositorio entra al VPS**.
 
-> **Estado actual (2026-09-22): el portfolio NO está desplegado.** El runtime productivo, `compose.production.yaml` y los workflows de GitHub Actions existen y fueron verificados localmente. La release `v0.9.0` existe: tag anotado sobre `main` en `ac3ae1a`, GitHub Release publicada e imágenes en GHCR con sus digests registrados más abajo. Esas imágenes se descargaron por digest y pasaron el smoke completo (40/40) con la misma secuencia de deployment documentada en este archivo. El deployment al VPS **no fue ejecutado**: lo realiza después `vps_ops_claude` consumiendo exactamente esa release.
+> **Estado actual (2026-09-22): el portfolio NO está desplegado.** El runtime productivo, `compose.production.yaml` y los workflows de GitHub Actions existen y fueron verificados localmente. La release a desplegar es **`v0.9.1`**: tag anotado sobre `main` en `ce2afd4`, GitHub Release publicada e imágenes en GHCR con sus digests registrados más abajo. Esas imágenes se descargaron por digest y pasaron el smoke completo (40/40) con la misma secuencia de deployment documentada en este archivo. `v0.9.1` reemplaza a `v0.9.0` (que nunca se desplegó) y solo cambia la imagen web: sirve el video de scroll V4. El deployment al VPS **no fue ejecutado**: lo realiza después `vps_ops_claude` consumiendo exactamente esa release.
 >
 > **Excepción de roadmap autorizada (2026-09-22).** `v0.9.0` se produjo por decisión humana explícita de Luciano para publicar el portfolio antes de cerrar los gates normales, porque lo necesita en su CV. **Fase 9 (seguridad y endurecimiento) y Fase 10 (pruebas y control de calidad) permanecen OPEN**; sus tareas no se marcaron como hechas. `v0.9.0` es una release desplegable y funcional, no el cierre del roadmap. `v1.0.0` queda reservada para cuando Fases 9 y 10 estén completas y la imagen social final esté integrada. Ver `ROADMAP.md`, sección de la excepción.
 
@@ -467,10 +467,13 @@ Reglas:
 | `v0.9.0` | `ac3ae1a5dba4a2dc37fcb589ff2c6301a287c6e0` | `ghcr.io/gonzalez-luciano/portfolio-web:v0.9.0` | `sha256:7a2396917fa0eb7bc4758bbf3c966a03b124c63ad9bbae071a952f517bb35210` | Schema hasta `2026_09_15_000005_add_location_to_profiles` |
 | `v0.9.0` | `ac3ae1a5dba4a2dc37fcb589ff2c6301a287c6e0` | `ghcr.io/gonzalez-luciano/portfolio-api:v0.9.0` | `sha256:482579e1957487a991966ab1b9cf5bb7a911bcffb5006d70abd2e5bc40da4b83` | Schema hasta `2026_09_15_000005_add_location_to_profiles` |
 | `v0.9.0` | `ac3ae1a5dba4a2dc37fcb589ff2c6301a287c6e0` | `ghcr.io/gonzalez-luciano/portfolio-gateway:v0.9.0` | `sha256:228fd25fc15ecf02e441d3cce5eb5aaf634fd20517a8dafa4b917574aac369f0` | — |
+| `v0.9.1` | `ce2afd46d96939e2e9e11b3e57f378f487e75021` | `ghcr.io/gonzalez-luciano/portfolio-web:v0.9.1` | `sha256:209cc5ff75b335ef81ec05b8ab0e25680710b982b2deab20b6310e976eb70d75` | Schema hasta `2026_09_15_000005_add_location_to_profiles` (sin cambios desde `v0.9.0`) |
+| `v0.9.1` | `ce2afd46d96939e2e9e11b3e57f378f487e75021` | `ghcr.io/gonzalez-luciano/portfolio-api:v0.9.1` | `sha256:d3f2731cb4f18e50b9d0c8dee4cc62ad5b039c125ab5e3ef7da85eb686d94c49` | Schema hasta `2026_09_15_000005_add_location_to_profiles` (sin cambios desde `v0.9.0`) |
+| `v0.9.1` | `ce2afd46d96939e2e9e11b3e57f378f487e75021` | `ghcr.io/gonzalez-luciano/portfolio-gateway:v0.9.1` | `sha256:2e66e886ebc54ea0b566faedbadb39ab4da34aff3c498262e91a6e92296f0efa` | — |
 
 MySQL no se versiona con la release: usa la imagen oficial `mysql:8.4.11`.
 
-## Handoff operativo de `v0.9.0`
+## Handoff operativo de `v0.9.1`
 
 Todo lo que operaciones necesita para desplegar esta release exacta. Ningún
 valor real de secreto aparece aquí; solo nombres de variables.
@@ -479,8 +482,8 @@ valor real de secreto aparece aquí; solo nombres de variables.
 
 ```text
 Repositorio: https://github.com/Gonzalez-Luciano/portfolio-luciano
-Tag:         v0.9.0
-Commit:      ac3ae1a5dba4a2dc37fcb589ff2c6301a287c6e0
+Tag:         v0.9.1
+Commit:      ce2afd46d96939e2e9e11b3e57f378f487e75021
 Compose:     compose.production.yaml (del checkout de ese tag)
 Hostname público esperado: lucianogonzalez.dev
 Entrypoint del proyecto:   127.0.0.1:8000
@@ -505,9 +508,9 @@ para `linux/amd64`.
 > silenciosamente el digest publicado por una build local.
 
 ```text
-ghcr.io/gonzalez-luciano/portfolio-web:v0.9.0      @ sha256:7a2396917fa0eb7bc4758bbf3c966a03b124c63ad9bbae071a952f517bb35210
-ghcr.io/gonzalez-luciano/portfolio-api:v0.9.0      @ sha256:482579e1957487a991966ab1b9cf5bb7a911bcffb5006d70abd2e5bc40da4b83
-ghcr.io/gonzalez-luciano/portfolio-gateway:v0.9.0  @ sha256:228fd25fc15ecf02e441d3cce5eb5aaf634fd20517a8dafa4b917574aac369f0
+ghcr.io/gonzalez-luciano/portfolio-web:v0.9.1      @ sha256:209cc5ff75b335ef81ec05b8ab0e25680710b982b2deab20b6310e976eb70d75
+ghcr.io/gonzalez-luciano/portfolio-api:v0.9.1      @ sha256:d3f2731cb4f18e50b9d0c8dee4cc62ad5b039c125ab5e3ef7da85eb686d94c49
+ghcr.io/gonzalez-luciano/portfolio-gateway:v0.9.1  @ sha256:2e66e886ebc54ea0b566faedbadb39ab4da34aff3c498262e91a6e92296f0efa
 mysql:8.4.11                                       (imagen oficial fijada)
 ```
 
@@ -769,3 +772,28 @@ de modo que un operador puede confirmar desde el registry que el artefacto
 corresponde exactamente al commit etiquetado, sin reconstruir nada.
 
 Las imágenes están publicadas para `linux/amd64`.
+
+## Verificación de la release publicada `v0.9.1` (2026-09-22)
+
+Misma secuencia que para `v0.9.0`: las tres imágenes publicadas se descargaron
+desde GHCR **por digest** y se ejecutaron con `docker compose pull` seguido de
+`up -d --no-build --wait`, en un proyecto Compose aislado sobre
+`127.0.0.1:28000`, con volúmenes vacíos y un env descartable.
+
+| Comprobación | Resultado |
+|---|---|
+| CI de `main` en `ce2afd4` (4 jobs) antes de etiquetar | PASS |
+| `docker compose pull` de los tres digests | PASS |
+| Arranque con `--no-build --wait` (health de los 4 servicios) | PASS |
+| `php artisan migrate --force` desde base fresca | PASS |
+| Smoke `infra/validation/smoke-production.sh` | 40/40 PASS |
+| `/media/scroll/ink-tree-network-v4.mp4` y `-v4-poster.webp` | `200` (2,328,248 y 14,012 bytes) |
+| `/media/scroll/ink-tree-network-v3*` | `404` (ya no se sirve) |
+| Solo el gateway publica puerto, sobre loopback | PASS |
+| Etiquetas OCI `version=v0.9.1` y `revision=ce2afd46d96939e2e9e11b3e57f378f487e75021` en las tres imágenes | PASS |
+| Digest del tag de versión = digest del tag `sha-ce2afd46d96939e2e9e11b3e57f378f487e75021` | PASS |
+
+`v0.9.1` no cambia schema, API ni configuración respecto de `v0.9.0`: el cambio
+es el video de scroll de la imagen web (ver
+`docs/design/phase-6/scroll-video/PROMPTS.md`, sección V4).
+

@@ -36,6 +36,12 @@
 > registrados en `docs/DEPLOYMENT.md`. Esas imágenes se descargaron por digest
 > y pasaron el smoke completo con la secuencia de deployment documentada.
 >
+> **`v0.9.1` (2026-09-22)** reemplaza a `v0.9.0` antes de su deployment: sirve el
+> video de scroll V4 aprobado por Luciano (solo cambia la imagen web). Tag anotado
+> sobre `main` en `ce2afd46d96939e2e9e11b3e57f378f487e75021`, CI verde antes de etiquetar,
+> GitHub Release e imágenes en GHCR con digests en `docs/DEPLOYMENT.md`, verificadas
+> por digest con smoke 40/40. Fases 9 y 10 siguen OPEN.
+>
 > **El portfolio todavía NO está desplegado.** El deployment al VPS lo ejecuta
 > después `vps_ops_claude`, fuera de este repositorio.
 
