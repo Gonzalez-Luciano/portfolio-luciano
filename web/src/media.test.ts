@@ -26,6 +26,17 @@ describe('scroll scene media', () => {
     expect(posterSize).toBeGreaterThan(1 * 1024)
     expect(posterSize).toBeLessThan(200 * 1024)
   })
+
+  it('ships the v4 poster as a 1920×1080 lossy WebP with a small footprint', () => {
+    const poster = readFileSync(scroll('ink-tree-network-v4-poster.webp'))
+    expect(poster.subarray(0, 4).toString('ascii')).toBe('RIFF')
+    expect(poster.subarray(8, 16).toString('ascii')).toBe('WEBPVP8 ')
+    expect(poster.subarray(23, 26)).toEqual(Buffer.from([0x9d, 0x01, 0x2a]))
+    expect(poster.readUInt16LE(26) & 0x3fff).toBe(1920)
+    expect(poster.readUInt16LE(28) & 0x3fff).toBe(1080)
+    expect(poster.length).toBeGreaterThan(1 * 1024)
+    expect(poster.length).toBeLessThan(200 * 1024)
+  })
 })
 
 describe('favicon package', () => {
