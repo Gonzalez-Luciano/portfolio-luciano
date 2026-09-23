@@ -17,8 +17,8 @@ export function stepTowards(
 }
 
 /**
- * The two frames around `seconds` and how far between them it sits, so an
- * 81-frame bank can be drawn as a continuous cross-fade.
+ * The two frames around `seconds` and how far between them it sits, so a
+ * frame bank can be drawn as a continuous cross-fade.
  */
 export function blendFrames(
   frames: ReadonlyArray<{ ts: number }>,

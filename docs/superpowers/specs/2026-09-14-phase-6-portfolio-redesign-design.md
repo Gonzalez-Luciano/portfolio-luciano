@@ -176,9 +176,9 @@ Autoalojadas con paquetes `@fontsource` (Fraunces variable, Instrument Sans, IBM
 
 | Aspecto | Valor |
 |---|---|
-| Archivo | `web/public/media/scroll/ink-tree-network-v3.mp4` (se reemplaza la URL externa) |
-| Origen | Wan 2.2 First-Last Frame, 81 cuadros a 16 fps, 848×480, 5,06 s, sin audio; cuadros escalados 4× con Real-ESRGAN (`x4plus-anime`) a 3392×1920 y reescalados 2× (Lanczos) a 1696×960, el doble de la resolución original, servidos |
-| Póster | `ink-tree-network-v3-poster.webp` (cuadro 0, 1696×960), usado mientras carga y sin JavaScript |
+| Archivo | `web/public/media/scroll/ink-tree-network-v4.mp4` (reemplaza a `-v3` el 2026-09-22; `-v3` queda sin servir en `docs/design/phase-6/scroll-video/`) |
+| Origen | V4: video nuevo aportado por Luciano, 1920×1080, 121 cuadros a 24 fps, 5,04 s; solo recodificado (detalle en `PROMPTS.md`). Antes, v3: Wan 2.2 First-Last Frame, 81 cuadros a 16 fps, escalado a 1696×960 |
+| Póster | `ink-tree-network-v4-poster.webp` (cuadro 0, 1920×1080), usado mientras carga y sin JavaScript |
 | Versionado | Un video nuevo se publica con sufijo `-v2`, nunca pisando el anterior |
 | Recodificación | H.264 todo intra (cada cuadro clave) para que el fallback con `currentTime` salte sin trabas; herramienta ffmpeg ejecutada en contenedor Docker de uso puntual |
 | Fuentes | Cuadros y prompts en `docs/design/phase-6/scroll-video/` (fuera de `public/`) |
@@ -187,8 +187,9 @@ Autoalojadas con paquetes `@fontsource` (Fraunces variable, Instrument Sans, IBM
 
 - Se conserva `useVideoScrub` (lerp, `LERP_TAU`, `SNAP`, banco de frames, LRU, watchdog, fallback).
 - El canvas usa las dimensiones nativas del video; `object-fit: cover` lo escala.
-- **Mezcla entre cuadros:** con el banco de frames activo se dibujan los dos cuadros vecinos con opacidad proporcional a la posición fraccional, para que 81 cuadros se sientan continuos.
-- **Corrección de la transición (D16):** entre progreso 0,55 y 0,75 (cuadros ≈44–60) se aplica un filtro `contrast`/`saturate`/`brightness` sobre la capa del video, con envolvente triangular: 1 → pico en 0,65 (`contrast(1.35) saturate(1.25) brightness(.94)`) → 1.
+- **Mezcla entre cuadros:** con el banco de frames activo se dibujan los dos cuadros vecinos con opacidad proporcional a la posición fraccional, para que los cuadros se sientan continuos.
+- **Corrección de la transición (D16):** con v3, entre progreso 0,55 y 0,75 (cuadros ≈44–60) se aplicaba un filtro `contrast`/`saturate`/`brightness` sobre la capa del video. El v4 conserva el contraste en toda la transición, así que el filtro se retiró el 2026-09-22.
+- **Mapeo scroll → video (v4, 2026-09-22):** el v4 anochece en sus cuadros ≈20–45, mucho antes que el v3. `videoProgress(p)` mapea por tramos p 0–0,63 → cuadros 0–25, 0,63–0,70 → 25–35, 0,70–0,78 → 35–45 y 0,78–1 → 45–120, para que la tabla de 7.3 siga valiendo sin cambios (mediciones del v4 en `PROMPTS.md`).
 
 ### 7.3 Tiempos
 
@@ -340,8 +341,8 @@ Sigue pendiente solo el contenido que aporta Luciano: textos de problema, soluci
 - La foto del hero usa el alt de Profile; el avatar de la barra es decorativo.
 - Contraste AA en ambos temas (8.1) y sobre los cuadros de la escena.
 - Nada depende solo del hover; todo funciona con teclado y a 200 % de zoom.
-- Imágenes con `loading="lazy"`, `decoding="async"` y dimensiones explícitas. Video servido `ink-tree-network-v3.mp4` (1696×960) de 2,16 MB (v1, 246 KB, y v2, 868 KB, quedan sin servir por la regla de versionado).
-- El fondo SVG y la corrección de filtro solo trabajan mientras la escena está en pantalla.
+- Imágenes con `loading="lazy"`, `decoding="async"` y dimensiones explícitas. Video servido `ink-tree-network-v4.mp4` (1920×1080) de 2,22 MB (v1, v2 y v3 quedan sin servir por la regla de versionado).
+- El fondo SVG y el dibujo del canvas solo trabajan mientras la escena está en pantalla.
 
 ## 12. Verificación
 

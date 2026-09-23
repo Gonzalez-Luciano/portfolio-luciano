@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   VEIL_OPACITY,
   columnVeilOpacity,
-  correctionEnvelope,
-  correctionFilter,
   cloudOffset,
   landscapeOpacity,
   linksOpacity,
@@ -11,22 +9,40 @@ import {
   navVeilOpacity,
   starOpacity,
   sunSkyPosition,
+  videoProgress,
 } from '@/lib/scene-timeline'
 
-describe('transition correction', () => {
-  it('is a triangle over 0.55–0.75 peaking at 0.65', () => {
-    expect(correctionEnvelope(0.5)).toBe(0)
-    expect(correctionEnvelope(0.55)).toBe(0)
-    expect(correctionEnvelope(0.6)).toBeCloseTo(0.5)
-    expect(correctionEnvelope(0.65)).toBeCloseTo(1)
-    expect(correctionEnvelope(0.7)).toBeCloseTo(0.5)
-    expect(correctionEnvelope(0.75)).toBe(0)
+describe('video progress', () => {
+  it('keeps the daylight frames (0–25 of 121) under beats 1–2', () => {
+    expect(videoProgress(0)).toBe(0)
+    expect(videoProgress(0.315)).toBeCloseTo(12.5 / 121)
+    expect(videoProgress(0.63)).toBeCloseTo(25 / 121)
   })
 
-  it('maps the envelope to the approved CSS filter', () => {
-    expect(correctionFilter(0.2)).toBe('none')
-    expect(correctionFilter(0.65)).toBe('contrast(1.35) saturate(1.25) brightness(0.94)')
-    expect(correctionFilter(0.6)).toBe('contrast(1.175) saturate(1.125) brightness(0.97)')
+  it('stays on frames where the dark nav passes AA (up to frame 35) until it turns light at 0.70', () => {
+    expect(videoProgress(0.665)).toBeCloseTo(30 / 121)
+    expect(videoProgress(0.7)).toBeCloseTo(35 / 121)
+  })
+
+  it('lets night fall (frames 35–45) behind the veils between 0.70 and 0.78', () => {
+    expect(videoProgress(0.74)).toBeCloseTo(40 / 121)
+    expect(videoProgress(0.78)).toBeCloseTo(45 / 121)
+  })
+
+  it('grows the lit network under beat 3 and clamps outside the track', () => {
+    expect(videoProgress(0.89)).toBeCloseTo(83 / 121)
+    expect(videoProgress(1)).toBe(1)
+    expect(videoProgress(-0.1)).toBe(0)
+    expect(videoProgress(1.1)).toBe(1)
+  })
+
+  it('never runs the video backwards', () => {
+    let previous = -1
+    for (let p = 0; p <= 1; p += 0.01) {
+      const next = videoProgress(p)
+      expect(next).toBeGreaterThanOrEqual(previous)
+      previous = next
+    }
   })
 })
 

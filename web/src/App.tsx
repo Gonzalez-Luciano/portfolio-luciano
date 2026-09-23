@@ -13,7 +13,7 @@ import { useRegion } from '@/hooks/useRegion'
 import { useTheme } from '@/hooks/useTheme'
 import { loadStructuralContent, type StructuralContent } from '@/lib/api'
 import { buildScene } from '@/lib/scene'
-import { SCROLL_VIDEO_SRC, navLightText, navVeilOpacity } from '@/lib/scene-timeline'
+import { SCROLL_VIDEO_SRC, navLightText, navVeilOpacity, videoProgress } from '@/lib/scene-timeline'
 import { combineStatus, hasAboutContent, hasContactContent, visibleSections, type SectionId } from '@/lib/sections'
 import { useVideoScrub } from '@/useVideoScrub'
 
@@ -22,7 +22,7 @@ type StructuralState = { status: 'loading' } | { status: 'ready'; content: Struc
 export default function App() {
   const locale = useMemo(() => resolveLocale(window.location.pathname), [])
   const ui = uiCopy(locale)
-  const scrub = useVideoScrub(SCROLL_VIDEO_SRC)
+  const scrub = useVideoScrub(SCROLL_VIDEO_SRC, videoProgress)
   const { theme, toggle: toggleTheme } = useTheme()
   const [structural, setStructural] = useState<StructuralState>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)

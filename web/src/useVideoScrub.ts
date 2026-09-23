@@ -141,7 +141,8 @@ async function buildFrameBank(
   return bank.sort((a, b) => a.ts - b.ts)
 }
 
-export function useVideoScrub(videoSrc: string) {
+/** `toVideoProgress` maps scroll progress to a fraction of the video's duration (monotonic, 0 → 0, 1 → 1). */
+export function useVideoScrub(videoSrc: string, toVideoProgress: (p: number) => number) {
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -173,9 +174,9 @@ export function useVideoScrub(videoSrc: string) {
     let rafId = 0
     let watchdogId: number | undefined
     let disposed = false
-    // The backdrop/correction filter (spec §11) and the canvas draw/warmLRU work only need to
-    // run while the 500vh track is actually on screen; once it has scrolled past (or hasn't been
-    // reached yet) the sticky scene is not visible, so skip the per-frame decode/paint work.
+    // The canvas draw/warmLRU work only needs to run while the 500vh track is actually on
+    // screen; once it has scrolled past (or hasn't been reached yet) the sticky scene is not
+    // visible, so skip the per-frame decode/paint work.
     let onScreen = true
 
     const measure = () => {
@@ -315,7 +316,7 @@ export function useVideoScrub(videoSrc: string) {
       setScrollProgress(Math.round(p * 1000) / 1000)
 
       if (dur > 0) {
-        target = p * dur
+        target = toVideoProgress(p) * dur
         if (reducedMotion.matches) current = target
         else current = stepTowards(current, target, dt, LERP_TAU, SNAP)
 
@@ -369,7 +370,7 @@ export function useVideoScrub(videoSrc: string) {
       for (const bitmap of lru.values()) bitmap?.close()
       lru.clear()
     }
-  }, [videoSrc])
+  }, [videoSrc, toVideoProgress])
 
   return { containerRef, videoRef, canvasRef, scrollProgress, canvasLive }
 }

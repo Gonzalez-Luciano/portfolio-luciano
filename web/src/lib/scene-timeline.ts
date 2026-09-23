@@ -1,7 +1,7 @@
 import { NAV_LIGHT_THRESHOLD } from '@/lib/section-opacity'
 
-export const SCROLL_VIDEO_SRC = '/media/scroll/ink-tree-network-v3.mp4'
-export const SCROLL_POSTER_SRC = '/media/scroll/ink-tree-network-v3-poster.webp'
+export const SCROLL_VIDEO_SRC = '/media/scroll/ink-tree-network-v4.mp4'
+export const SCROLL_POSTER_SRC = '/media/scroll/ink-tree-network-v4-poster.webp'
 
 /** Darkest opacity of both veils (#1A1411), measured to keep beat 3 and the nav above AA. */
 export const VEIL_OPACITY = 0.45
@@ -12,17 +12,32 @@ export function ramp(p: number, from: number, to: number): number {
   return clamp01((p - from) / (to - from))
 }
 
-/** Low-contrast blend of the video (frames ≈44–60): triangle 0.55 → 0.65 → 0.75. */
-export function correctionEnvelope(p: number): number {
-  if (p <= 0.55 || p >= 0.75) return 0
-  return p <= 0.65 ? (p - 0.55) / 0.1 : (0.75 - p) / 0.1
-}
+/**
+ * Scroll progress → fraction of the video's duration. The v4 video (121 frames) turns to
+ * night over frames ≈20–45, so the scroll holds its daylight frames under beats 1–2 (the
+ * beat 2 accent keeps 3:1 up to frame 25, when the beat has faded out at p 0.63), keeps the
+ * dark nav on frames where dark text passes AA (up to frame 35 at p 0.70), lets night fall
+ * behind the veils between p 0.70 and 0.78, and grows the lit network under beat 3 (light
+ * text passes AA without a veil from frame 45).
+ */
+const VIDEO_KNOTS: ReadonlyArray<readonly [p: number, video: number]> = [
+  [0, 0],
+  [0.63, 25 / 121],
+  [0.7, 35 / 121],
+  [0.78, 45 / 121],
+  [1, 1],
+]
 
-export function correctionFilter(p: number): string {
-  const envelope = correctionEnvelope(p)
-  if (envelope === 0) return 'none'
-  const value = (amount: number) => Number(amount.toFixed(3))
-  return `contrast(${value(1 + 0.35 * envelope)}) saturate(${value(1 + 0.25 * envelope)}) brightness(${value(1 - 0.06 * envelope)})`
+export function videoProgress(p: number): number {
+  const clamped = clamp01(p)
+  for (let i = 1; i < VIDEO_KNOTS.length; i++) {
+    const [p1, v1] = VIDEO_KNOTS[i]
+    if (clamped <= p1) {
+      const [p0, v0] = VIDEO_KNOTS[i - 1]
+      return v0 + (v1 - v0) * ramp(clamped, p0, p1)
+    }
+  }
+  return 1
 }
 
 const veilFadeOut = (p: number) => VEIL_OPACITY * (1 - ramp(p, 0.78, 0.84))

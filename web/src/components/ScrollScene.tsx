@@ -4,7 +4,7 @@ import { SceneBackdrop } from '@/components/SceneBackdrop'
 import { Stagger } from '@/components/Stagger'
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
 import type { SceneContent } from '@/lib/scene'
-import { SCROLL_POSTER_SRC, SCROLL_VIDEO_SRC, columnVeilOpacity, correctionFilter } from '@/lib/scene-timeline'
+import { SCROLL_POSTER_SRC, SCROLL_VIDEO_SRC, columnVeilOpacity } from '@/lib/scene-timeline'
 import { STAGGER_THRESHOLD, sectionOneOpacity, sectionThreeOpacity, sectionTwoOpacity } from '@/lib/section-opacity'
 import type { useVideoScrub } from '@/useVideoScrub'
 import { ANALYTICS_EVENTS } from '@/lib/analytics-events'
@@ -32,12 +32,12 @@ export function ScrollScene({ scrub, scene, status, ui, onRetry }: Props) {
   return (
     <div ref={containerRef} id="top" className="relative h-[500vh]">
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-[#F5EFE6]">
-        <div className="absolute inset-0" style={{ filter: correctionFilter(p) }}>
+        <div className="absolute inset-0">
           <video ref={videoRef} src={SCROLL_VIDEO_SRC} poster={SCROLL_POSTER_SRC} muted playsInline preload="auto" aria-hidden="true" className={media} />
           <canvas
             ref={canvasRef}
-            width={1696}
-            height={960}
+            width={1920}
+            height={1080}
             aria-hidden="true"
             className={`${media} transition-opacity duration-300 ${canvasLive ? 'opacity-100' : 'opacity-0'}`}
           />

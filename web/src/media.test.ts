@@ -16,26 +16,30 @@ const pngDimensions = (file: string) => {
 }
 
 describe('scroll scene media', () => {
-  it('ships the upscaled video and its poster with a small footprint', () => {
-    expect(existsSync(scroll('ink-tree-network-v3.mp4'))).toBe(true)
-    expect(existsSync(scroll('ink-tree-network-v3-poster.webp'))).toBe(true)
-    const videoSize = statSync(scroll('ink-tree-network-v3.mp4')).size
+  it('ships the v4 video and its poster with a small footprint', () => {
+    expect(existsSync(scroll('ink-tree-network-v4.mp4'))).toBe(true)
+    expect(existsSync(scroll('ink-tree-network-v4-poster.webp'))).toBe(true)
+    const videoSize = statSync(scroll('ink-tree-network-v4.mp4')).size
     expect(videoSize).toBeGreaterThan(1 * 1024 * 1024)
     expect(videoSize).toBeLessThan(3 * 1024 * 1024)
-    const posterSize = statSync(scroll('ink-tree-network-v3-poster.webp')).size
+    const posterSize = statSync(scroll('ink-tree-network-v4-poster.webp')).size
     expect(posterSize).toBeGreaterThan(1 * 1024)
     expect(posterSize).toBeLessThan(200 * 1024)
   })
 
-  it('ships the v4 poster as a 1920×1080 lossy WebP with a small footprint', () => {
+  it('ships the v4 poster as a lossy WebP at the video resolution (1920×1080)', () => {
     const poster = readFileSync(scroll('ink-tree-network-v4-poster.webp'))
     expect(poster.subarray(0, 4).toString('ascii')).toBe('RIFF')
     expect(poster.subarray(8, 16).toString('ascii')).toBe('WEBPVP8 ')
     expect(poster.subarray(23, 26)).toEqual(Buffer.from([0x9d, 0x01, 0x2a]))
     expect(poster.readUInt16LE(26) & 0x3fff).toBe(1920)
     expect(poster.readUInt16LE(28) & 0x3fff).toBe(1080)
-    expect(poster.length).toBeGreaterThan(1 * 1024)
-    expect(poster.length).toBeLessThan(200 * 1024)
+  })
+
+  it('serves the video with the moov atom first so playback can start before the download ends', () => {
+    const head = readFileSync(scroll('ink-tree-network-v4.mp4')).subarray(0, 64)
+    expect(head.subarray(4, 8).toString('ascii')).toBe('ftyp')
+    expect(head.subarray(head.readUInt32BE(0) + 4, head.readUInt32BE(0) + 8).toString('ascii')).toBe('moov')
   })
 })
 

@@ -1,6 +1,6 @@
 # Scroll video — generation record
 
-Source record for `ink-tree-network-v1.mp4`, kept in this folder together with `-v2` and its poster; superseded by `-v3`, which is the only encode served from `web/public/media/scroll/` (§11 of the design spec). The two frames in this folder are generation inputs only; none of the files here are served by the site.
+Source record for `ink-tree-network-v1.mp4`, kept in this folder together with `-v2`, `-v3` and their posters; superseded by `-v4` (see [V4](#v4) below), which is the only encode served from `web/public/media/scroll/` (§11 of the design spec). The two frames in this folder are generation inputs only; none of the files here are served by the site.
 
 | Item | Value |
 |---|---|
@@ -67,3 +67,31 @@ Do not include: any text, letters, numbers, logos, watermark, signature, people,
   - dark text `#2D251B` passes 4.5:1 up to frame 56 (p 0.70);
   - light text `#F3E9DD` passes 4.5:1 from frame 62 (p 0.775);
   - between p 0.70 and 0.78 neither passes on its own, hence the dark veil described in the design spec (section 7.3).
+
+## V4
+
+A new video, not a re-encode of v1: supplied by Luciano on 2026-09-22 as `hf_20260922_234439_4c31be34-18d8-4d5e-8155-c27800162931.mp4`. Its generator, prompts and seed are not recorded here. It was converted only; no frame was edited, cropped, colour-corrected or regenerated.
+
+| Item | Value |
+|---|---|
+| Source | HEVC Main 10 (`yuv420p10le`), 1920×1080 (16:9), BT.709 limited range, progressive, 24 fps, 121 frames, 5.04 s, AAC audio track, 3,949,701 bytes, SHA-256 `c414cbee91c09a87fc5e25ee67224766a0076a99349171172b03d9c258143cff` |
+| Served video | `ink-tree-network-v4.mp4`: H.264 High, `libx264 -preset slow`, all-intra (`-g 1 -keyint_min 1`, every frame a key frame), no B-frames, 8-bit `yuv420p`, BT.709 tags, CRF 23, `+faststart`, audio dropped (`-an`), 1920×1080, 121 frames at 24 fps, 2,328,248 bytes. CRF 23 instead of 20 keeps it inside the 3 MB budget (CRF 20 gives 3.69 MB) at an imperceptible cost: PSNR against the source 49.7 dB average (48.0 min), vs 50.9 dB at CRF 20 |
+| Poster | `ink-tree-network-v4-poster.webp`: frame 0 (pts 0, I-frame) of the source, `select=eq(n\,0)`, `libwebp -quality 82`, 1920×1080, 14,012 bytes; PSNR 43.3 dB / SSIM 0.994 against a lossless PNG of the same frame |
+
+```sh
+ffmpeg -i <source> -map 0:v:0 -an -vf format=yuv420p -c:v libx264 -preset slow -crf 23 -g 1 -keyint_min 1 -bf 0 \
+  -pix_fmt yuv420p -color_primaries bt709 -color_trc bt709 -colorspace bt709 -color_range tv -movflags +faststart \
+  ink-tree-network-v4.mp4
+ffmpeg -i <source> -map 0:v:0 -vf "select=eq(n\,0)" -frames:v 1 -fps_mode passthrough -c:v libwebp -quality 82 \
+  ink-tree-network-v4-poster.webp
+```
+
+### V4 measured facts
+
+Same method as above (text zone: left 5–40 % × middle 50 %; nav zone: top 10 %; 1st/99th luminance percentile of the background). The method reproduces the v3 figure of frame 56 for dark text.
+
+- Night falls much earlier than in v3: mean luminance 0.88 up to frame 10, 0.53 at frame 25, 0.13 at frame 45, 0.025 from frame 65.
+- Contrast stays high through the transition (std ≥ 7.4 vs 1.7 in v3), so the v3 contrast/saturation correction filter was removed.
+- Dark text `#2D251B` passes 4.5:1 up to frame 35; the beat 2 accent `#9A4E2A` (large text) passes 3:1 up to frame 26; light text `#F3E9DD` passes 4.5:1 from frame 45, or from frame 32 over the 45 % veil.
+- Played linearly, the video would put beat 2 and the dark nav on night frames. `videoProgress(p)` in `web/src/lib/scene-timeline.ts` maps scroll to video time instead: p 0 → 0.63 onto frames 0–25, 0.63 → 0.70 onto 25–35, 0.70 → 0.78 onto 35–45 (behind the veils) and 0.78 → 1 onto 45–120. The beats, colours, veils, `NAV_LIGHT_THRESHOLD` and the backdrop timings are unchanged.
+- Measured over the whole track with that mapping and the veils (worst of the two blended frames): nav dark ≥ 4.60:1, nav light ≥ 5.64:1, beat 1 ≥ 9.88:1, beat 2 ink ≥ 8.61:1 / accent ≥ 3.43:1 / muted ≥ 4.20:1, beat 3 light ≥ 6.81:1 / glow ≥ 3.19:1. No failures.
