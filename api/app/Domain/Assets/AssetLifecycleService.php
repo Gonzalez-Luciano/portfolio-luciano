@@ -3,6 +3,7 @@
 namespace App\Domain\Assets;
 
 use App\Domain\Publishing\EditorialMutationContext;
+use App\Domain\Publishing\PublicationValidationException;
 use App\Domain\Publishing\PublicationValidator;
 use App\Enums\PublicationStatus;
 use App\Models\CvDocument;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 final class AssetLifecycleService
 {
@@ -619,8 +621,21 @@ final class AssetLifecycleService
         }
     }
 
-    private function operationFailure(string $operation, Model $owner, string $operationId, \Throwable $previous): AssetOperationException
+    /**
+     * Expected editorial rejections (publication rules, upload policy, form
+     * validation) are returned unchanged so the caller can show the specific
+     * reason; compensation has already run at every call site. Anything else
+     * is an operational failure: it is logged with identifiers only and
+     * replaced by a generic, safe message.
+     */
+    private function operationFailure(string $operation, Model $owner, string $operationId, \Throwable $previous): \Throwable
     {
+        if ($previous instanceof PublicationValidationException
+            || $previous instanceof AssetValidationException
+            || $previous instanceof ValidationException) {
+            return $previous;
+        }
+
         $this->log($owner, $operationId, $operation);
 
         return new AssetOperationException('The asset operation could not be completed.', 0, $previous);
