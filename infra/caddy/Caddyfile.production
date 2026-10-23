@@ -34,7 +34,9 @@
 	}
 
 	# Current Livewire CSS, JavaScript, and source maps are public assets.
-	@livewireAssets path_regexp livewireAssets ^/livewire-[^/]+/(?:css/[^/]+(?:\.global)?\.css|js/[^/]+\.js|livewire\.js|livewire\.csp\.min\.js\.map|livewire\.min\.js\.map)$
+	# Livewire serves livewire.js with APP_DEBUG on and livewire.min.js with it
+	# off (production); both spellings are the same runtime script.
+	@livewireAssets path_regexp livewireAssets ^/livewire-[^/]+/(?:css/[^/]+(?:\.global)?\.css|js/[^/]+\.js|livewire(?:\.min)?\.js|livewire\.csp\.min\.js\.map|livewire\.min\.js\.map)$
 	handle @livewireAssets {
 		reverse_proxy api:80
 	}

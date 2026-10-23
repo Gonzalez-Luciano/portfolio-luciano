@@ -145,6 +145,34 @@ for (const path of ['infra/caddy/Caddyfile', 'infra/caddy/laravel-routes.json', 
 }
 
 const caddy = read('infra/caddy/Caddyfile');
+
+// Livewire registers livewire.js when APP_DEBUG is on and livewire.min.js when
+// it is off (production). Both spellings must reach Laravel; unrelated paths
+// under the same prefix must not.
+function assertLivewireAssetRouting(source, label) {
+  const match = source.match(/@livewireAssets path_regexp livewireAssets (\S+)/);
+  assert.ok(match, `${label}: missing @livewireAssets matcher`);
+  const matcher = new RegExp(match[1]);
+  for (const path of [
+    '/livewire-abc123/livewire.min.js',
+    '/livewire-abc123/livewire.js',
+    '/livewire-abc123/livewire.min.js.map',
+    '/livewire-abc123/livewire.csp.min.js.map',
+    '/livewire-abc123/js/component.js',
+    '/livewire-abc123/css/component.global.css',
+  ]) {
+    assert.match(path, matcher, `${label}: ${path} must route to Laravel`);
+  }
+  for (const path of [
+    '/livewire-abc123/livewire.min.jsx',
+    '/livewire-abc123/other.js',
+    '/livewire-abc123/livewire.min.js/extra',
+    '/livewire/livewire.min.js',
+  ]) {
+    assert.doesNotMatch(path, matcher, `${label}: ${path} must not route to Laravel`);
+  }
+}
+assertLivewireAssetRouting(caddy, 'development gateway');
 assert.doesNotMatch(caddy, /livewire-[0-9a-f]{8,}/i, 'Caddy must not copy a generated Livewire hash');
 assert.doesNotMatch(caddy, /cloudflare|trusted_proxies/i, 'Gateway must not own Cloudflare proxy configuration');
 assert.doesNotMatch(caddy, /(?:^|\n)\s*(?:root|file_server)\b/m, 'Gateway must not serve application files directly');
@@ -295,6 +323,7 @@ assert.match(productionCaddy, /rewrite[^\n]*\/en\/index\.html/);
 assert.match(productionCaddy, /Cache-Control[^\n]*no-store/);
 assert.match(productionCaddy, /@livewireTechnical/);
 assert.match(productionCaddy, /@livewireAssets/);
+assertLivewireAssetRouting(productionCaddy, 'production gateway');
 assert.match(productionCaddy, /copy_response 404/);
 assert.match(productionCaddy, /^\t@backendPublic path[^\n]*\/cv\/\*/m, 'The public backend matcher must cover /cv/*');
 
