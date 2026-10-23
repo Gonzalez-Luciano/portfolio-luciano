@@ -343,7 +343,7 @@ La analítica opcional se activa fijando `UMAMI_TRACKER_URL` y `UMAMI_WEBSITE_ID
 
 ## Contexto de producción
 
-El portfolio se ejecutará en un VPS Linux de OVHcloud junto con otros proyectos Dockerizados. **Todavía no está desplegado.**
+El portfolio se ejecuta en un VPS Linux de OVHcloud junto con otros proyectos Dockerizados. **Producción fue desplegada por operaciones, fuera de este repositorio; los deployments posteriores siguen a cargo del flujo operativo `vps_ops_claude`.**
 
 ```text
 Internet

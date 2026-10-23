@@ -826,7 +826,7 @@ CI y release nunca acceden al VPS, no contienen secretos del host ni de Cloudfla
 
 ## Producción
 
-El portfolio se ejecutará en el VPS Linux de OVHcloud administrado por Luciano, junto con otros proyectos Docker independientes. **Todavía no está desplegado.**
+El portfolio se ejecuta en el VPS Linux de OVHcloud administrado por Luciano, junto con otros proyectos Docker independientes. **Producción fue desplegada por operaciones, fuera de este repositorio; los deployments posteriores siguen a cargo del flujo operativo `vps_ops_claude`.**
 
 No se despliega a una plataforma de hosting de aplicaciones.
 
