@@ -547,6 +547,29 @@ PHP `8.5.12` corrige CVE-2026-109618 y CVE-2026-109619 (ejecución remota de có
 
 Se registra al ejecutar la verificación local aislada de esta release; no se agregan filas de digests hasta la publicación.
 
+Ejecutada con un proyecto Compose aislado y descartable (`portfolio-v092-verify`) sobre `127.0.0.1:28000`, desde volúmenes vacíos, sin override y sin tocar el stack de desarrollo. Los secretos fueron valores aleatorios descartables que no se registran.
+
+| Comprobación | Resultado |
+|---|---|
+| Build de las tres imágenes propias y arranque con `--wait` | PASS, 4 servicios healthy |
+| `php artisan migrate --force` (como `www-data`) desde base fresca | PASS, 15 migraciones |
+| PHP en la imagen productiva | `8.5.12` (NTS, OPcache 8.5.12) |
+| Módulos PHP | `bcmath`, `intl`, `mbstring`, `pdo_mysql`, `zip`, `sodium`, `openssl`, `fileinfo`, `tokenizer`, `ctype`, `dom` presentes |
+| `composer check-platform-reqs` | PASS en el stage `vendor` del build (sin cache); la imagen no incluye binario de Composer |
+| `symfony/http-foundation` en la imagen | `8.1.9.0` |
+| `portfolio:import-initial-content` como root | rechazada con el mensaje de guarda, exit `1`, 0 archivos de media creados |
+| `portfolio:import-initial-content` como `www-data` | PASS, exit `0` |
+| Ownership de `storage/app/private/{profiles,cv}` | `www-data:www-data`, `700` |
+| Archivos world-writable bajo `storage/app` | `0` |
+| Operaciones de runtime como `www-data` (crear, reemplazar, publicar copia pública, retirar, eliminar icono; reemplazar CV) | 6/6 `ok` |
+| `technologies`, `livewire-tmp` tras las operaciones | `www-data:www-data`, sin bits world-writable (la subida real de Livewire se cubre con los tests de upload de Filament) |
+| Gateway: bind mounts / matcher `livewire(?:\.min)?\.js` horneado | `[]` / presente |
+| Smoke `infra/validation/smoke-production.sh` contra las imágenes construidas | 53/53 PASS, 0 FAIL |
+| `livewire.min.js?id=…` por el gateway nuevo | `200` `application/javascript` |
+| `livewire.min.js?id=…` por el gateway de `v0.9.1` (mismo proyecto) | `404`; el smoke da 52 PASS / 1 FAIL |
+| `POST /livewire-<hash>/update` y `/upload-file` sin sesión | `419`, respondidos por Laravel (evidencia esperada) |
+| Login real en `/admin/login` (navegador, usuario descartable) | `livewire.min.js` `200`, `POST /livewire-<hash>/update` `200`, dashboard cargado |
+
 ## Handoff operativo de `v0.9.1`
 
 Todo lo que operaciones necesita para desplegar esta release exacta. Ningún
