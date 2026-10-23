@@ -42,8 +42,16 @@
 > GitHub Release e imágenes en GHCR con digests en `docs/DEPLOYMENT.md`, verificadas
 > por digest con smoke 40/40. Fases 9 y 10 siguen OPEN.
 >
-> **El portfolio todavía NO está desplegado.** El deployment al VPS lo ejecuta
-> después `vps_ops_claude`, fuera de este repositorio.
+> **`v0.9.2` (en preparación, 2026-10-23)** — release de mantenimiento, hotfix
+> productivo y seguridad: ruteo del `livewire.min.js` en el gateway, guard de
+> ownership para el import inicial (`-u www-data`), propagación de errores
+> editoriales en operaciones de assets, PHP 8.5.12 (CVE-2026-109618/109619) y
+> `symfony/http-foundation` 8.1.9 (CVE-2026-108082). Sin migraciones ni cambios
+> de contenido o frontend. Fases 9 y 10 siguen OPEN.
+>
+> **El portfolio ya fue desplegado a producción por operaciones, fuera de este
+> repositorio.** Los deployments posteriores, incluido el de `v0.9.2`, siguen
+> siendo responsabilidad de `vps_ops_claude`.
 
 ## 1. Visión
 

@@ -4,7 +4,7 @@
 
 Este documento describe el contrato de aplicación y de release que el repositorio entrega al flujo operativo `vps_ops_claude`. No es un checklist para que un agente del repositorio instale, configure u opere el VPS: **ningún agente del repositorio entra al VPS**.
 
-> **Estado actual (2026-09-22): el portfolio NO está desplegado.** El runtime productivo, `compose.production.yaml` y los workflows de GitHub Actions existen y fueron verificados localmente. La release a desplegar es **`v0.9.1`**: tag anotado sobre `main` en `ce2afd4`, GitHub Release publicada e imágenes en GHCR con sus digests registrados más abajo. Esas imágenes se descargaron por digest y pasaron el smoke completo (40/40) con la misma secuencia de deployment documentada en este archivo. `v0.9.1` reemplaza a `v0.9.0` (que nunca se desplegó) y solo cambia la imagen web: sirve el video de scroll V4. El deployment al VPS **no fue ejecutado**: lo realiza después `vps_ops_claude` consumiendo exactamente esa release.
+> **Estado actual (2026-10-23): el portfolio existe en producción.** Fue desplegado por operaciones, fuera de este repositorio, y hoy corre `portfolio-web` `v0.9.1`, `portfolio-api` y `portfolio-gateway` basados en `v0.9.0` (el gateway con un override temporal de operaciones que enruta `livewire.min.js`) y `mysql:8.4.11`. La release a desplegar a continuación es **`v0.9.2`** (mantenimiento y seguridad; ver su handoff más abajo). Los deployments posteriores siguen siendo responsabilidad de `vps_ops_claude`; el repositorio no los ejecuta. Los registros de `v0.9.0` y `v0.9.1` más abajo se conservan como historial de release.
 >
 > **Excepción de roadmap autorizada (2026-09-22).** `v0.9.0` se produjo por decisión humana explícita de Luciano para publicar el portfolio antes de cerrar los gates normales, porque lo necesita en su CV. **Fase 9 (seguridad y endurecimiento) y Fase 10 (pruebas y control de calidad) permanecen OPEN**; sus tareas no se marcaron como hechas. `v0.9.0` es una release desplegable y funcional, no el cierre del roadmap. `v1.0.0` queda reservada para cuando Fases 9 y 10 estén completas y la imagen social final esté integrada. Ver `ROADMAP.md`, sección de la excepción.
 
@@ -160,8 +160,10 @@ El lock de reconstrucción (`public-content-rebuild:v1:{locale}:{endpoint}`) y e
 `PortfolioContentSeeder` es explícito y nunca se ejecuta como parte de bootstrap, migración o despliegue. Cuando un operador decide cargarlo deliberadamente (por ejemplo, para revisión editorial en un entorno no productivo):
 
 ```bash
-php artisan db:seed --class=PortfolioContentSeeder
+docker compose -f compose.production.yaml exec -T -u www-data api php artisan db:seed --class=PortfolioContentSeeder
 ```
+
+Se ejecuta con `-T -u www-data` por la misma razón que la secuencia de primer deployment (ver más abajo).
 
 El seeder es idempotente (`updateOrCreate` sobre claves/tipos propios aprobados), nunca publica ni hace visible nada, nunca crea `Project`, `CvDocument`, usuarios o secretos, y nunca sube ni copia un archivo a ningún disco. Ejecutarlo dos veces no duplica filas ni borra contenido no relacionado.
 
@@ -229,7 +231,7 @@ Fase 3 no crea targets de producción especulativos ni un Compose final del serv
 Desde Fase 6, `web` es una SPA Vite: `pnpm build` genera archivos estáticos en `web/dist` sin depender de Laravel, y el contenido se pide en el navegador a la API pública. Por eso el build de imagen de producción de `web` nunca requiere que el API de producción esté disponible. Fase 11 define cómo se sirven esos archivos detrás del gateway (el gateway no sirve archivos de aplicación directamente).
 
 La validación local de aceptación usa Caddy `2.11.4-alpine`, Node `24.18.0`,
-pnpm `11.20.0`, Vite 8 con React 18, PHP `8.5.8`, Laravel `13.25.0`, Filament
+pnpm `11.20.0`, Vite 8 con React 18, PHP `8.5.12`, Laravel `13.25.0`, Filament
 `5.7.6` y MySQL `8.4`. Los puertos internos son Caddy `80`, Vite `5173`,
 Apache/Laravel `80` y MySQL `3306`; el único publish local es Caddy
 `127.0.0.1:8000`. Las señales de aplicación entregadas son Caddy
@@ -473,6 +475,78 @@ Reglas:
 
 MySQL no se versiona con la release: usa la imagen oficial `mysql:8.4.11`.
 
+## Handoff operativo de `v0.9.2`
+
+Release de mantenimiento, hotfix productivo y seguridad. Todo lo que operaciones
+necesita para desplegarla. Ningún valor real de secreto aparece aquí. El
+repositorio no ejecuta nada de esto: lo realiza `vps_ops_claude`, de forma
+manual, desde su propio contexto operativo.
+
+### Identidad de la release
+
+- Tag: `v0.9.2`.
+- Commit y digests de imágenes: se registran tras la publicación (los completa la fase de release; no existen todavía).
+
+### Cambios
+
+- Gateway: `livewire.min.js` se enruta al backend en `Caddyfile.production` y `Caddyfile`; el override temporal de operaciones deja de ser necesario.
+- Ownership de media: el import inicial se niega a correr salvo como `www-data` dueño de ambas raíces de media; los comandos se ejecutan con `-u www-data`.
+- Errores editoriales: los errores de dominio de las operaciones de assets se propagan y Filament los muestra de forma segura (mensaje genérico para fallos internos).
+- PHP actualizado a `8.5.12` en ambos Dockerfiles de la API (CVE-2026-109618 y CVE-2026-109619).
+- Composer: `symfony/http-foundation` `8.1.4` -> `8.1.9` (CVE-2026-108082), sin otros cambios en el lock.
+
+### Esquema
+
+Sin cambios. No hay migraciones nuevas; la última migración sigue siendo `2026_09_15_000005_add_location_to_profiles`. Sin cambios de contenido ni de frontend.
+
+### Primer deployment (volúmenes vacíos)
+
+Seguir la [Secuencia de primer deployment](#secuencia-de-primer-deployment) de este documento. Todos los comandos se ejecutan con `-u www-data` (con `-T`, salvo el bootstrap interactivo del administrador).
+
+### Upgrade `v0.9.1` -> `v0.9.2` (producción existente)
+
+> **Prohibido en este upgrade:** `php artisan migrate` (v0.9.2 no agrega migraciones), `portfolio:import-initial-content`, `PhaseSixDraftContentSeeder` (ni ningún seeder), `portfolio:bootstrap-admin`; borrar la base; recrear MySQL (`mysql:8.4.11` se mantiene); recrear, borrar o resetear `mysql_data`, `api_private_media` o `api_public_media`.
+
+Ejecutado por operaciones, fuera del repositorio:
+
+1. Respaldar `mysql_data`, `api_private_media`, `api_public_media` y el override actual, incluido `/srv/ops/portfolio/gateway.Caddyfile`.
+2. Hacer checkout del tag `v0.9.2` y fijar en el override los tres digests de `v0.9.2`.
+3. Quitar **solo** el bind mount temporal `/srv/ops/portfolio/gateway.Caddyfile:/etc/caddy/Caddyfile:ro`, después de respaldarlo. El resto del override se conserva.
+4. Descargar y recrear únicamente `api`, `gateway` y `web`; MySQL no se recrea:
+
+   ```bash
+   docker compose -f compose.production.yaml -f /srv/ops/portfolio/compose.vps.yaml pull api gateway web
+   docker compose -f compose.production.yaml -f /srv/ops/portfolio/compose.vps.yaml up -d --no-build --wait --no-deps api gateway web
+   ```
+
+5. Verificar `/__gateway/health`, que `/admin/login` carga `livewire.min.js` con `200`, un login real de administrador y el smoke.
+
+### Rollback a `v0.9.1`
+
+1. Hacer checkout del tag `v0.9.1`.
+2. Restaurar en el override los digests de `v0.9.1`.
+3. Restaurar el bind mount temporal del gateway (`/srv/ops/portfolio/gateway.Caddyfile:/etc/caddy/Caddyfile:ro`): el gateway de `v0.9.1` todavía no tiene el fix.
+4. Recrear `api` y `gateway` (y `web` si su digest cambió).
+
+Sin restore de base de datos y sin cambios de volúmenes: `v0.9.2` no cambia el esquema ni el formato de datos. La media escrita por `v0.9.2` usa el mismo layout y sigue siendo legible por `v0.9.1`.
+
+### Seguridad de dependencias
+
+PHP `8.5.12` corrige CVE-2026-109618 y CVE-2026-109619 (ejecución remota de código, críticas) y las correcciones de seguridad de 8.5.9 a 8.5.11. `composer audit` sobre el lock de `v0.9.1`:
+
+| Paquete (lock previo) | Advisory | Severidad | Decisión |
+|---|---|---|---|
+| `symfony/http-foundation` 8.1.4 | CVE-2026-108082, ReDoS en `HeaderUtils::split()` vía el header `Cache-Control` | — | **Corregido en `v0.9.2`** (8.1.9). Alcanzable públicamente sin autenticación. |
+| `laravel/framework` 13.25.0 | CVE-2026-102279, XSS en la página de debug | baja | Fase 9. Inalcanzable en producción: `APP_DEBUG=false` está forzado por Compose y el entrypoint. Requiere actualizar el minor del framework. |
+| `filament/filament` 5.7.6 | CVE-2026-104181, gestión de MFA sin reautenticación | media | Fase 9. MFA no está configurado. Requiere actualizar Filament. |
+| `league/commonmark` 2.10.0 | GHSA-3q6v-r5mr-hxv8, DoS cuadrático en la extensión de tablas GFM | alta | Fase 9. Ningún código de la aplicación renderiza Markdown ni recibe entrada pública hacia él. |
+| `league/commonmark` 2.10.0 | Bypass de DisallowedRawHtml | media | Fase 9, mismo razonamiento. |
+| `league/flysystem` 3.35.2 | CVE-2026-102601, UTF-8 malformado evade el chequeo de caracteres de control | baja | Fase 9. Todas las rutas almacenadas son nombres UUID generados; la entrada del usuario no llega a Flysystem. |
+
+### Verificación local del runtime productivo `v0.9.2`
+
+Se registra al ejecutar la verificación local aislada de esta release; no se agregan filas de digests hasta la publicación.
+
 ## Handoff operativo de `v0.9.1`
 
 Todo lo que operaciones necesita para desplegar esta release exacta. Ningún
@@ -570,16 +644,18 @@ Ejecutada por el operador, en este orden, después de levantar el stack:
 
 ```bash
 # 1. Migraciones sobre base vacía.
-docker compose -f compose.production.yaml exec api php artisan migrate --force
+docker compose -f compose.production.yaml exec -T -u www-data api php artisan migrate --force
 
 # 2. Import inicial guardado de contenido. Un solo uso: rechaza cualquier
 #    ejecución posterior. Crea todo como borrador, oculto y no publicado.
-docker compose -f compose.production.yaml exec api php artisan portfolio:import-initial-content
+docker compose -f compose.production.yaml exec -T -u www-data api php artisan portfolio:import-initial-content
 
 # 3. Primer administrador. Interactivo por diseño: requiere un TTY real.
 #    Pide nombre, email y contraseña (mínimo 12 caracteres) con confirmación.
-docker compose -f compose.production.yaml exec api php artisan portfolio:bootstrap-admin
+docker compose -f compose.production.yaml exec -u www-data api php artisan portfolio:bootstrap-admin
 ```
+
+> **Ejecutar siempre como `www-data` (`-u www-data`).** `docker compose exec` corre como root por defecto. El disco `local` crea los directorios privados con modo `0700` y como dueño al proceso que los crea, así que la media creada por root queda inutilizable para Apache/PHP (`www-data`). `portfolio:import-initial-content` se niega a ejecutarse si no corre como `www-data` y dueño de ambas raíces de media. Para un stack ya afectado, la recuperación no destructiva es reiniciar el contenedor `api` (el entrypoint reaplica `chown -R www-data:www-data storage`). Nunca usar `chmod 777`.
 
 Después de esto el contenido sigue **sin publicar**: un humano revisa y publica
 desde Filament en `/admin`. Hasta entonces los endpoints públicos localizados

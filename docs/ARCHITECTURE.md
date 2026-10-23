@@ -737,7 +737,7 @@ desarrollo: no cambia Caddy, sus rutas ni el build de producción.
 ### Runtime de desarrollo vigente
 
 La aceptación local vigente usa Caddy `2.11.4-alpine`, Node `24.18.0`, pnpm
-`11.20.0`, Vite 8 con React 18, PHP `8.5.8`, Laravel `13.25.0`, Filament
+`11.20.0`, Vite 8 con React 18, PHP `8.5.12`, Laravel `13.25.0`, Filament
 `5.7.6` y MySQL `8.4`. Los puertos internos son Caddy `80`, Vite `5173`,
 Apache/Laravel `80` y MySQL `3306`; solo Caddy se publica como
 `127.0.0.1:8000`.
