@@ -321,17 +321,18 @@ docker compose --env-file ../portfolio-production.env \
   -f compose.production.yaml -p portfolio-production-test up -d --build --wait
 
 # Base fresca: migraciones, import inicial guardado y primer administrador.
+# Siempre como www-data: el import se niega a correr como root (ver docs/DEPLOYMENT.md).
 docker compose --env-file ../portfolio-production.env \
   -f compose.production.yaml -p portfolio-production-test \
-  exec api php artisan migrate --force
+  exec -T -u www-data api php artisan migrate --force
 
 docker compose --env-file ../portfolio-production.env \
   -f compose.production.yaml -p portfolio-production-test \
-  exec api php artisan portfolio:import-initial-content
+  exec -T -u www-data api php artisan portfolio:import-initial-content
 
 docker compose --env-file ../portfolio-production.env \
   -f compose.production.yaml -p portfolio-production-test \
-  exec api php artisan portfolio:bootstrap-admin
+  exec -u www-data api php artisan portfolio:bootstrap-admin
 
 # Smoke funcional reproducible contra el puerto publicado.
 infra/validation/smoke-production.sh http://127.0.0.1:8000
