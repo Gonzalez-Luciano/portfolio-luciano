@@ -1,4 +1,4 @@
-FROM php:8.5.8-apache-bookworm
+FROM php:8.5.12-apache-bookworm
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl default-mysql-client libicu-dev libonig-dev libzip-dev unzip \
