@@ -203,11 +203,7 @@ final class EditProfile extends Page implements HasForms
             try {
                 $updated = app(UpdateOwnedAssetAltText::class)($updated, $altEs, $altEn);
             } catch (\Throwable $exception) {
-                Notification::make()
-                    ->danger()
-                    ->title('Save failed')
-                    ->body($exception->getMessage())
-                    ->send();
+                EditorialActions::notifyAssetFailure('Save', $exception);
 
                 return;
             }

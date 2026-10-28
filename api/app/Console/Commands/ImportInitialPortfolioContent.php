@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Domain\Content\InitialPortfolioContent;
 use App\Domain\Content\InitialPortfolioImporter;
+use App\Support\PersistentMediaWriterGuard;
+use App\Support\PersistentMediaWriterRejected;
 use Illuminate\Console\Command;
 
 /**
@@ -13,7 +15,8 @@ use Illuminate\Console\Command;
  * either fills the pristine Phase 4 structural singletons and creates the
  * approved draft collections, or it fails without changing anything. It never
  * runs migrations, the database seeders, cache publication, a Filament
- * publication action, or startup logic.
+ * publication action, or startup logic. It must run as the web runtime user;
+ * see PersistentMediaWriterGuard.
  */
 final class ImportInitialPortfolioContent extends Command
 {
@@ -21,8 +24,18 @@ final class ImportInitialPortfolioContent extends Command
 
     protected $description = 'Perform the guarded one-time import of the approved initial portfolio content as draft, hidden, unpublished records.';
 
-    public function handle(InitialPortfolioImporter $importer): int
+    public function handle(InitialPortfolioImporter $importer, PersistentMediaWriterGuard $guard): int
     {
+        // Checked before anything is read or written: media created by any
+        // other process identity would be unusable by the web runtime.
+        try {
+            $guard->assertRuntimeUser($this->getName());
+        } catch (PersistentMediaWriterRejected $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
+
         try {
             $importer(InitialPortfolioContent::data());
         } catch (\Throwable) {

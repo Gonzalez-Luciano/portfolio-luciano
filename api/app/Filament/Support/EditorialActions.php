@@ -2,6 +2,8 @@
 
 namespace App\Filament\Support;
 
+use App\Domain\Assets\AssetOperationException;
+use App\Domain\Assets\AssetValidationException;
 use App\Domain\Content\Actions\HideContent;
 use App\Domain\Content\Actions\PublishContent;
 use App\Domain\Content\Actions\ReturnContentToDraft;
@@ -12,6 +14,7 @@ use Closure;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Filament-UI glue for the four content transition buttons (Publish, Show,
@@ -21,6 +24,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class EditorialActions
 {
+    public const GENERIC_FAILURE = 'The operation could not be completed.';
+
     /**
      * @param  Closure(): Model  $record
      * @param  (Closure(Model): void)|null  $afterSuccess
@@ -151,7 +156,7 @@ final class EditorialActions
         Notification::make()
             ->danger()
             ->title("{$label} failed")
-            ->body($exception->getMessage())
+            ->body(self::safeAssetMessage($exception))
             ->send();
     }
 
@@ -167,12 +172,32 @@ final class EditorialActions
     {
         $detail = $exception instanceof PublicationValidationException
             ? self::formatIssues($exception)
-            : $exception->getMessage();
+            : self::safeAssetMessage($exception);
 
         Notification::make()
             ->danger()
             ->title("{$label} partially failed")
             ->body("The other changes were saved. The screenshots were not:\n{$detail}")
             ->send();
+    }
+
+    /**
+     * Only messages written in this codebase reach the editor: validation
+     * messages and the curated owned-asset messages. Any other exception may
+     * carry SQL, paths or driver detail, so it is reported and replaced.
+     */
+    private static function safeAssetMessage(\Throwable $exception): string
+    {
+        if ($exception instanceof ValidationException) {
+            return collect($exception->errors())->flatten()->implode("\n");
+        }
+
+        if ($exception instanceof AssetOperationException || $exception instanceof AssetValidationException) {
+            return $exception->getMessage();
+        }
+
+        report($exception);
+
+        return self::GENERIC_FAILURE;
     }
 }

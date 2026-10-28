@@ -321,17 +321,18 @@ docker compose --env-file ../portfolio-production.env \
   -f compose.production.yaml -p portfolio-production-test up -d --build --wait
 
 # Base fresca: migraciones, import inicial guardado y primer administrador.
+# Siempre como www-data: el import se niega a correr como root (ver docs/DEPLOYMENT.md).
 docker compose --env-file ../portfolio-production.env \
   -f compose.production.yaml -p portfolio-production-test \
-  exec api php artisan migrate --force
+  exec -T -u www-data api php artisan migrate --force
 
 docker compose --env-file ../portfolio-production.env \
   -f compose.production.yaml -p portfolio-production-test \
-  exec api php artisan portfolio:import-initial-content
+  exec -T -u www-data api php artisan portfolio:import-initial-content
 
 docker compose --env-file ../portfolio-production.env \
   -f compose.production.yaml -p portfolio-production-test \
-  exec api php artisan portfolio:bootstrap-admin
+  exec -u www-data api php artisan portfolio:bootstrap-admin
 
 # Smoke funcional reproducible contra el puerto publicado.
 infra/validation/smoke-production.sh http://127.0.0.1:8000
@@ -343,7 +344,7 @@ La analítica opcional se activa fijando `UMAMI_TRACKER_URL` y `UMAMI_WEBSITE_ID
 
 ## Contexto de producción
 
-El portfolio se ejecutará en un VPS Linux de OVHcloud junto con otros proyectos Dockerizados. **Todavía no está desplegado.**
+El portfolio se ejecuta en un VPS Linux de OVHcloud junto con otros proyectos Dockerizados. **Producción fue desplegada por operaciones, fuera de este repositorio; los deployments posteriores siguen a cargo del flujo operativo `vps_ops_claude`.**
 
 ```text
 Internet

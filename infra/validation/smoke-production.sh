@@ -104,6 +104,58 @@ redirect() {
     fi
 }
 
+# laravel_reached <name> <method> <path>
+# Proves a request was answered by Laravel and not by the static frontend
+# fallback: the static frontend never sets a cookie, and its fallback is a 404.
+# The concrete status (419 for an unauthenticated POST without a CSRF token) is
+# reported as evidence but is not required.
+laravel_reached() {
+    local name="$1" method="$2" path="$3"
+    local headers code
+    headers="$(curl -s -X "$method" -D - -o /dev/null "${BASE}${path}" | tr -d '\r')"
+    code="$(printf '%s' "$headers" | awk 'NR==1{print $2}')"
+    if [ "$code" != "404" ] && contains "${headers,,}" "set-cookie:"; then
+        green "PASS  ${name} (${method} ${path} -> ${code}, answered by Laravel)"
+        PASS=$((PASS + 1))
+    else
+        red "FAIL  ${name} (${method} ${path} -> ${code}, not answered by Laravel)"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
+# livewire_runtime: discovers the content-addressed Livewire prefix from the
+# real login page instead of copying a hash, then checks the runtime script and
+# the technical endpoints behind it.
+livewire_runtime() {
+    local html script prefix headers body code
+    html="$(curl -s "${BASE}/admin/login")"
+    script="$(printf '%s' "$html" | grep -oE '/livewire-[^/"]+/livewire(\.min)?\.js(\?[^"]*)?' | head -n 1)"
+    script="${script//&amp;/&}"
+    if [ -z "$script" ]; then
+        red "FAIL  livewire script discovered (/admin/login has no Livewire script)"
+        FAIL=$((FAIL + 1))
+        return
+    fi
+    green "PASS  livewire script discovered (${script})"
+    PASS=$((PASS + 1))
+
+    headers="$(curl -s -D - -o /tmp/portfolio-smoke-livewire.js "${BASE}${script}" | tr -d '\r')"
+    body="$(head -c 2048 /tmp/portfolio-smoke-livewire.js)"
+    rm -f /tmp/portfolio-smoke-livewire.js
+    code="$(printf '%s' "$headers" | awk 'NR==1{print $2}')"
+    if [ "$code" = "200" ] && contains "${headers,,}" "javascript" && ! contains "$body" 'Página no encontrada' && ! contains "$body" '<html'; then
+        green "PASS  livewire runtime script (${script} -> 200 javascript)"
+        PASS=$((PASS + 1))
+    else
+        red "FAIL  livewire runtime script (${script} -> ${code}, expected 200 javascript, not the frontend)"
+        FAIL=$((FAIL + 1))
+    fi
+
+    prefix="$(printf '%s' "$script" | sed -E 's#^(/livewire-[^/]+/).*#\1#')"
+    laravel_reached "livewire update reaches Laravel"      POST "${prefix}update"
+    laravel_reached "livewire upload reaches Laravel"      POST "${prefix}upload-file"
+}
+
 echo "Smoke checking ${BASE}"
 echo
 
@@ -158,6 +210,12 @@ header  "api noindex"               /api/v1                   'X-Robots-Tag: noi
 # administrator publishes content. Both states satisfy the contract.
 status_any "api spanish profile"    /api/v1/es/profile        200 404
 status_any "api english profile"    /api/v1/en/profile        200 404
+status_any "api spanish site"       /api/v1/es/site           200 404
+status_any "api english site"       /api/v1/en/site           200 404
+status_any "api projects"           /api/v1/es/projects       200 404
+status_any "api technologies"       /api/v1/es/technologies   200 404
+status_any "api experiences"        /api/v1/es/experiences    200 404
+status_any "api work cases"         /api/v1/es/work-cases     200 404
 body    "api error envelope"        /api/v1/es/nope           '"code":"not_found"'
 status  "api unsupported locale"    /api/v1/fr/profile        404
 status  "api unknown resource"      /api/v1/es/nope           404
@@ -175,6 +233,14 @@ echo "-- administration --"
 # /admin must answer and must not serve the panel to an anonymous visitor.
 status  "admin requires auth"       /admin                    302
 header  "admin noindex"             /admin                    'X-Robots-Tag: noindex, nofollow'
+status  "admin login page"          /admin/login              200
+
+echo "-- livewire runtime --"
+livewire_runtime
+
+echo "-- scroll media --"
+status  "scroll video v4"           /media/scroll/ink-tree-network-v4.mp4         200
+status  "scroll poster v4"          /media/scroll/ink-tree-network-v4-poster.webp 200
 
 echo
 echo "passed: ${PASS}  failed: ${FAIL}"

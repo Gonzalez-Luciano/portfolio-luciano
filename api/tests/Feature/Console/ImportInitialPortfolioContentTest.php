@@ -15,6 +15,7 @@ use App\Models\SiteConfiguration;
 use App\Models\Technology;
 use App\Models\WorkCase;
 use App\Models\WorkPrinciple;
+use App\Support\PersistentMediaWriterGuard;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -60,6 +61,46 @@ final class ImportInitialPortfolioContentTest extends TestCase
 
         Storage::fake('local');
         Storage::fake('public');
+
+        // The test container runs as root; the real guard would refuse it by
+        // design. Existing behavior is exercised as the runtime user.
+        $this->bindGuard(euid: 33);
+    }
+
+    private function bindGuard(int $euid): void
+    {
+        $this->app->instance(PersistentMediaWriterGuard::class, new PersistentMediaWriterGuard(
+            effectiveUid: static fn (): int => $euid,
+            uidOfUser: static fn (string $name): ?int => $name === 'www-data' ? 33 : null,
+            ownerOf: static fn (string $path): ?int => 33,
+            roots: ['/media/private', '/media/public'],
+        ));
+    }
+
+    public function test_it_refuses_to_run_as_root_before_any_write(): void
+    {
+        $this->bindGuard(euid: 0);
+
+        $this->artisan('portfolio:import-initial-content')
+            ->expectsOutput('This command writes persistent media and must be executed as the runtime user (www-data). Run it with `docker compose exec -T -u www-data api php artisan portfolio:import-initial-content`.')
+            ->assertFailed();
+
+        $this->assertSame([], Storage::disk('local')->allFiles());
+        $this->assertSame([], Storage::disk('public')->allFiles());
+        foreach (self::EMPTY_TABLES as $table) {
+            $this->assertSame(0, DB::table($table)->count(), "{$table} must stay empty.");
+        }
+        $this->assertNull(DB::table('profiles')->value('name'));
+    }
+
+    public function test_it_refuses_a_user_that_does_not_own_the_media_roots(): void
+    {
+        $this->bindGuard(euid: 1000);
+
+        $this->artisan('portfolio:import-initial-content')->assertFailed();
+
+        $this->assertSame([], Storage::disk('local')->allFiles());
+        $this->assertNull(DB::table('profiles')->value('name'));
     }
 
     protected function tearDown(): void
