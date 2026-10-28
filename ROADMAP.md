@@ -42,7 +42,7 @@
 > GitHub Release e imágenes en GHCR con digests en `docs/DEPLOYMENT.md`, verificadas
 > por digest con smoke 40/40. Fases 9 y 10 siguen OPEN.
 >
-> **`v0.9.2` (en preparación, 2026-10-23)** — release de mantenimiento, hotfix
+> **`v0.9.2` (publicada, 2026-10-23; commit del tag `bca7fb296e13219f40c2c73392e970e2f1101641`; digests en `docs/DEPLOYMENT.md`)** — release de mantenimiento, hotfix
 > productivo y seguridad: ruteo del `livewire.min.js` en el gateway, guard de
 > ownership para el import inicial (`-u www-data`), propagación de errores
 > editoriales en operaciones de assets, PHP 8.5.12 (CVE-2026-109618/109619) y

@@ -472,6 +472,9 @@ Reglas:
 | `v0.9.1` | `ce2afd46d96939e2e9e11b3e57f378f487e75021` | `ghcr.io/gonzalez-luciano/portfolio-web:v0.9.1` | `sha256:209cc5ff75b335ef81ec05b8ab0e25680710b982b2deab20b6310e976eb70d75` | Schema hasta `2026_09_15_000005_add_location_to_profiles` (sin cambios desde `v0.9.0`) |
 | `v0.9.1` | `ce2afd46d96939e2e9e11b3e57f378f487e75021` | `ghcr.io/gonzalez-luciano/portfolio-api:v0.9.1` | `sha256:d3f2731cb4f18e50b9d0c8dee4cc62ad5b039c125ab5e3ef7da85eb686d94c49` | Schema hasta `2026_09_15_000005_add_location_to_profiles` (sin cambios desde `v0.9.0`) |
 | `v0.9.1` | `ce2afd46d96939e2e9e11b3e57f378f487e75021` | `ghcr.io/gonzalez-luciano/portfolio-gateway:v0.9.1` | `sha256:2e66e886ebc54ea0b566faedbadb39ab4da34aff3c498262e91a6e92296f0efa` | — |
+| `v0.9.2` | `bca7fb296e13219f40c2c73392e970e2f1101641` | `ghcr.io/gonzalez-luciano/portfolio-web:v0.9.2` | `sha256:5c42e37bfa70fa2fe331a2488e04870d820d66a929523fba18697b4b73a826ec` | Schema hasta `2026_09_15_000005_add_location_to_profiles` (sin cambios desde `v0.9.0`) |
+| `v0.9.2` | `bca7fb296e13219f40c2c73392e970e2f1101641` | `ghcr.io/gonzalez-luciano/portfolio-api:v0.9.2` | `sha256:003328d0a31d581a58d5fb76cce3e5a18f136202923c99835ad28996073ad5a5` | Schema hasta `2026_09_15_000005_add_location_to_profiles` (sin cambios desde `v0.9.0`) |
+| `v0.9.2` | `bca7fb296e13219f40c2c73392e970e2f1101641` | `ghcr.io/gonzalez-luciano/portfolio-gateway:v0.9.2` | `sha256:1c15da8f1a3d8bd4b3a398840f0d50263a402030c0a54afa3206d16714d1c576` | — |
 
 MySQL no se versiona con la release: usa la imagen oficial `mysql:8.4.11`.
 
@@ -485,7 +488,15 @@ manual, desde su propio contexto operativo.
 ### Identidad de la release
 
 - Tag: `v0.9.2`.
-- Commit y digests de imágenes: se registran tras la publicación (los completa la fase de release; no existen todavía).
+- Commit: `bca7fb296e13219f40c2c73392e970e2f1101641` (merge commit del PR #1 en `main`).
+- GitHub Release: https://github.com/Gonzalez-Luciano/portfolio-luciano/releases/tag/v0.9.2
+- Imágenes (los tags `v0.9.2` y `sha-bca7fb296e13219f40c2c73392e970e2f1101641` resuelven al mismo digest; desplegar por digest):
+
+```text
+ghcr.io/gonzalez-luciano/portfolio-web     @ sha256:5c42e37bfa70fa2fe331a2488e04870d820d66a929523fba18697b4b73a826ec
+ghcr.io/gonzalez-luciano/portfolio-api     @ sha256:003328d0a31d581a58d5fb76cce3e5a18f136202923c99835ad28996073ad5a5
+ghcr.io/gonzalez-luciano/portfolio-gateway @ sha256:1c15da8f1a3d8bd4b3a398840f0d50263a402030c0a54afa3206d16714d1c576
+```
 
 ### Cambios
 
@@ -545,7 +556,7 @@ PHP `8.5.12` corrige CVE-2026-109618 y CVE-2026-109619 (ejecución remota de có
 
 ### Verificación local del runtime productivo `v0.9.2`
 
-Se registra al ejecutar la verificación local aislada de esta release; no se agregan filas de digests hasta la publicación.
+Verificación local previa a la publicación, sobre imágenes construidas localmente. La verificación sobre las imágenes publicadas figura en la sección siguiente.
 
 Ejecutada con un proyecto Compose aislado y descartable (`portfolio-v092-verify`) sobre `127.0.0.1:28000`, desde volúmenes vacíos, sin override y sin tocar el stack de desarrollo. Los secretos fueron valores aleatorios descartables que no se registran.
 
@@ -569,6 +580,26 @@ Ejecutada con un proyecto Compose aislado y descartable (`portfolio-v092-verify`
 | `livewire.min.js?id=…` por el gateway de `v0.9.1` (mismo proyecto) | `404`; el smoke da 52 PASS / 1 FAIL |
 | `POST /livewire-<hash>/update` y `/upload-file` sin sesión | `419`, respondidos por Laravel (evidencia esperada) |
 | Login real en `/admin/login` (navegador, usuario descartable) | `livewire.min.js` `200`, `POST /livewire-<hash>/update` `200`, dashboard cargado |
+
+### Verificación de la release publicada `v0.9.2`
+
+Ejecutada localmente con un proyecto Compose aislado y descartable (`portfolio-v092-release`) sobre `127.0.0.1:28000`, con las imágenes descargadas **por digest**, sin archivo override y desde volúmenes vacíos. El proyecto se desmontó con sus volúmenes. No se tocó el VPS.
+
+| Comprobación | Resultado |
+|---|---|
+| CI en `main` (`bca7fb2`) | success |
+| Workflow de release (tag `v0.9.2`) | success |
+| GitHub Release | publicada: https://github.com/Gonzalez-Luciano/portfolio-luciano/releases/tag/v0.9.2 |
+| Digests `v0.9.2` vs `sha-bca7fb296e13219f40c2c73392e970e2f1101641` | idénticos en las tres imágenes (ver identidad de la release) |
+| Labels OCI (las tres imágenes) | `org.opencontainers.image.version=v0.9.2`, `org.opencontainers.image.revision=bca7fb296e13219f40c2c73392e970e2f1101641` |
+| Arranque por digest con `--wait` | PASS, 4 servicios healthy |
+| `php artisan migrate --force` desde volúmenes vacíos | PASS |
+| PHP en la imagen `api` publicada | `8.5.12` |
+| Smoke `infra/validation/smoke-production.sh` | 53 PASS / 0 FAIL |
+| `/livewire-<hash>/livewire.min.js` | `200` `application/javascript` |
+| `POST /livewire-<hash>/update` y `/upload-file` sin sesión | `419`, respondidos por Laravel |
+| Mounts del contenedor gateway | `[]` (sin Caddyfile externo) |
+| Schema | hasta `2026_09_15_000005_add_location_to_profiles` (sin cambios desde `v0.9.0`) |
 
 ## Handoff operativo de `v0.9.1`
 
